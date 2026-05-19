@@ -154,6 +154,55 @@ class SourceTextFlowAnalyzerTest {
         assertFalse(hasNode(graph, "method:paymentClient.charge"));
     }
 
+    @Test
+    void findsAnnotatedControllerMethodWithGenericReturnAndMemberAccessCall() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/study/onboarding/modules/auth/api/AuthController.java"),
+                """
+                        package com.study.onboarding.modules.auth.api;
+
+                        import org.springframework.http.ResponseEntity;
+                        import org.springframework.web.bind.annotation.PostMapping;
+                        import org.springframework.web.bind.annotation.RequestBody;
+
+                        public class AuthController {
+                            private final UserRegistrationInternal userRegistration;
+
+                            @PostMapping("/register")
+                            public ResponseEntity<Void> register(@RequestBody RegisterRequest req) {
+                                userRegistration.create(
+                                        new UserCreateInternalRequest(req.name(), req.email(), req.password())
+                                );
+                                return ResponseEntity.status(201).build();
+                            }
+                        }
+
+                        interface UserRegistrationInternal {
+                        }
+
+                        class RegisterRequest {
+                        }
+
+                        class UserCreateInternalRequest {
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.study.onboarding.modules.auth.api.AuthController.register"
+        );
+
+        assertNodeExists(graph, "class:com.study.onboarding.modules.auth.api.AuthController");
+        assertNodeExists(graph, "method:com.study.onboarding.modules.auth.api.AuthController.register");
+        assertNodeExists(graph, "method:userRegistration.create");
+        assertFalse(hasNode(graph, "method:PostMapping"));
+
+        GraphNode callNode = nodeById(graph, "method:userRegistration.create");
+        assertEquals("member-access", callNode.attributes().get("resolution"));
+        assertEquals("userRegistration", callNode.attributes().get("receiverName"));
+    }
+
     private static String simpleFooServiceSource() {
         return """
                 package com.company;

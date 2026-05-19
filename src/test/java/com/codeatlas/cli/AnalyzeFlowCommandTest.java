@@ -67,6 +67,11 @@ class AnalyzeFlowCommandTest {
         assertTrue(handoff.contains(".code-atlas/flows/com/company/FooService/processOrder/flow.json"));
         assertTrue(handoff.contains(".code-atlas/flows/com/company/FooService/processOrder/context-pack.md"));
         assertTrue(handoff.contains(".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md"));
+        assertTrue(handoff.contains(portablePath(projectDirectory.resolve("src/main/java/com/company/FooService.java"))));
+        assertTrue(handoff.contains(portablePath(expectedOutputDirectory.resolve("flow.json"))));
+        assertTrue(handoff.contains(portablePath(expectedOutputDirectory.resolve("flow.md"))));
+        assertTrue(handoff.contains(portablePath(expectedOutputDirectory.resolve("flow.mmd"))));
+        assertTrue(handoff.contains(portablePath(expectedOutputDirectory.resolve("context-pack.md"))));
 
         JsonNode projectIndex = OBJECT_MAPPER.readTree(projectDirectory.resolve(".code-atlas/project-index.json").toFile());
         JsonNode indexedFlow = projectIndex.get("flows").get(0);
@@ -150,5 +155,9 @@ class AnalyzeFlowCommandTest {
                         }
                         """
         );
+    }
+
+    private static String portablePath(Path path) {
+        return path.toAbsolutePath().normalize().toString().replace('\\', '/');
     }
 }

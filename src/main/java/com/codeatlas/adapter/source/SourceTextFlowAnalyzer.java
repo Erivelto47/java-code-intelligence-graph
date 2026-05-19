@@ -245,6 +245,10 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
             if (depth == 1 && Character.isJavaIdentifierStart(current)) {
                 int nameStart = index;
                 int nameEnd = readIdentifierEnd(strippedSource, nameStart);
+                if (isAnnotationName(strippedSource, typeRegion.bodyStart(), nameStart)) {
+                    index = nameEnd;
+                    continue;
+                }
                 String methodName = strippedSource.substring(nameStart, nameEnd);
                 if (methodName.equals(className) || RESERVED_CALL_WORDS.contains(methodName)) {
                     index = nameEnd;
@@ -603,6 +607,11 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         }
         int previous = previousNonWhitespace(source, lowerBound, index);
         return previous >= lowerBound && source.charAt(previous) == '.';
+    }
+
+    private static boolean isAnnotationName(String source, int lowerBound, int index) {
+        int previous = previousNonWhitespace(source, lowerBound, index);
+        return previous >= lowerBound && source.charAt(previous) == '@';
     }
 
     private static int previousNonWhitespace(String source, int lowerBound, int index) {

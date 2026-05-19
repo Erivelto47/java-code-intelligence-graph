@@ -69,6 +69,13 @@ public final class AgentHandoffWriter {
         appendArtifact(markdown, flowPath, "flow.mmd");
         appendArtifact(markdown, flowPath, "context-pack.md");
         appendArtifact(markdown, flowPath, "agent-handoff.md");
+        markdown.append("\n## Exact Paths\n\n");
+        appendExactSourcePaths(markdown, projectPath, sourceFiles);
+        appendExactArtifact(markdown, outputDirectory, "flow.json");
+        appendExactArtifact(markdown, outputDirectory, "flow.md");
+        appendExactArtifact(markdown, outputDirectory, "flow.mmd");
+        appendExactArtifact(markdown, outputDirectory, "context-pack.md");
+        appendExactArtifact(markdown, outputDirectory, "agent-handoff.md");
         markdown.append("\n## Graph Summary\n\n");
         markdown.append("- Schema version: `").append(escapeInline(graph.schemaVersion())).append("`\n");
         markdown.append("- Node count: `").append(graph.nodes().size()).append("`\n");
@@ -103,6 +110,26 @@ public final class AgentHandoffWriter {
                 .append(escapeInline(artifactName))
                 .append("` - `")
                 .append(escapeInline(artifactPath(flowPath, artifactName)))
+                .append("`\n");
+    }
+
+    private static void appendExactSourcePaths(StringBuilder markdown, Path projectPath, List<String> sourceFiles) {
+        if (sourceFiles.isEmpty()) {
+            markdown.append("- `source` - `No source files detected`\n");
+            return;
+        }
+        for (String sourceFile : sourceFiles) {
+            markdown.append("- `source` - `")
+                    .append(escapeInline(absolutePath(projectPath.resolve(sourceFile))))
+                    .append("`\n");
+        }
+    }
+
+    private static void appendExactArtifact(StringBuilder markdown, Path outputDirectory, String artifactName) {
+        markdown.append("- `")
+                .append(escapeInline(artifactName))
+                .append("` - `")
+                .append(escapeInline(absolutePath(outputDirectory.resolve(artifactName))))
                 .append("`\n");
     }
 
@@ -184,6 +211,10 @@ public final class AgentHandoffWriter {
             return fileName;
         }
         return flowPath + "/" + fileName;
+    }
+
+    private static String absolutePath(Path path) {
+        return portablePath(path.toAbsolutePath().normalize());
     }
 
     private static String projectRelativePath(Path projectPath, Path path) {
