@@ -31,7 +31,7 @@ class AnalyzeFlowCommandTest {
     }
 
     @Test
-    void generatesExpectedFiles() throws Exception {
+    void generatesExpectedFilesWithStubAnalyzer() throws Exception {
         Path projectDirectory = Files.createDirectory(tempDir.resolve("project"));
         Path outputDirectory = tempDir.resolve("output");
 
@@ -39,6 +39,26 @@ class AnalyzeFlowCommandTest {
                 new String[]{
                         "--project", projectDirectory.toString(),
                         "--entrypoint", "com.company.FooService.method",
+                        "--output", outputDirectory.toString(),
+                        "--stub"
+                }
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.json")));
+        assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.md")));
+        assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.mmd")));
+        assertTrue(Files.isRegularFile(outputDirectory.resolve("context-pack.md")));
+    }
+
+    @Test
+    void generatesExpectedFilesWithSourceTextAnalyzer() {
+        Path outputDirectory = tempDir.resolve("source-output");
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "--project", Path.of("examples/java-simple").toString(),
+                        "--entrypoint", "com.company.FooService.processOrder",
                         "--output", outputDirectory.toString()
                 }
         );

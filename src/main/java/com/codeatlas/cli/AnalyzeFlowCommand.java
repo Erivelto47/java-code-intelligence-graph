@@ -1,5 +1,6 @@
 package com.codeatlas.cli;
 
+import com.codeatlas.adapter.source.SourceTextFlowAnalyzer;
 import com.codeatlas.core.analyzer.FlowAnalyzer;
 import com.codeatlas.core.analyzer.StubFlowAnalyzer;
 import com.codeatlas.core.model.FlowGraph;
@@ -24,7 +25,7 @@ public final class AnalyzeFlowCommand {
 
     public AnalyzeFlowCommand() {
         this(
-                new StubFlowAnalyzer(),
+                new SourceTextFlowAnalyzer(),
                 new JsonFlowWriter(),
                 new MarkdownFlowWriter(),
                 new MermaidFlowWriter(),
@@ -70,7 +71,8 @@ public final class AnalyzeFlowCommand {
         }
 
         try {
-            FlowGraph graph = flowAnalyzer.analyze(arguments.projectPath(), arguments.entrypoint());
+            FlowAnalyzer selectedAnalyzer = arguments.useStub() ? new StubFlowAnalyzer() : flowAnalyzer;
+            FlowGraph graph = selectedAnalyzer.analyze(arguments.projectPath(), arguments.entrypoint());
             jsonFlowWriter.write(graph, arguments.outputDirectory());
             markdownFlowWriter.write(graph, arguments.outputDirectory());
             mermaidFlowWriter.write(graph, arguments.outputDirectory());
@@ -86,14 +88,15 @@ public final class AnalyzeFlowCommand {
     }
 
     private static void printUsage(PrintStream errorStream) {
-        errorStream.println("Usage: analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>]");
+        errorStream.println("Usage: analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
     }
 
-    private record Arguments(Path projectPath, String entrypoint, Path outputDirectory) {
+    private record Arguments(Path projectPath, String entrypoint, Path outputDirectory, boolean useStub) {
         private static Arguments parse(String[] args, PrintStream errorStream) {
             Path projectPath = null;
             String entrypoint = null;
             Path outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
+            boolean useStub = false;
 
             for (int i = 0; i < args.length; i++) {
                 String arg = args[i];
@@ -119,6 +122,7 @@ public final class AnalyzeFlowCommand {
                         }
                         outputDirectory = Path.of(value);
                     }
+                    case "--stub" -> useStub = true;
                     default -> {
                         errorStream.println("Unknown argument: " + arg);
                         return null;
@@ -135,7 +139,7 @@ public final class AnalyzeFlowCommand {
                 return null;
             }
 
-            return new Arguments(projectPath, entrypoint, outputDirectory);
+            return new Arguments(projectPath, entrypoint, outputDirectory, useStub);
         }
 
         private static String readValue(String[] args, int index, String option, PrintStream errorStream) {

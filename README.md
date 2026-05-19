@@ -51,6 +51,7 @@ context-pack.md
 src/main/java/com/codeatlas/
   cli/                 CLI analyze-flow
   core/                Modelo e contratos independentes de PSI
+  adapter/source/      Analyzer textual determinístico para arquivos .java
   adapter/psi/         Adapter futuro para IntelliJ PSI
   output/              Geradores derivados: JSON, Markdown, Mermaid, context pack
 docs/
@@ -68,10 +69,16 @@ Rodar testes:
 ./gradlew test
 ```
 
+Gerar artefatos com o analyzer textual real:
+
+```bash
+./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder"
+```
+
 Gerar artefatos com o analyzer stub:
 
 ```bash
-./gradlew run --args="--project ./ --entrypoint com.company.FooService.method"
+./gradlew run --args="--project ./ --entrypoint com.company.FooService.method --stub"
 ```
 
 Por padrão, os arquivos são escritos em:
@@ -80,6 +87,34 @@ Por padrão, os arquivos são escritos em:
 build/code-atlas-output/
 ```
 
+## SourceTextFlowAnalyzer
+
+O analyzer padrão da Fase 1 lê arquivos `.java` diretamente e faz parsing textual conservador, sem IntelliJ PSI, JavaParser, Spoon ou outra biblioteca externa de parsing.
+
+Exemplo analisado:
+
+```bash
+./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder"
+```
+
+O `flow.json` gerado contém nós como:
+
+```text
+class:com.company.FooService
+method:com.company.FooService.processOrder
+method:com.company.FooService.validate
+method:repository.save
+method:paymentClient.charge
+method:com.company.FooService.mapper
+```
+
+Limitações explícitas desta fase:
+
+- Detecta apenas chamadas diretas simples no corpo do método de entrada.
+- Não resolve overloads, polimorfismo, herança, imports complexos ou tipos de campos.
+- Não detecta construtores, reflection, lambdas, method references ou cadeias complexas como `a.b().c()`.
+- Quando o alvo não é resolvido localmente, o grafo usa nomes parciais/inferidos com fatos marcados como determinísticos.
+
 ## Status
 
-O MVP atual valida argumentos, cria um grafo determinístico com o nó do entrypoint e gera os quatro artefatos derivados. A análise PSI ainda não foi implementada.
+O MVP atual resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os quatro artefatos derivados. A análise PSI ainda não foi implementada.

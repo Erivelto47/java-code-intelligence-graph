@@ -4,7 +4,7 @@
 
 Create a deterministic Java Flow Graph from a Java class/method entrypoint.
 
-The current implementation is intentionally a stub. It establishes the CLI, output layout, graph model, and serialization contract before introducing source-code analysis.
+The current implementation uses a small source-text analyzer. It establishes the CLI, output layout, graph model, serialization contract, and a conservative deterministic analysis path before introducing richer source-code adapters.
 
 ## CLI
 
@@ -17,6 +17,19 @@ Supported arguments:
 - `--project <path>`: required project directory.
 - `--entrypoint <qualified.class.method>`: required Java class/method entrypoint.
 - `--output <path>`: optional output directory. Defaults to `./build/code-atlas-output`.
+- `--stub`: optional flag that uses `StubFlowAnalyzer` instead of the source-text analyzer.
+
+Run the real MVP against the included example:
+
+```bash
+./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder"
+```
+
+Run the stub pipeline:
+
+```bash
+./gradlew run --args="--project ./ --entrypoint com.company.FooService.method --stub"
+```
 
 ## Outputs
 
@@ -29,9 +42,10 @@ Supported arguments:
 
 - Java 21 Gradle project setup.
 - Core model independent from IntelliJ PSI.
-- Stub analyzer that creates a graph with the entrypoint node.
+- Source-text analyzer that reads `.java` files without PSI or external parser libraries.
+- Stub analyzer that remains available behind `--stub`.
 - CLI validation and deterministic file generation.
-- Unit tests for the analyzer, JSON writer, and CLI.
+- Unit tests for the analyzers, JSON writer, CLI, and dependency boundary.
 
 ## Out of Scope
 
@@ -42,6 +56,54 @@ Supported arguments:
 - Advanced data flow.
 - Automatic decomposition.
 - IntelliJ PSI implementation.
+- External parser integration such as JavaParser or Spoon.
+
+## SourceTextFlowAnalyzer
+
+`SourceTextFlowAnalyzer` lives in `com.codeatlas.adapter.source`. The core model and `FlowAnalyzer` contract do not depend on this adapter.
+
+For an entrypoint such as `com.company.FooService.processOrder`, it:
+
+- splits package, class, and method from the entrypoint;
+- searches recursively for `FooService.java`;
+- prefers a file declaring `package com.company`;
+- finds the class and method body with simple textual scanning and brace matching;
+- removes line comments, block comments, string literals, and char literals before scanning for calls;
+- emits deterministic `CLASS`, `METHOD`, `DECLARES`, and `CALLS` facts.
+
+Example source:
+
+```java
+package com.company;
+
+public class FooService {
+    public OrderDto processOrder(Order order) {
+        validate(order);
+        repository.save(order);
+        paymentClient.charge(order);
+        return mapper(order);
+    }
+}
+```
+
+Example graph facts:
+
+```text
+class:com.company.FooService
+method:com.company.FooService.processOrder
+method:com.company.FooService.validate
+method:repository.save
+method:paymentClient.charge
+method:com.company.FooService.mapper
+```
+
+Known limitations:
+
+- Detects direct calls such as `validate(order)`, `repository.save(order)`, `this.calculateTotal(order)`, `paymentClient.charge(order)`, and `mapper.toDto(order)`.
+- Does not detect complex chained calls such as `a.b().c()`.
+- Does not process lambdas, method references, constructors, reflection, polymorphic dispatch, overload resolution, inherited calls, or complex imports.
+- Does not implement data flow, runtime tracing, QA generation, Kotlin, Neo4j, or microservice decomposition.
+- Member-access calls are intentionally represented with inferred names such as `method:repository.save` when the receiver type is unknown.
 
 ## Determinism
 
