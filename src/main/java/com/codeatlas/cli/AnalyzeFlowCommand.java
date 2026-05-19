@@ -15,8 +15,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class AnalyzeFlowCommand {
-    private static final Path DEFAULT_OUTPUT_DIRECTORY = Path.of("build", "code-atlas-output");
-
     private final FlowAnalyzer flowAnalyzer;
     private final JsonFlowWriter jsonFlowWriter;
     private final MarkdownFlowWriter markdownFlowWriter;
@@ -95,7 +93,7 @@ public final class AnalyzeFlowCommand {
         private static Arguments parse(String[] args, PrintStream errorStream) {
             Path projectPath = null;
             String entrypoint = null;
-            Path outputDirectory = DEFAULT_OUTPUT_DIRECTORY;
+            Path outputDirectory = null;
             boolean useStub = false;
 
             for (int i = 0; i < args.length; i++) {
@@ -139,7 +137,26 @@ public final class AnalyzeFlowCommand {
                 return null;
             }
 
-            return new Arguments(projectPath, entrypoint, outputDirectory, useStub);
+            Path resolvedOutputDirectory = outputDirectory == null
+                    ? defaultOutputDirectory(projectPath, entrypoint)
+                    : outputDirectory;
+
+            return new Arguments(projectPath, entrypoint, resolvedOutputDirectory, useStub);
+        }
+
+        private static Path defaultOutputDirectory(Path projectPath, String entrypoint) {
+            int methodSeparator = entrypoint.lastIndexOf('.');
+            String classQualifiedName = entrypoint.substring(0, methodSeparator);
+            String methodName = entrypoint.substring(methodSeparator + 1);
+            int classSeparator = classQualifiedName.lastIndexOf('.');
+            String packageName = classQualifiedName.substring(0, classSeparator);
+            String className = classQualifiedName.substring(classSeparator + 1);
+
+            Path outputDirectory = projectPath.resolve(".code-atlas").resolve("flows");
+            for (String packageSegment : packageName.split("\\.")) {
+                outputDirectory = outputDirectory.resolve(packageSegment);
+            }
+            return outputDirectory.resolve(className).resolve(methodName);
         }
 
         private static String readValue(String[] args, int index, String option, PrintStream errorStream) {

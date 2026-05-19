@@ -1,6 +1,7 @@
 .gradle/
 build/
 out/
+.code-atlas/
 .idea/
 *.iml
 .DS_Store

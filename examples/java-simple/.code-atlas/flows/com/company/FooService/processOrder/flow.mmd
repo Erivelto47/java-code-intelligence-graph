@@ -1,0 +1,12 @@
+flowchart TD
+  n0["com.company.FooService"]
+  n1["com.company.FooService.processOrder"]
+  n2["com.company.FooService.validate"]
+  n3["repository.save"]
+  n4["paymentClient.charge"]
+  n5["com.company.FooService.mapper"]
+  n0 -->|DECLARES| n1
+  n1 -->|CALLS| n2
+  n1 -->|CALLS| n3
+  n1 -->|CALLS| n4
+  n1 -->|CALLS| n5

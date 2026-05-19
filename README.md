@@ -84,7 +84,19 @@ Gerar artefatos com o analyzer stub:
 Por padrão, os arquivos são escritos em:
 
 ```text
-build/code-atlas-output/
+<projectPath>/.code-atlas/flows/<package-path>/<ClassName>/<methodName>/
+```
+
+Para o exemplo acima:
+
+```text
+examples/java-simple/.code-atlas/flows/com/company/FooService/processOrder/
+```
+
+Use `--output` para sobrescrever explicitamente esse destino:
+
+```bash
+./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder --output build/code-atlas-output"
 ```
 
 ## SourceTextFlowAnalyzer

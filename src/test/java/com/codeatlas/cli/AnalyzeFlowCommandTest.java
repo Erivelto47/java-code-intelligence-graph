@@ -31,6 +31,28 @@ class AnalyzeFlowCommandTest {
     }
 
     @Test
+    void generatesFilesUnderProjectWhenOutputIsOmitted() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeJavaFile(projectDirectory.resolve("src/main/java/com/company/FooService.java"));
+        Path expectedOutputDirectory = projectDirectory.resolve(
+                ".code-atlas/flows/com/company/FooService/processOrder"
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.FooService.processOrder"
+                }
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.json")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.mmd")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("context-pack.md")));
+    }
+
+    @Test
     void generatesExpectedFilesWithStubAnalyzer() throws Exception {
         Path projectDirectory = Files.createDirectory(tempDir.resolve("project"));
         Path outputDirectory = tempDir.resolve("output");
@@ -68,5 +90,20 @@ class AnalyzeFlowCommandTest {
         assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.md")));
         assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.mmd")));
         assertTrue(Files.isRegularFile(outputDirectory.resolve("context-pack.md")));
+    }
+
+    private static void writeJavaFile(Path sourceFile) throws Exception {
+        Files.createDirectories(sourceFile.getParent());
+        Files.writeString(
+                sourceFile,
+                """
+                        package com.company;
+
+                        public class FooService {
+                            public void processOrder() {
+                            }
+                        }
+                        """
+        );
     }
 }

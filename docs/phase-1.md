@@ -16,13 +16,31 @@ Supported arguments:
 
 - `--project <path>`: required project directory.
 - `--entrypoint <qualified.class.method>`: required Java class/method entrypoint.
-- `--output <path>`: optional output directory. Defaults to `./build/code-atlas-output`.
+- `--output <path>`: optional output directory override.
 - `--stub`: optional flag that uses `StubFlowAnalyzer` instead of the source-text analyzer.
+
+When `--output` is omitted, artifacts are written inside the analyzed project:
+
+```text
+<projectPath>/.code-atlas/flows/<package-path>/<ClassName>/<methodName>/
+```
+
+For `--project examples/java-simple` and `--entrypoint com.company.FooService.processOrder`, the default output directory is:
+
+```text
+examples/java-simple/.code-atlas/flows/com/company/FooService/processOrder/
+```
 
 Run the real MVP against the included example:
 
 ```bash
 ./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder"
+```
+
+Run the same analysis with an explicit output override:
+
+```bash
+./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder --output build/code-atlas-output"
 ```
 
 Run the stub pipeline:
