@@ -6,9 +6,9 @@
 
 ## Flows
 
-| Entrypoint | Flow path | Context pack | Flow JSON |
-| --- | --- | --- | --- |
-| `com.company.FooService.processOrder` | `.code-atlas/flows/com/company/FooService/processOrder` | `.code-atlas/flows/com/company/FooService/processOrder/context-pack.md` | `.code-atlas/flows/com/company/FooService/processOrder/flow.json` |
+| Entrypoint | Flow path | Agent handoff | Context pack | Flow JSON |
+| --- | --- | --- | --- | --- |
+| `com.company.FooService.processOrder` | `.code-atlas/flows/com/company/FooService/processOrder` | `.code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md` | `.code-atlas/flows/com/company/FooService/processOrder/context-pack.md` | `.code-atlas/flows/com/company/FooService/processOrder/flow.json` |
 
 ## Notes
 

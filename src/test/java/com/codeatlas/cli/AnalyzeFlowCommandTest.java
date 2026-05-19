@@ -87,8 +87,10 @@ class AnalyzeFlowCommandTest {
         );
 
         String flowsIndex = Files.readString(projectDirectory.resolve(".code-atlas/flows-index.md"));
+        assertTrue(flowsIndex.contains("Agent handoff"));
         assertTrue(flowsIndex.contains("com.company.FooService.processOrder"));
         assertTrue(flowsIndex.contains(".code-atlas/flows/com/company/FooService/processOrder"));
+        assertTrue(flowsIndex.contains(".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md"));
         assertTrue(flowsIndex.contains("context-pack.md"));
         assertTrue(flowsIndex.contains("flow.json"));
     }

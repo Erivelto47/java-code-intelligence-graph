@@ -31,12 +31,15 @@ public final class FlowsIndexMarkdownWriter {
         markdown.append("## Project\n\n");
         markdown.append("`").append(escapeInline(portablePath(projectPath.normalize()))).append("`\n\n");
         markdown.append("## Flows\n\n");
-        markdown.append("| Entrypoint | Flow path | Context pack | Flow JSON |\n");
-        markdown.append("| --- | --- | --- | --- |\n");
+        String agentHandoffPath = artifactPath(flowPath, "agent-handoff.md");
+        markdown.append("| Entrypoint | Flow path | Agent handoff | Context pack | Flow JSON |\n");
+        markdown.append("| --- | --- | --- | --- | --- |\n");
         markdown.append("| `")
                 .append(escapeTable(graph.entrypoint()))
                 .append("` | `")
                 .append(escapeTable(flowPath))
+                .append("` | `")
+                .append(escapeTable(agentHandoffPath))
                 .append("` | `")
                 .append(escapeTable(contextPackPath))
                 .append("` | `")
