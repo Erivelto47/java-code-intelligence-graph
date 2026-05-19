@@ -19,13 +19,13 @@ Transformar código Java existente em grafos técnicos úteis para:
 
 **Fase 1: Java Flow Graph MVP**
 
-Entrada planejada:
+Entrada:
 
 ```bash
-analyze-flow --project ./repo --entrypoint com.company.FooService.method
+./gradlew run --args="--project ./repo --entrypoint com.company.FooService.method"
 ```
 
-Saídas planejadas:
+Saídas:
 
 ```text
 flow.json
@@ -60,6 +60,26 @@ examples/
   sample-flow.json
 ```
 
+## Desenvolvimento
+
+Rodar testes:
+
+```bash
+./gradlew test
+```
+
+Gerar artefatos com o analyzer stub:
+
+```bash
+./gradlew run --args="--project ./ --entrypoint com.company.FooService.method"
+```
+
+Por padrão, os arquivos são escritos em:
+
+```text
+build/code-atlas-output/
+```
+
 ## Status
 
-Repositório inicial criado para começar a implementação do Java Flow Graph MVP.
+O MVP atual valida argumentos, cria um grafo determinístico com o nó do entrypoint e gera os quatro artefatos derivados. A análise PSI ainda não foi implementada.

@@ -1,0 +1,20 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.company.FooService.method",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "method:com.company.FooService.method",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.company.FooService.method",
+    "displayName" : "method",
+    "attributes" : {
+      "entrypoint" : true
+    }
+  } ],
+  "edges" : [ ],
+  "metadata" : {
+    "analyzer" : "stub-flow-analyzer",
+    "deterministic" : true,
+    "phase" : "phase-1-mvp"
+  }
+}
