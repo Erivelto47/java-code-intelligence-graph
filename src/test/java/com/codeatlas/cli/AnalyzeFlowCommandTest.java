@@ -1,5 +1,7 @@
 package com.codeatlas.cli;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -13,6 +15,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AnalyzeFlowCommandTest {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @TempDir
     Path tempDir;
 
@@ -50,6 +54,43 @@ class AnalyzeFlowCommandTest {
         assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.md")));
         assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.mmd")));
         assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("context-pack.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("agent-handoff.md")));
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/project-index.json")));
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/flows-index.md")));
+
+        String handoff = Files.readString(expectedOutputDirectory.resolve("agent-handoff.md"));
+        assertTrue(handoff.contains("Agent Handoff"));
+        assertTrue(handoff.contains("com.company.FooService.processOrder"));
+        assertTrue(handoff.contains("src/main/java/com/company/FooService.java"));
+        assertTrue(handoff.contains("Node count: `2`"));
+        assertTrue(handoff.contains("Edge count: `1`"));
+        assertTrue(handoff.contains(".code-atlas/flows/com/company/FooService/processOrder/flow.json"));
+        assertTrue(handoff.contains(".code-atlas/flows/com/company/FooService/processOrder/context-pack.md"));
+        assertTrue(handoff.contains(".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md"));
+
+        JsonNode projectIndex = OBJECT_MAPPER.readTree(projectDirectory.resolve(".code-atlas/project-index.json").toFile());
+        JsonNode indexedFlow = projectIndex.get("flows").get(0);
+        assertEquals("1.0", projectIndex.get("schemaVersion").asText());
+        assertEquals(projectDirectory.toString().replace('\\', '/'), projectIndex.get("project").get("root").asText());
+        assertEquals("com.company.FooService.processOrder", indexedFlow.get("entrypoint").asText());
+        assertEquals(
+                ".code-atlas/flows/com/company/FooService/processOrder/flow.json",
+                indexedFlow.get("artifacts").get("flowJson").asText()
+        );
+        assertEquals(
+                ".code-atlas/flows/com/company/FooService/processOrder/context-pack.md",
+                indexedFlow.get("artifacts").get("contextPack").asText()
+        );
+        assertEquals(
+                ".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md",
+                indexedFlow.get("artifacts").get("agentHandoff").asText()
+        );
+
+        String flowsIndex = Files.readString(projectDirectory.resolve(".code-atlas/flows-index.md"));
+        assertTrue(flowsIndex.contains("com.company.FooService.processOrder"));
+        assertTrue(flowsIndex.contains(".code-atlas/flows/com/company/FooService/processOrder"));
+        assertTrue(flowsIndex.contains("context-pack.md"));
+        assertTrue(flowsIndex.contains("flow.json"));
     }
 
     @Test
@@ -71,6 +112,7 @@ class AnalyzeFlowCommandTest {
         assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.md")));
         assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.mmd")));
         assertTrue(Files.isRegularFile(outputDirectory.resolve("context-pack.md")));
+        assertTrue(Files.isRegularFile(outputDirectory.resolve("agent-handoff.md")));
     }
 
     @Test
@@ -90,6 +132,7 @@ class AnalyzeFlowCommandTest {
         assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.md")));
         assertTrue(Files.isRegularFile(outputDirectory.resolve("flow.mmd")));
         assertTrue(Files.isRegularFile(outputDirectory.resolve("context-pack.md")));
+        assertTrue(Files.isRegularFile(outputDirectory.resolve("agent-handoff.md")));
     }
 
     private static void writeJavaFile(Path sourceFile) throws Exception {

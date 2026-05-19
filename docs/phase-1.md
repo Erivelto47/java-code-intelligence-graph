@@ -51,10 +51,46 @@ Run the stub pipeline:
 
 ## Outputs
 
+When `--output` is omitted, the CLI writes the flow artifacts under:
+
+```text
+<projectPath>/.code-atlas/flows/<package-path>/<ClassName>/<methodName>/
+```
+
+It also writes project-level navigation files:
+
+- `.code-atlas/project-index.json`: structured index for the analyzed project and current flow.
+- `.code-atlas/flows-index.md`: human-readable index with direct paths to the generated flow artifacts.
+
+The flow directory contains:
+
 - `flow.json`: primary deterministic graph artifact.
 - `flow.md`: Markdown rendering derived from `flow.json` data.
 - `flow.mmd`: Mermaid rendering derived from `flow.json` data.
 - `context-pack.md`: deterministic context pack derived from `flow.json` data.
+- `agent-handoff.md`: operational handoff for agents that need exact artifact paths.
+
+For the included fixture, the generated structure is:
+
+```text
+examples/java-simple/.code-atlas/
+  project-index.json
+  flows-index.md
+  flows/com/company/FooService/processOrder/
+    flow.json
+    flow.md
+    flow.mmd
+    context-pack.md
+    agent-handoff.md
+```
+
+`project-index.json` keeps JSON as the primary machine-readable navigation surface for generated flows. It includes the project root, current entrypoint, source files, flow path, and artifact paths. In this phase it may be overwritten with the current flow instead of accumulating multiple flows.
+
+`flows-index.md` exists for humans and agents that can read a known file path but cannot traverse repository directories. It provides a compact table pointing to the flow directory, `context-pack.md`, and `flow.json`.
+
+`agent-handoff.md` sits next to each flow and summarizes the repository, project path, entrypoint, source files, generated artifacts, graph counts, analyzer name, detected nodes, detected edges, and the command used to regenerate the flow. It may contain operational guidance for another agent, but it does not add AI interpretation.
+
+When `--output <path>` is provided, the CLI keeps the current behavior of writing flow artifacts to that explicit directory. It also writes `agent-handoff.md` there. Project-level `.code-atlas/project-index.json` and `.code-atlas/flows-index.md` are not required in that mode.
 
 ## In Scope
 
@@ -62,7 +98,7 @@ Run the stub pipeline:
 - Core model independent from IntelliJ PSI.
 - Source-text analyzer that reads `.java` files without PSI or external parser libraries.
 - Stub analyzer that remains available behind `--stub`.
-- CLI validation and deterministic file generation.
+- CLI validation and deterministic file generation, including agent navigation artifacts.
 - Unit tests for the analyzers, JSON writer, CLI, and dependency boundary.
 
 ## Out of Scope

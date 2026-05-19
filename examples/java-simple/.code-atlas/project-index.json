@@ -1,0 +1,19 @@
+{
+  "schemaVersion" : "1.0",
+  "project" : {
+    "root" : "examples/java-simple"
+  },
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "flows" : [ {
+    "entrypoint" : "com.company.FooService.processOrder",
+    "flowPath" : ".code-atlas/flows/com/company/FooService/processOrder",
+    "sourceFiles" : [ "src/main/java/com/company/FooService.java" ],
+    "artifacts" : {
+      "flowJson" : ".code-atlas/flows/com/company/FooService/processOrder/flow.json",
+      "flowMarkdown" : ".code-atlas/flows/com/company/FooService/processOrder/flow.md",
+      "flowMermaid" : ".code-atlas/flows/com/company/FooService/processOrder/flow.mmd",
+      "contextPack" : ".code-atlas/flows/com/company/FooService/processOrder/context-pack.md",
+      "agentHandoff" : ".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md"
+    }
+  } ]
+}

@@ -5,6 +5,9 @@ import com.codeatlas.core.analyzer.FlowAnalyzer;
 import com.codeatlas.core.analyzer.StubFlowAnalyzer;
 import com.codeatlas.core.model.FlowGraph;
 import com.codeatlas.output.context.ContextPackWriter;
+import com.codeatlas.output.handoff.AgentHandoffWriter;
+import com.codeatlas.output.index.FlowsIndexMarkdownWriter;
+import com.codeatlas.output.index.ProjectIndexWriter;
 import com.codeatlas.output.json.JsonFlowWriter;
 import com.codeatlas.output.markdown.MarkdownFlowWriter;
 import com.codeatlas.output.mermaid.MermaidFlowWriter;
@@ -15,11 +18,16 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 public final class AnalyzeFlowCommand {
+    private static final String REPOSITORY = "Erivelto47/java-code-intelligence-graph";
+
     private final FlowAnalyzer flowAnalyzer;
     private final JsonFlowWriter jsonFlowWriter;
     private final MarkdownFlowWriter markdownFlowWriter;
     private final MermaidFlowWriter mermaidFlowWriter;
     private final ContextPackWriter contextPackWriter;
+    private final ProjectIndexWriter projectIndexWriter;
+    private final FlowsIndexMarkdownWriter flowsIndexMarkdownWriter;
+    private final AgentHandoffWriter agentHandoffWriter;
 
     public AnalyzeFlowCommand() {
         this(
@@ -27,7 +35,10 @@ public final class AnalyzeFlowCommand {
                 new JsonFlowWriter(),
                 new MarkdownFlowWriter(),
                 new MermaidFlowWriter(),
-                new ContextPackWriter()
+                new ContextPackWriter(),
+                new ProjectIndexWriter(),
+                new FlowsIndexMarkdownWriter(),
+                new AgentHandoffWriter()
         );
     }
 
@@ -36,13 +47,19 @@ public final class AnalyzeFlowCommand {
             JsonFlowWriter jsonFlowWriter,
             MarkdownFlowWriter markdownFlowWriter,
             MermaidFlowWriter mermaidFlowWriter,
-            ContextPackWriter contextPackWriter
+            ContextPackWriter contextPackWriter,
+            ProjectIndexWriter projectIndexWriter,
+            FlowsIndexMarkdownWriter flowsIndexMarkdownWriter,
+            AgentHandoffWriter agentHandoffWriter
     ) {
         this.flowAnalyzer = flowAnalyzer;
         this.jsonFlowWriter = jsonFlowWriter;
         this.markdownFlowWriter = markdownFlowWriter;
         this.mermaidFlowWriter = mermaidFlowWriter;
         this.contextPackWriter = contextPackWriter;
+        this.projectIndexWriter = projectIndexWriter;
+        this.flowsIndexMarkdownWriter = flowsIndexMarkdownWriter;
+        this.agentHandoffWriter = agentHandoffWriter;
     }
 
     public static void main(String[] args) {
@@ -75,6 +92,18 @@ public final class AnalyzeFlowCommand {
             markdownFlowWriter.write(graph, arguments.outputDirectory());
             mermaidFlowWriter.write(graph, arguments.outputDirectory());
             contextPackWriter.write(graph, arguments.outputDirectory());
+            agentHandoffWriter.write(
+                    graph,
+                    arguments.projectPath(),
+                    arguments.outputDirectory(),
+                    REPOSITORY,
+                    arguments.outputExplicit(),
+                    arguments.useStub()
+            );
+            if (!arguments.outputExplicit()) {
+                projectIndexWriter.write(graph, arguments.projectPath(), arguments.outputDirectory());
+                flowsIndexMarkdownWriter.write(graph, arguments.projectPath(), arguments.outputDirectory());
+            }
             return 0;
         } catch (IllegalArgumentException exception) {
             errorStream.println(exception.getMessage());
@@ -89,11 +118,18 @@ public final class AnalyzeFlowCommand {
         errorStream.println("Usage: analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
     }
 
-    private record Arguments(Path projectPath, String entrypoint, Path outputDirectory, boolean useStub) {
+    private record Arguments(
+            Path projectPath,
+            String entrypoint,
+            Path outputDirectory,
+            boolean outputExplicit,
+            boolean useStub
+    ) {
         private static Arguments parse(String[] args, PrintStream errorStream) {
             Path projectPath = null;
             String entrypoint = null;
             Path outputDirectory = null;
+            boolean outputExplicit = false;
             boolean useStub = false;
 
             for (int i = 0; i < args.length; i++) {
@@ -119,6 +155,7 @@ public final class AnalyzeFlowCommand {
                             return null;
                         }
                         outputDirectory = Path.of(value);
+                        outputExplicit = true;
                     }
                     case "--stub" -> useStub = true;
                     default -> {
@@ -141,7 +178,7 @@ public final class AnalyzeFlowCommand {
                     ? defaultOutputDirectory(projectPath, entrypoint)
                     : outputDirectory;
 
-            return new Arguments(projectPath, entrypoint, resolvedOutputDirectory, useStub);
+            return new Arguments(projectPath, entrypoint, resolvedOutputDirectory, outputExplicit, useStub);
         }
 
         private static Path defaultOutputDirectory(Path projectPath, String entrypoint) {

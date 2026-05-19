@@ -28,10 +28,13 @@ Entrada:
 Saídas:
 
 ```text
-flow.json
-flow.md
-flow.mmd
-context-pack.md
+.code-atlas/project-index.json
+.code-atlas/flows-index.md
+.code-atlas/flows/<package-path>/<ClassName>/<methodName>/flow.json
+.code-atlas/flows/<package-path>/<ClassName>/<methodName>/flow.md
+.code-atlas/flows/<package-path>/<ClassName>/<methodName>/flow.mmd
+.code-atlas/flows/<package-path>/<ClassName>/<methodName>/context-pack.md
+.code-atlas/flows/<package-path>/<ClassName>/<methodName>/agent-handoff.md
 ```
 
 ## Princípios do projeto
@@ -93,11 +96,38 @@ Para o exemplo acima:
 examples/java-simple/.code-atlas/flows/com/company/FooService/processOrder/
 ```
 
+Também são escritos dois índices no projeto analisado:
+
+```text
+<projectPath>/.code-atlas/project-index.json
+<projectPath>/.code-atlas/flows-index.md
+```
+
+Esses índices ajudam agentes que conseguem ler arquivos por caminho exato, mas não conseguem navegar livremente pela árvore do repositório. O `project-index.json` é o índice estruturado com o flow atual, arquivos fonte e caminhos dos artefatos. O `flows-index.md` é a versão humana para localizar rapidamente o flow, o context pack e o JSON primário.
+
 Use `--output` para sobrescrever explicitamente esse destino:
 
 ```bash
 ./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder --output build/code-atlas-output"
 ```
+
+Com `--output`, os artefatos do flow continuam sendo gravados no diretório informado. Nessa forma, a CLI também grava `agent-handoff.md` no diretório de output, mas não grava obrigatoriamente `project-index.json` ou `flows-index.md` em `.code-atlas`.
+
+Exemplo de estrutura gerada sem `--output`:
+
+```text
+examples/java-simple/.code-atlas/
+  project-index.json
+  flows-index.md
+  flows/com/company/FooService/processOrder/
+    flow.json
+    flow.md
+    flow.mmd
+    context-pack.md
+    agent-handoff.md
+```
+
+O `agent-handoff.md` resume o repositório, o projeto, o entrypoint, os arquivos fonte, os artefatos gerados, a contagem de nós e arestas, e os nós/arestas detectados. Ele pode conter orientação operacional para outros agentes, mas não adiciona interpretação de IA.
 
 ## SourceTextFlowAnalyzer
 
