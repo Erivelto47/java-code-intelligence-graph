@@ -1,0 +1,190 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.example.repository.AccountService.openAccount",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "class:com.example.repository.AccountService",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.repository.AccountService",
+    "displayName" : "AccountService",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "AccountService",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.repository",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/repository/AccountService.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.repository.AccountService.openAccount",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.repository.AccountService.openAccount",
+    "displayName" : "openAccount",
+    "attributes" : {
+      "className" : "AccountService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "entrypoint" : true,
+      "line" : 10,
+      "methodName" : "openAccount",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.repository.AccountService",
+      "packageName" : "com.example.repository",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/repository/AccountService.java"
+    }
+  }, {
+    "id" : "interface:com.example.repository.AccountRepository",
+    "kind" : "INTERFACE",
+    "qualifiedName" : "com.example.repository.AccountRepository",
+    "displayName" : "AccountRepository",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "AccountRepository",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.repository",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/repository/AccountRepository.java",
+      "typeKind" : "interface"
+    }
+  }, {
+    "id" : "boundary:com.example.repository.AccountRepository.findByDocument",
+    "kind" : "BOUNDARY",
+    "qualifiedName" : "com.example.repository.AccountRepository.findByDocument",
+    "displayName" : "findByDocument",
+    "attributes" : {
+      "boundaryKind" : "REPOSITORY",
+      "declaredType" : "com.example.repository.AccountRepository",
+      "deterministic" : true,
+      "line" : 11,
+      "packageName" : "com.example.repository",
+      "reason" : "REPOSITORY_BOUNDARY",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/repository/AccountRepository.java"
+    }
+  }, {
+    "id" : "boundary:com.example.repository.AccountRepository.save",
+    "kind" : "BOUNDARY",
+    "qualifiedName" : "com.example.repository.AccountRepository.save",
+    "displayName" : "save",
+    "attributes" : {
+      "boundaryKind" : "REPOSITORY",
+      "declaredType" : "com.example.repository.AccountRepository",
+      "deterministic" : true,
+      "line" : 12,
+      "packageName" : "com.example.repository",
+      "reason" : "REPOSITORY_BOUNDARY",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/repository/AccountRepository.java"
+    }
+  } ],
+  "edges" : [ {
+    "id" : "declares:class:com.example.repository.AccountService->method:com.example.repository.AccountService.openAccount",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.repository.AccountService",
+    "targetNodeId" : "method:com.example.repository.AccountService.openAccount",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 10,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.repository.AccountRepository->boundary:com.example.repository.AccountRepository.findByDocument",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.repository.AccountRepository",
+    "targetNodeId" : "boundary:com.example.repository.AccountRepository.findByDocument",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.repository.AccountService.openAccount->boundary:com.example.repository.AccountRepository.findByDocument:11:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.repository.AccountService.openAccount",
+    "targetNodeId" : "boundary:com.example.repository.AccountRepository.findByDocument",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "accountRepository.findByDocument()",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.repository.AccountRepository->boundary:com.example.repository.AccountRepository.save",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.repository.AccountRepository",
+    "targetNodeId" : "boundary:com.example.repository.AccountRepository.save",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 12,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.repository.AccountService.openAccount->boundary:com.example.repository.AccountRepository.save:12:2",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.repository.AccountService.openAccount",
+    "targetNodeId" : "boundary:com.example.repository.AccountRepository.save",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "accountRepository.save()",
+      "line" : 12,
+      "source" : "source-text"
+    }
+  } ],
+  "metadata" : {
+    "analyzer" : "source-text-flow-analyzer",
+    "deterministic" : true,
+    "indexedJavaSourceFiles" : 2,
+    "indexedTypes" : 2,
+    "maxTraversalDepth" : 24,
+    "phase" : "phase-1-mvp",
+    "source" : "source-text"
+  },
+  "unresolved" : [ ],
+  "boundaries" : [ {
+    "symbol" : "com.example.repository.AccountRepository.findByDocument",
+    "nodeId" : "boundary:com.example.repository.AccountRepository.findByDocument",
+    "fromNodeId" : "method:com.example.repository.AccountService.openAccount",
+    "kind" : "REPOSITORY",
+    "reason" : "REPOSITORY_BOUNDARY",
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "expression" : "accountRepository.findByDocument()",
+      "line" : 11,
+      "methodName" : "findByDocument",
+      "receiverName" : "accountRepository",
+      "source" : "source-text"
+    }
+  }, {
+    "symbol" : "com.example.repository.AccountRepository.save",
+    "nodeId" : "boundary:com.example.repository.AccountRepository.save",
+    "fromNodeId" : "method:com.example.repository.AccountService.openAccount",
+    "kind" : "REPOSITORY",
+    "reason" : "REPOSITORY_BOUNDARY",
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "expression" : "accountRepository.save()",
+      "line" : 12,
+      "methodName" : "save",
+      "receiverName" : "accountRepository",
+      "source" : "source-text"
+    }
+  } ],
+  "resolutions" : [ ]
+}

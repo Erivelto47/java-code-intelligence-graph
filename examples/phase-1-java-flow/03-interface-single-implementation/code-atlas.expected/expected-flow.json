@@ -1,0 +1,319 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.example.interfaces.single.RegistrationController.register",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "class:com.example.interfaces.single.RegistrationController",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationController",
+    "displayName" : "RegistrationController",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "RegistrationController",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.interfaces.single",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationController.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.single.RegistrationController.register",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationController.register",
+    "displayName" : "register",
+    "attributes" : {
+      "className" : "RegistrationController",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "entrypoint" : true,
+      "line" : 10,
+      "methodName" : "register",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.interfaces.single.RegistrationController",
+      "packageName" : "com.example.interfaces.single",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationController.java"
+    }
+  }, {
+    "id" : "interface:com.example.interfaces.single.RegistrationUseCase",
+    "kind" : "INTERFACE",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationUseCase",
+    "displayName" : "RegistrationUseCase",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "RegistrationUseCase",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.interfaces.single",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationUseCase.java",
+      "typeKind" : "interface"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.single.RegistrationUseCase.create",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationUseCase.create",
+    "displayName" : "create",
+    "attributes" : {
+      "className" : "RegistrationUseCase",
+      "declarationOnly" : true,
+      "deterministic" : true,
+      "line" : 4,
+      "methodName" : "create",
+      "ownerKind" : "interface",
+      "ownerType" : "com.example.interfaces.single.RegistrationUseCase",
+      "packageName" : "com.example.interfaces.single",
+      "receiverName" : "registrationUseCase",
+      "resolution" : "field",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationUseCase.java"
+    }
+  }, {
+    "id" : "class:com.example.interfaces.single.RegistrationService",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationService",
+    "displayName" : "RegistrationService",
+    "attributes" : {
+      "annotations" : [ "Service" ],
+      "className" : "RegistrationService",
+      "deterministic" : true,
+      "implementedInterfaces" : [ "com.example.interfaces.single.RegistrationUseCase" ],
+      "line" : 6,
+      "packageName" : "com.example.interfaces.single",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationService.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.single.RegistrationService.create",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationService.create",
+    "displayName" : "create",
+    "attributes" : {
+      "className" : "RegistrationService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 14,
+      "methodName" : "create",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.interfaces.single.RegistrationService",
+      "packageName" : "com.example.interfaces.single",
+      "resolution" : "single-implementation",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationService.java"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.single.RegistrationService.validate",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.single.RegistrationService.validate",
+    "displayName" : "validate",
+    "attributes" : {
+      "className" : "RegistrationService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 19,
+      "methodName" : "validate",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.interfaces.single.RegistrationService",
+      "packageName" : "com.example.interfaces.single",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/RegistrationService.java"
+    }
+  }, {
+    "id" : "interface:com.example.interfaces.single.UserRepository",
+    "kind" : "INTERFACE",
+    "qualifiedName" : "com.example.interfaces.single.UserRepository",
+    "displayName" : "UserRepository",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "UserRepository",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.interfaces.single",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/UserRepository.java",
+      "typeKind" : "interface"
+    }
+  }, {
+    "id" : "boundary:com.example.interfaces.single.UserRepository.save",
+    "kind" : "BOUNDARY",
+    "qualifiedName" : "com.example.interfaces.single.UserRepository.save",
+    "displayName" : "save",
+    "attributes" : {
+      "boundaryKind" : "REPOSITORY",
+      "declaredType" : "com.example.interfaces.single.UserRepository",
+      "deterministic" : true,
+      "line" : 16,
+      "packageName" : "com.example.interfaces.single",
+      "reason" : "REPOSITORY_BOUNDARY",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/single/UserRepository.java"
+    }
+  } ],
+  "edges" : [ {
+    "id" : "declares:class:com.example.interfaces.single.RegistrationController->method:com.example.interfaces.single.RegistrationController.register",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.interfaces.single.RegistrationController",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationController.register",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 10,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.interfaces.single.RegistrationUseCase->method:com.example.interfaces.single.RegistrationUseCase.create",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.interfaces.single.RegistrationUseCase",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationUseCase.create",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 4,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.interfaces.single.RegistrationController.register->method:com.example.interfaces.single.RegistrationUseCase.create:11:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.interfaces.single.RegistrationController.register",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationUseCase.create",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "registrationUseCase.create()",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "implements:class:com.example.interfaces.single.RegistrationService->interface:com.example.interfaces.single.RegistrationUseCase",
+    "kind" : "IMPLEMENTS",
+    "sourceNodeId" : "class:com.example.interfaces.single.RegistrationService",
+    "targetNodeId" : "interface:com.example.interfaces.single.RegistrationUseCase",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 6,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.interfaces.single.RegistrationService->method:com.example.interfaces.single.RegistrationService.create",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.interfaces.single.RegistrationService",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationService.create",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 14,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "resolves:method:com.example.interfaces.single.RegistrationUseCase.create->method:com.example.interfaces.single.RegistrationService.create",
+    "kind" : "RESOLVES_TO",
+    "sourceNodeId" : "method:com.example.interfaces.single.RegistrationUseCase.create",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationService.create",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "INFERRED",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.interfaces.single.RegistrationService->method:com.example.interfaces.single.RegistrationService.validate",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.interfaces.single.RegistrationService",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationService.validate",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 19,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.interfaces.single.RegistrationService.create->method:com.example.interfaces.single.RegistrationService.validate:15:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.interfaces.single.RegistrationService.create",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationService.validate",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "validate()",
+      "line" : 15,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.interfaces.single.UserRepository->boundary:com.example.interfaces.single.UserRepository.save",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.interfaces.single.UserRepository",
+    "targetNodeId" : "boundary:com.example.interfaces.single.UserRepository.save",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 16,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.interfaces.single.RegistrationService.create->boundary:com.example.interfaces.single.UserRepository.save:16:2",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.interfaces.single.RegistrationService.create",
+    "targetNodeId" : "boundary:com.example.interfaces.single.UserRepository.save",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "userRepository.save()",
+      "line" : 16,
+      "source" : "source-text"
+    }
+  } ],
+  "metadata" : {
+    "analyzer" : "source-text-flow-analyzer",
+    "deterministic" : true,
+    "indexedJavaSourceFiles" : 5,
+    "indexedTypes" : 4,
+    "maxTraversalDepth" : 24,
+    "phase" : "phase-1-mvp",
+    "source" : "source-text"
+  },
+  "unresolved" : [ ],
+  "boundaries" : [ {
+    "symbol" : "com.example.interfaces.single.UserRepository.save",
+    "nodeId" : "boundary:com.example.interfaces.single.UserRepository.save",
+    "fromNodeId" : "method:com.example.interfaces.single.RegistrationService.create",
+    "kind" : "REPOSITORY",
+    "reason" : "REPOSITORY_BOUNDARY",
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "expression" : "userRepository.save()",
+      "line" : 16,
+      "methodName" : "save",
+      "receiverName" : "userRepository",
+      "source" : "source-text"
+    }
+  } ],
+  "resolutions" : [ {
+    "sourceNodeId" : "method:com.example.interfaces.single.RegistrationUseCase.create",
+    "targetNodeId" : "method:com.example.interfaces.single.RegistrationService.create",
+    "kind" : "INTERFACE_SINGLE_IMPLEMENTATION",
+    "evidence" : "INFERRED",
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "line" : 11,
+      "reason" : "SINGLE_IMPLEMENTATION",
+      "source" : "source-text"
+    }
+  } ]
+}

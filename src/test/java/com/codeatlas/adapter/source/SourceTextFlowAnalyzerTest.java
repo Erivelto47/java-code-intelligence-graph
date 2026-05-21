@@ -1,7 +1,13 @@
 package com.codeatlas.adapter.source;
 
 import com.codeatlas.core.model.FlowGraph;
+import com.codeatlas.core.model.GraphEdge;
 import com.codeatlas.core.model.GraphNode;
+import com.codeatlas.output.context.ContextPackWriter;
+import com.codeatlas.output.handoff.AgentHandoffWriter;
+import com.codeatlas.output.markdown.MarkdownFlowWriter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -14,6 +20,8 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SourceTextFlowAnalyzerTest {
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+
     @TempDir
     Path tempDir;
 
@@ -263,8 +271,17 @@ class SourceTextFlowAnalyzerTest {
         assertTrue(graph.resolutions().stream().anyMatch(resolution ->
                 resolution.sourceNodeId().equals("method:com.example.RegistrationUseCase.create")
                         && resolution.targetNodeId().equals("method:com.example.RegistrationService.create")
+                        && resolution.kind().equals("INTERFACE_SINGLE_IMPLEMENTATION")
                         && resolution.evidence().equals("INFERRED")
+                        && resolution.confidence().equals("HIGH")
         ));
+
+        GraphEdge resolutionEdge = graph.edges().stream()
+                .filter(edge -> edge.kind().equals("RESOLVES_TO"))
+                .findFirst()
+                .orElseThrow();
+        assertEquals("INFERRED", resolutionEdge.attributes().get("evidence"));
+        assertEquals("HIGH", resolutionEdge.attributes().get("confidence"));
     }
 
     @Test
@@ -313,6 +330,17 @@ class SourceTextFlowAnalyzerTest {
                         && unresolved.candidates().contains("com.example.EmailNotificationSender.send")
                         && unresolved.candidates().contains("com.example.SmsNotificationSender.send")
         ));
+        assertFalse(graph.edges().stream().anyMatch(edge ->
+                edge.kind().equals("RESOLVES_TO")
+                        && edge.sourceNodeId().equals("method:com.example.NotificationSender.send")
+        ));
+        assertFalse(graph.edges().stream().anyMatch(edge ->
+                edge.kind().equals("CALLS")
+                        && (edge.targetNodeId().equals("method:com.example.EmailNotificationSender.send")
+                        || edge.targetNodeId().equals("method:com.example.SmsNotificationSender.send"))
+        ));
+        assertFalse(hasNode(graph, "method:com.example.EmailNotificationSender.formatEmail"));
+        assertFalse(hasNode(graph, "method:com.example.SmsNotificationSender.formatSms"));
     }
 
     @Test
@@ -416,6 +444,195 @@ class SourceTextFlowAnalyzerTest {
         ));
     }
 
+    @Test
+    void recordsLocalHttpClientInterfaceWithNoImplementationAsBoundaryTarget() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/PaymentService.java"),
+                """
+                        package com.example;
+
+                        public class PaymentService {
+                            private final PaymentGatewayClient paymentGatewayClient;
+
+                            public PaymentService(PaymentGatewayClient paymentGatewayClient) {
+                                this.paymentGatewayClient = paymentGatewayClient;
+                            }
+
+                            public void pay() {
+                                paymentGatewayClient.authorize();
+                            }
+                        }
+
+                        interface PaymentGatewayClient {
+                            void authorize();
+                        }
+
+                        class HttpPaymentGatewayClient implements PaymentGatewayClient {
+                            private final HttpClient httpClient;
+
+                            HttpPaymentGatewayClient(HttpClient httpClient) {
+                                this.httpClient = httpClient;
+                            }
+
+                            public void authorize() {
+                                httpClient.post();
+                            }
+                        }
+
+                        interface HttpClient {
+                            void post();
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.PaymentService.pay"
+        );
+
+        assertNodeExists(graph, "boundary:com.example.HttpClient.post");
+        assertFalse(hasNode(graph, "method:com.example.HttpClient.post"));
+        assertTrue(graph.edges().stream().anyMatch(edge ->
+                edge.kind().equals("CALLS")
+                        && edge.sourceNodeId().equals("method:com.example.HttpPaymentGatewayClient.authorize")
+                        && edge.targetNodeId().equals("boundary:com.example.HttpClient.post")
+        ));
+        assertTrue(graph.boundaries().stream().anyMatch(boundary ->
+                boundary.kind().equals("HTTP_CLIENT")
+                        && boundary.symbol().equals("com.example.HttpClient.post")
+                        && boundary.reason().equals("NO_LOCAL_IMPLEMENTATION")
+        ));
+    }
+
+    @Test
+    void derivedOutputsExposeResolutionsBoundariesAndUnresolvedSections() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/PhaseController.java"),
+                """
+                        package com.example;
+
+                        public class PhaseController {
+                            private final UseCase useCase;
+
+                            public PhaseController(UseCase useCase) {
+                                this.useCase = useCase;
+                            }
+
+                            public void go() {
+                                useCase.run();
+                            }
+                        }
+
+                        interface UseCase {
+                            void run();
+                        }
+
+                        class UseCaseImpl implements UseCase {
+                            private final AccountRepository accountRepository;
+                            private final NotificationSender notificationSender;
+
+                            UseCaseImpl(AccountRepository accountRepository, NotificationSender notificationSender) {
+                                this.accountRepository = accountRepository;
+                                this.notificationSender = notificationSender;
+                            }
+
+                            public void run() {
+                                accountRepository.save();
+                                notificationSender.send();
+                            }
+                        }
+
+                        interface AccountRepository {
+                            void save();
+                        }
+
+                        interface NotificationSender {
+                            void send();
+                        }
+
+                        class EmailNotificationSender implements NotificationSender {
+                            public void send() {
+                            }
+                        }
+
+                        class SmsNotificationSender implements NotificationSender {
+                            public void send() {
+                            }
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.PhaseController.go"
+        );
+        assertEquals(1, graph.resolutions().size());
+        assertEquals(1, graph.boundaries().size());
+        assertEquals(1, graph.unresolved().size());
+
+        Path outputDirectory = tempDir.resolve("derived-output");
+        new MarkdownFlowWriter().write(graph, outputDirectory);
+        new ContextPackWriter().write(graph, outputDirectory);
+        new AgentHandoffWriter().write(graph, tempDir, outputDirectory, "test/repo", true, false);
+
+        String flowMarkdown = Files.readString(outputDirectory.resolve("flow.md"));
+        assertTrue(flowMarkdown.contains("## Resolutions"));
+        assertTrue(flowMarkdown.contains("INTERFACE_SINGLE_IMPLEMENTATION"));
+        assertTrue(flowMarkdown.contains("## Boundaries"));
+        assertTrue(flowMarkdown.contains("com.example.AccountRepository.save"));
+        assertTrue(flowMarkdown.contains("## Unresolved"));
+        assertTrue(flowMarkdown.contains("MULTIPLE_IMPLEMENTATIONS"));
+
+        String contextPack = Files.readString(outputDirectory.resolve("context-pack.md"));
+        assertTrue(contextPack.contains("Resolution count: 1"));
+        assertTrue(contextPack.contains("Boundary count: 1"));
+        assertTrue(contextPack.contains("Unresolved count: 1"));
+        assertTrue(contextPack.contains("None. This artifact contains deterministic facts only."));
+
+        String handoff = Files.readString(outputDirectory.resolve("agent-handoff.md"));
+        assertTrue(handoff.contains("Resolution count: `1`"));
+        assertTrue(handoff.contains("Boundary count: `1`"));
+        assertTrue(handoff.contains("Unresolved count: `1`"));
+        assertTrue(handoff.contains("## Inferred Resolutions"));
+        assertTrue(handoff.contains("evidence=`INFERRED`"));
+        assertTrue(handoff.contains("## Boundaries"));
+        assertTrue(handoff.contains("kind=`REPOSITORY`"));
+        assertTrue(handoff.contains("## Unresolved"));
+        assertTrue(handoff.contains("reason=`MULTIPLE_IMPLEMENTATIONS`"));
+    }
+
+    @Test
+    void phase1ExampleFixturesStayAlignedWithCurrentFlowGraphSchema() throws Exception {
+        List<Phase1Example> examples = List.of(
+                new Phase1Example("01-direct-method-call", "com.example.direct.OrderController.create"),
+                new Phase1Example("02-controller-service", "com.example.controllerservice.CustomerController.register"),
+                new Phase1Example("03-interface-single-implementation", "com.example.interfaces.single.RegistrationController.register"),
+                new Phase1Example("04-interface-multiple-implementations", "com.example.interfaces.multiple.NotificationController.send"),
+                new Phase1Example("05-repository-boundary", "com.example.repository.AccountService.openAccount"),
+                new Phase1Example("06-external-client-boundary", "com.example.externalclient.PaymentService.pay")
+        );
+
+        SourceTextFlowAnalyzer analyzer = new SourceTextFlowAnalyzer();
+        for (Phase1Example example : examples) {
+            Path examplePath = Path.of("examples/phase-1-java-flow").resolve(example.directory());
+            Path expectedPath = examplePath.resolve("code-atlas.expected");
+            assertTrue(Files.isRegularFile(expectedPath.resolve("expected-flow.json")), example.directory());
+            assertTrue(Files.isRegularFile(expectedPath.resolve("expected-flow.md")), example.directory());
+            assertTrue(Files.isRegularFile(expectedPath.resolve("expected-flow.mmd")), example.directory());
+            assertTrue(Files.isRegularFile(expectedPath.resolve("expected-context-pack.md")), example.directory());
+
+            FlowGraph graph = analyzer.analyze(examplePath, example.entrypoint());
+            JsonNode expectedJson = OBJECT_MAPPER.readTree(expectedPath.resolve("expected-flow.json").toFile());
+            assertEquals("1.0", expectedJson.get("schemaVersion").asText(), example.directory());
+            assertEquals(example.entrypoint(), expectedJson.get("entrypoint").asText(), example.directory());
+            assertEquals(graph.nodes().size(), expectedJson.get("nodes").size(), example.directory());
+            assertEquals(graph.edges().size(), expectedJson.get("edges").size(), example.directory());
+            assertEquals(graph.resolutions().size(), expectedJson.get("resolutions").size(), example.directory());
+            assertEquals(graph.boundaries().size(), expectedJson.get("boundaries").size(), example.directory());
+            assertEquals(graph.unresolved().size(), expectedJson.get("unresolved").size(), example.directory());
+        }
+    }
+
     private static String simpleFooServiceSource() {
         return """
                 package com.company;
@@ -475,5 +692,8 @@ class SourceTextFlowAnalyzerTest {
 
     private static void assertNodeExists(FlowGraph graph, String nodeId) {
         assertTrue(hasNode(graph, nodeId), "Expected node " + nodeId);
+    }
+
+    private record Phase1Example(String directory, String entrypoint) {
     }
 }

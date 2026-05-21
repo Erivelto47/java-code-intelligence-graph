@@ -1,0 +1,276 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.example.externalclient.PaymentService.pay",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "class:com.example.externalclient.PaymentService",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.externalclient.PaymentService",
+    "displayName" : "PaymentService",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "PaymentService",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.externalclient",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/PaymentService.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.externalclient.PaymentService.pay",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.externalclient.PaymentService.pay",
+    "displayName" : "pay",
+    "attributes" : {
+      "className" : "PaymentService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "entrypoint" : true,
+      "line" : 10,
+      "methodName" : "pay",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.externalclient.PaymentService",
+      "packageName" : "com.example.externalclient",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/PaymentService.java"
+    }
+  }, {
+    "id" : "interface:com.example.externalclient.PaymentGatewayClient",
+    "kind" : "INTERFACE",
+    "qualifiedName" : "com.example.externalclient.PaymentGatewayClient",
+    "displayName" : "PaymentGatewayClient",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "PaymentGatewayClient",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.externalclient",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/PaymentGatewayClient.java",
+      "typeKind" : "interface"
+    }
+  }, {
+    "id" : "method:com.example.externalclient.PaymentGatewayClient.authorize",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.externalclient.PaymentGatewayClient.authorize",
+    "displayName" : "authorize",
+    "attributes" : {
+      "className" : "PaymentGatewayClient",
+      "declarationOnly" : true,
+      "deterministic" : true,
+      "line" : 4,
+      "methodName" : "authorize",
+      "ownerKind" : "interface",
+      "ownerType" : "com.example.externalclient.PaymentGatewayClient",
+      "packageName" : "com.example.externalclient",
+      "receiverName" : "paymentGatewayClient",
+      "resolution" : "field",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/PaymentGatewayClient.java"
+    }
+  }, {
+    "id" : "class:com.example.externalclient.HttpPaymentGatewayClient",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.externalclient.HttpPaymentGatewayClient",
+    "displayName" : "HttpPaymentGatewayClient",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "HttpPaymentGatewayClient",
+      "deterministic" : true,
+      "implementedInterfaces" : [ "com.example.externalclient.PaymentGatewayClient" ],
+      "line" : 3,
+      "packageName" : "com.example.externalclient",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/HttpPaymentGatewayClient.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "displayName" : "authorize",
+    "attributes" : {
+      "className" : "HttpPaymentGatewayClient",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 11,
+      "methodName" : "authorize",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.externalclient.HttpPaymentGatewayClient",
+      "packageName" : "com.example.externalclient",
+      "resolution" : "single-implementation",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/HttpPaymentGatewayClient.java"
+    }
+  }, {
+    "id" : "interface:com.example.externalclient.HttpClient",
+    "kind" : "INTERFACE",
+    "qualifiedName" : "com.example.externalclient.HttpClient",
+    "displayName" : "HttpClient",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "HttpClient",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.externalclient",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/HttpClient.java",
+      "typeKind" : "interface"
+    }
+  }, {
+    "id" : "boundary:com.example.externalclient.HttpClient.post",
+    "kind" : "BOUNDARY",
+    "qualifiedName" : "com.example.externalclient.HttpClient.post",
+    "displayName" : "post",
+    "attributes" : {
+      "boundaryKind" : "HTTP_CLIENT",
+      "declaredType" : "com.example.externalclient.HttpClient",
+      "deterministic" : true,
+      "line" : 12,
+      "packageName" : "com.example.externalclient",
+      "reason" : "NO_LOCAL_IMPLEMENTATION",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/externalclient/HttpClient.java"
+    }
+  } ],
+  "edges" : [ {
+    "id" : "declares:class:com.example.externalclient.PaymentService->method:com.example.externalclient.PaymentService.pay",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.externalclient.PaymentService",
+    "targetNodeId" : "method:com.example.externalclient.PaymentService.pay",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 10,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.externalclient.PaymentGatewayClient->method:com.example.externalclient.PaymentGatewayClient.authorize",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.externalclient.PaymentGatewayClient",
+    "targetNodeId" : "method:com.example.externalclient.PaymentGatewayClient.authorize",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 4,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.externalclient.PaymentService.pay->method:com.example.externalclient.PaymentGatewayClient.authorize:11:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.externalclient.PaymentService.pay",
+    "targetNodeId" : "method:com.example.externalclient.PaymentGatewayClient.authorize",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "paymentGatewayClient.authorize()",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "implements:class:com.example.externalclient.HttpPaymentGatewayClient->interface:com.example.externalclient.PaymentGatewayClient",
+    "kind" : "IMPLEMENTS",
+    "sourceNodeId" : "class:com.example.externalclient.HttpPaymentGatewayClient",
+    "targetNodeId" : "interface:com.example.externalclient.PaymentGatewayClient",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 3,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.externalclient.HttpPaymentGatewayClient->method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.externalclient.HttpPaymentGatewayClient",
+    "targetNodeId" : "method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "resolves:method:com.example.externalclient.PaymentGatewayClient.authorize->method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "kind" : "RESOLVES_TO",
+    "sourceNodeId" : "method:com.example.externalclient.PaymentGatewayClient.authorize",
+    "targetNodeId" : "method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "INFERRED",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.externalclient.HttpClient->boundary:com.example.externalclient.HttpClient.post",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.externalclient.HttpClient",
+    "targetNodeId" : "boundary:com.example.externalclient.HttpClient.post",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 12,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.externalclient.HttpPaymentGatewayClient.authorize->boundary:com.example.externalclient.HttpClient.post:12:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "targetNodeId" : "boundary:com.example.externalclient.HttpClient.post",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "httpClient.post()",
+      "line" : 12,
+      "source" : "source-text"
+    }
+  } ],
+  "metadata" : {
+    "analyzer" : "source-text-flow-analyzer",
+    "deterministic" : true,
+    "indexedJavaSourceFiles" : 4,
+    "indexedTypes" : 4,
+    "maxTraversalDepth" : 24,
+    "phase" : "phase-1-mvp",
+    "source" : "source-text"
+  },
+  "unresolved" : [ ],
+  "boundaries" : [ {
+    "symbol" : "com.example.externalclient.HttpClient.post",
+    "nodeId" : "boundary:com.example.externalclient.HttpClient.post",
+    "fromNodeId" : "method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "kind" : "HTTP_CLIENT",
+    "reason" : "NO_LOCAL_IMPLEMENTATION",
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "expression" : "httpClient.post()",
+      "line" : 12,
+      "methodName" : "post",
+      "receiverName" : "httpClient",
+      "source" : "source-text"
+    }
+  } ],
+  "resolutions" : [ {
+    "sourceNodeId" : "method:com.example.externalclient.PaymentGatewayClient.authorize",
+    "targetNodeId" : "method:com.example.externalclient.HttpPaymentGatewayClient.authorize",
+    "kind" : "INTERFACE_SINGLE_IMPLEMENTATION",
+    "evidence" : "INFERRED",
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "line" : 11,
+      "reason" : "SINGLE_IMPLEMENTATION",
+      "source" : "source-text"
+    }
+  } ]
+}

@@ -1,0 +1,20 @@
+flowchart TD
+  n0["com.example.interfaces.single.RegistrationController"]
+  n1["com.example.interfaces.single.RegistrationController.register"]
+  n2["com.example.interfaces.single.RegistrationUseCase"]
+  n3["com.example.interfaces.single.RegistrationUseCase.create"]
+  n4["com.example.interfaces.single.RegistrationService"]
+  n5["com.example.interfaces.single.RegistrationService.create"]
+  n6["com.example.interfaces.single.RegistrationService.validate"]
+  n7["com.example.interfaces.single.UserRepository"]
+  n8["com.example.interfaces.single.UserRepository.save"]
+  n0 -->|DECLARES| n1
+  n2 -->|DECLARES| n3
+  n1 -->|CALLS| n3
+  n4 -->|IMPLEMENTS| n2
+  n4 -->|DECLARES| n5
+  n3 -->|RESOLVES_TO| n5
+  n4 -->|DECLARES| n6
+  n5 -->|CALLS| n6
+  n7 -->|DECLARES| n8
+  n5 -->|CALLS| n8

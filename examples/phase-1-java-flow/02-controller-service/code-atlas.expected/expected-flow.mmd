@@ -1,0 +1,14 @@
+flowchart TD
+  n0["com.example.controllerservice.CustomerController"]
+  n1["com.example.controllerservice.CustomerController.register"]
+  n2["com.example.controllerservice.CustomerService"]
+  n3["com.example.controllerservice.CustomerService.register"]
+  n4["com.example.controllerservice.CustomerService.normalize"]
+  n5["com.example.controllerservice.CustomerService.persist"]
+  n0 -->|DECLARES| n1
+  n2 -->|DECLARES| n3
+  n1 -->|CALLS| n3
+  n2 -->|DECLARES| n4
+  n3 -->|CALLS| n4
+  n2 -->|DECLARES| n5
+  n3 -->|CALLS| n5

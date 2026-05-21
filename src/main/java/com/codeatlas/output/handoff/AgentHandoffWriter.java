@@ -1,8 +1,11 @@
 package com.codeatlas.output.handoff;
 
+import com.codeatlas.core.model.BoundarySymbol;
 import com.codeatlas.core.model.FlowGraph;
 import com.codeatlas.core.model.GraphEdge;
 import com.codeatlas.core.model.GraphNode;
+import com.codeatlas.core.model.Resolution;
+import com.codeatlas.core.model.UnresolvedSymbol;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -80,12 +83,21 @@ public final class AgentHandoffWriter {
         markdown.append("- Schema version: `").append(escapeInline(graph.schemaVersion())).append("`\n");
         markdown.append("- Node count: `").append(graph.nodes().size()).append("`\n");
         markdown.append("- Edge count: `").append(graph.edges().size()).append("`\n");
+        markdown.append("- Resolution count: `").append(graph.resolutions().size()).append("`\n");
+        markdown.append("- Boundary count: `").append(graph.boundaries().size()).append("`\n");
+        markdown.append("- Unresolved count: `").append(graph.unresolved().size()).append("`\n");
         markdown.append("- Analyzer: `").append(escapeInline(analyzer)).append("`\n");
         markdown.append("- Deterministic: `").append(escapeInline(deterministic)).append("`\n\n");
         markdown.append("## Detected Nodes\n\n");
         appendDetectedNodes(markdown, graph);
         markdown.append("\n## Detected Edges\n\n");
         appendDetectedEdges(markdown, graph);
+        markdown.append("\n## Inferred Resolutions\n\n");
+        appendInferredResolutions(markdown, graph);
+        markdown.append("\n## Boundaries\n\n");
+        appendBoundaries(markdown, graph);
+        markdown.append("\n## Unresolved\n\n");
+        appendUnresolved(markdown, graph);
         markdown.append("\n## Commands\n\n");
         markdown.append("```bash\n");
         markdown.append(command(projectDisplayPath, graph.entrypoint(), outputDirectory, outputExplicit, useStub));
@@ -161,6 +173,66 @@ public final class AgentHandoffWriter {
                     .append(escapeInline(edge.sourceNodeId()))
                     .append("` -> `")
                     .append(escapeInline(edge.targetNodeId()))
+                    .append("`\n");
+        }
+    }
+
+    private static void appendInferredResolutions(StringBuilder markdown, FlowGraph graph) {
+        if (graph.resolutions().isEmpty()) {
+            markdown.append("- `No inferred resolutions`\n");
+            return;
+        }
+        for (Resolution resolution : graph.resolutions()) {
+            markdown.append("- `")
+                    .append(escapeInline(resolution.kind()))
+                    .append("` `")
+                    .append(escapeInline(resolution.sourceNodeId()))
+                    .append("` -> `")
+                    .append(escapeInline(resolution.targetNodeId()))
+                    .append("` evidence=`")
+                    .append(escapeInline(resolution.evidence()))
+                    .append("` confidence=`")
+                    .append(escapeInline(resolution.confidence()))
+                    .append("`\n");
+        }
+    }
+
+    private static void appendBoundaries(StringBuilder markdown, FlowGraph graph) {
+        if (graph.boundaries().isEmpty()) {
+            markdown.append("- `No boundaries`\n");
+            return;
+        }
+        for (BoundarySymbol boundary : graph.boundaries()) {
+            markdown.append("- `")
+                    .append(escapeInline(boundary.symbol()))
+                    .append("` kind=`")
+                    .append(escapeInline(boundary.kind()))
+                    .append("` from=`")
+                    .append(escapeInline(boundary.fromNodeId()))
+                    .append("` reason=`")
+                    .append(escapeInline(boundary.reason()))
+                    .append("` confidence=`")
+                    .append(escapeInline(boundary.confidence()))
+                    .append("`\n");
+        }
+    }
+
+    private static void appendUnresolved(StringBuilder markdown, FlowGraph graph) {
+        if (graph.unresolved().isEmpty()) {
+            markdown.append("- `No unresolved symbols`\n");
+            return;
+        }
+        for (UnresolvedSymbol unresolved : graph.unresolved()) {
+            markdown.append("- `")
+                    .append(escapeInline(unresolved.symbol()))
+                    .append("` from=`")
+                    .append(escapeInline(unresolved.fromNodeId()))
+                    .append("` reason=`")
+                    .append(escapeInline(unresolved.reason()))
+                    .append("` confidence=`")
+                    .append(escapeInline(unresolved.confidence()))
+                    .append("` candidates=`")
+                    .append(escapeInline(String.join(", ", unresolved.candidates())))
                     .append("`\n");
         }
     }

@@ -237,6 +237,21 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
             );
             return;
         }
+        if ("interface".equals(declaredType.kind)
+                && isExternalClientBoundary(declaredType)
+                && context.index().implementations(declaredType.qualifiedName).isEmpty()) {
+            context.addTypeNode(declaredType);
+            addBoundaryCall(
+                    context,
+                    current,
+                    call,
+                    ordinal,
+                    declaredType.qualifiedName,
+                    boundaryKind(declaredType.qualifiedName, call.methodName()),
+                    "NO_LOCAL_IMPLEMENTATION"
+            );
+            return;
+        }
 
         JavaMethod declaredMethod = declaredType.method(call.methodName());
         if (declaredMethod == null && hasExternalSuperType(declaredType)) {

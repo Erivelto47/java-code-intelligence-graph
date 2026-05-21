@@ -1,0 +1,11 @@
+flowchart TD
+  n0["com.example.direct.OrderController"]
+  n1["com.example.direct.OrderController.create"]
+  n2["com.example.direct.OrderService"]
+  n3["com.example.direct.OrderService.createOrder"]
+  n4["com.example.direct.OrderService.validate"]
+  n0 -->|DECLARES| n1
+  n2 -->|DECLARES| n3
+  n1 -->|CALLS| n3
+  n2 -->|DECLARES| n4
+  n3 -->|CALLS| n4

@@ -1,0 +1,16 @@
+flowchart TD
+  n0["com.example.interfaces.multiple.NotificationController"]
+  n1["com.example.interfaces.multiple.NotificationController.send"]
+  n2["com.example.interfaces.multiple.NotificationSender"]
+  n3["com.example.interfaces.multiple.NotificationSender.send"]
+  n4["com.example.interfaces.multiple.EmailNotificationSender"]
+  n5["com.example.interfaces.multiple.EmailNotificationSender.send"]
+  n6["com.example.interfaces.multiple.SmsNotificationSender"]
+  n7["com.example.interfaces.multiple.SmsNotificationSender.send"]
+  n0 -->|DECLARES| n1
+  n2 -->|DECLARES| n3
+  n1 -->|CALLS| n3
+  n4 -->|IMPLEMENTS| n2
+  n4 -->|DECLARES| n5
+  n6 -->|IMPLEMENTS| n2
+  n6 -->|DECLARES| n7

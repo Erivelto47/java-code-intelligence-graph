@@ -1,0 +1,167 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.example.direct.OrderController.create",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "class:com.example.direct.OrderController",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.direct.OrderController",
+    "displayName" : "OrderController",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "OrderController",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.direct",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/direct/OrderController.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.direct.OrderController.create",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.direct.OrderController.create",
+    "displayName" : "create",
+    "attributes" : {
+      "className" : "OrderController",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "entrypoint" : true,
+      "line" : 10,
+      "methodName" : "create",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.direct.OrderController",
+      "packageName" : "com.example.direct",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/direct/OrderController.java"
+    }
+  }, {
+    "id" : "class:com.example.direct.OrderService",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.direct.OrderService",
+    "displayName" : "OrderService",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "OrderService",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.direct",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/direct/OrderService.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.direct.OrderService.createOrder",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.direct.OrderService.createOrder",
+    "displayName" : "createOrder",
+    "attributes" : {
+      "className" : "OrderService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 4,
+      "methodName" : "createOrder",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.direct.OrderService",
+      "packageName" : "com.example.direct",
+      "receiverName" : "orderService",
+      "resolution" : "field",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/direct/OrderService.java"
+    }
+  }, {
+    "id" : "method:com.example.direct.OrderService.validate",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.direct.OrderService.validate",
+    "displayName" : "validate",
+    "attributes" : {
+      "className" : "OrderService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 8,
+      "methodName" : "validate",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.direct.OrderService",
+      "packageName" : "com.example.direct",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/direct/OrderService.java"
+    }
+  } ],
+  "edges" : [ {
+    "id" : "declares:class:com.example.direct.OrderController->method:com.example.direct.OrderController.create",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.direct.OrderController",
+    "targetNodeId" : "method:com.example.direct.OrderController.create",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 10,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.direct.OrderService->method:com.example.direct.OrderService.createOrder",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.direct.OrderService",
+    "targetNodeId" : "method:com.example.direct.OrderService.createOrder",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 4,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.direct.OrderController.create->method:com.example.direct.OrderService.createOrder:11:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.direct.OrderController.create",
+    "targetNodeId" : "method:com.example.direct.OrderService.createOrder",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "orderService.createOrder()",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.direct.OrderService->method:com.example.direct.OrderService.validate",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.direct.OrderService",
+    "targetNodeId" : "method:com.example.direct.OrderService.validate",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 8,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.direct.OrderService.createOrder->method:com.example.direct.OrderService.validate:5:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.direct.OrderService.createOrder",
+    "targetNodeId" : "method:com.example.direct.OrderService.validate",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "validate()",
+      "line" : 5,
+      "source" : "source-text"
+    }
+  } ],
+  "metadata" : {
+    "analyzer" : "source-text-flow-analyzer",
+    "deterministic" : true,
+    "indexedJavaSourceFiles" : 2,
+    "indexedTypes" : 2,
+    "maxTraversalDepth" : 24,
+    "phase" : "phase-1-mvp",
+    "source" : "source-text"
+  },
+  "unresolved" : [ ],
+  "boundaries" : [ ],
+  "resolutions" : [ ]
+}

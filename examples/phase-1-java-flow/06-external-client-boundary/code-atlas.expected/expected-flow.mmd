@@ -1,0 +1,17 @@
+flowchart TD
+  n0["com.example.externalclient.PaymentService"]
+  n1["com.example.externalclient.PaymentService.pay"]
+  n2["com.example.externalclient.PaymentGatewayClient"]
+  n3["com.example.externalclient.PaymentGatewayClient.authorize"]
+  n4["com.example.externalclient.HttpPaymentGatewayClient"]
+  n5["com.example.externalclient.HttpPaymentGatewayClient.authorize"]
+  n6["com.example.externalclient.HttpClient"]
+  n7["com.example.externalclient.HttpClient.post"]
+  n0 -->|DECLARES| n1
+  n2 -->|DECLARES| n3
+  n1 -->|CALLS| n3
+  n4 -->|IMPLEMENTS| n2
+  n4 -->|DECLARES| n5
+  n3 -->|RESOLVES_TO| n5
+  n6 -->|DECLARES| n7
+  n5 -->|CALLS| n7

@@ -1,0 +1,254 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.example.interfaces.multiple.NotificationController.send",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "class:com.example.interfaces.multiple.NotificationController",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.interfaces.multiple.NotificationController",
+    "displayName" : "NotificationController",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "NotificationController",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.interfaces.multiple",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/NotificationController.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.multiple.NotificationController.send",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.multiple.NotificationController.send",
+    "displayName" : "send",
+    "attributes" : {
+      "className" : "NotificationController",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "entrypoint" : true,
+      "line" : 10,
+      "methodName" : "send",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.interfaces.multiple.NotificationController",
+      "packageName" : "com.example.interfaces.multiple",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/NotificationController.java"
+    }
+  }, {
+    "id" : "interface:com.example.interfaces.multiple.NotificationSender",
+    "kind" : "INTERFACE",
+    "qualifiedName" : "com.example.interfaces.multiple.NotificationSender",
+    "displayName" : "NotificationSender",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "NotificationSender",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.interfaces.multiple",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/NotificationSender.java",
+      "typeKind" : "interface"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.multiple.NotificationSender.send",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.multiple.NotificationSender.send",
+    "displayName" : "send",
+    "attributes" : {
+      "className" : "NotificationSender",
+      "declarationOnly" : true,
+      "deterministic" : true,
+      "line" : 4,
+      "methodName" : "send",
+      "ownerKind" : "interface",
+      "ownerType" : "com.example.interfaces.multiple.NotificationSender",
+      "packageName" : "com.example.interfaces.multiple",
+      "receiverName" : "notificationSender",
+      "resolution" : "field",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/NotificationSender.java"
+    }
+  }, {
+    "id" : "class:com.example.interfaces.multiple.EmailNotificationSender",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.interfaces.multiple.EmailNotificationSender",
+    "displayName" : "EmailNotificationSender",
+    "attributes" : {
+      "annotations" : [ "Service" ],
+      "className" : "EmailNotificationSender",
+      "deterministic" : true,
+      "implementedInterfaces" : [ "com.example.interfaces.multiple.NotificationSender" ],
+      "line" : 6,
+      "packageName" : "com.example.interfaces.multiple",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/EmailNotificationSender.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.multiple.EmailNotificationSender.send",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.multiple.EmailNotificationSender.send",
+    "displayName" : "send",
+    "attributes" : {
+      "className" : "EmailNotificationSender",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 8,
+      "methodName" : "send",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.interfaces.multiple.EmailNotificationSender",
+      "packageName" : "com.example.interfaces.multiple",
+      "resolution" : "candidate-implementation",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/EmailNotificationSender.java"
+    }
+  }, {
+    "id" : "class:com.example.interfaces.multiple.SmsNotificationSender",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.interfaces.multiple.SmsNotificationSender",
+    "displayName" : "SmsNotificationSender",
+    "attributes" : {
+      "annotations" : [ "Service" ],
+      "className" : "SmsNotificationSender",
+      "deterministic" : true,
+      "implementedInterfaces" : [ "com.example.interfaces.multiple.NotificationSender" ],
+      "line" : 6,
+      "packageName" : "com.example.interfaces.multiple",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/SmsNotificationSender.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.interfaces.multiple.SmsNotificationSender.send",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.interfaces.multiple.SmsNotificationSender.send",
+    "displayName" : "send",
+    "attributes" : {
+      "className" : "SmsNotificationSender",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 8,
+      "methodName" : "send",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.interfaces.multiple.SmsNotificationSender",
+      "packageName" : "com.example.interfaces.multiple",
+      "resolution" : "candidate-implementation",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/interfaces/multiple/SmsNotificationSender.java"
+    }
+  } ],
+  "edges" : [ {
+    "id" : "declares:class:com.example.interfaces.multiple.NotificationController->method:com.example.interfaces.multiple.NotificationController.send",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.interfaces.multiple.NotificationController",
+    "targetNodeId" : "method:com.example.interfaces.multiple.NotificationController.send",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 10,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:interface:com.example.interfaces.multiple.NotificationSender->method:com.example.interfaces.multiple.NotificationSender.send",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "interface:com.example.interfaces.multiple.NotificationSender",
+    "targetNodeId" : "method:com.example.interfaces.multiple.NotificationSender.send",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 4,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.interfaces.multiple.NotificationController.send->method:com.example.interfaces.multiple.NotificationSender.send:11:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.interfaces.multiple.NotificationController.send",
+    "targetNodeId" : "method:com.example.interfaces.multiple.NotificationSender.send",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "notificationSender.send()",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "implements:class:com.example.interfaces.multiple.EmailNotificationSender->interface:com.example.interfaces.multiple.NotificationSender",
+    "kind" : "IMPLEMENTS",
+    "sourceNodeId" : "class:com.example.interfaces.multiple.EmailNotificationSender",
+    "targetNodeId" : "interface:com.example.interfaces.multiple.NotificationSender",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 6,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.interfaces.multiple.EmailNotificationSender->method:com.example.interfaces.multiple.EmailNotificationSender.send",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.interfaces.multiple.EmailNotificationSender",
+    "targetNodeId" : "method:com.example.interfaces.multiple.EmailNotificationSender.send",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 8,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "implements:class:com.example.interfaces.multiple.SmsNotificationSender->interface:com.example.interfaces.multiple.NotificationSender",
+    "kind" : "IMPLEMENTS",
+    "sourceNodeId" : "class:com.example.interfaces.multiple.SmsNotificationSender",
+    "targetNodeId" : "interface:com.example.interfaces.multiple.NotificationSender",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 6,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.interfaces.multiple.SmsNotificationSender->method:com.example.interfaces.multiple.SmsNotificationSender.send",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.interfaces.multiple.SmsNotificationSender",
+    "targetNodeId" : "method:com.example.interfaces.multiple.SmsNotificationSender.send",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 8,
+      "source" : "source-text"
+    }
+  } ],
+  "metadata" : {
+    "analyzer" : "source-text-flow-analyzer",
+    "deterministic" : true,
+    "indexedJavaSourceFiles" : 5,
+    "indexedTypes" : 4,
+    "maxTraversalDepth" : 24,
+    "phase" : "phase-1-mvp",
+    "source" : "source-text"
+  },
+  "unresolved" : [ {
+    "symbol" : "com.example.interfaces.multiple.NotificationSender.send",
+    "fromNodeId" : "method:com.example.interfaces.multiple.NotificationSender.send",
+    "reason" : "MULTIPLE_IMPLEMENTATIONS",
+    "candidates" : [ "com.example.interfaces.multiple.EmailNotificationSender.send", "com.example.interfaces.multiple.SmsNotificationSender.send" ],
+    "confidence" : "HIGH",
+    "attributes" : {
+      "deterministic" : true,
+      "expression" : "notificationSender.send()",
+      "line" : 11,
+      "methodName" : "send",
+      "receiverName" : "notificationSender",
+      "source" : "source-text"
+    }
+  } ],
+  "boundaries" : [ ],
+  "resolutions" : [ ]
+}

@@ -1,0 +1,11 @@
+flowchart TD
+  n0["com.example.repository.AccountService"]
+  n1["com.example.repository.AccountService.openAccount"]
+  n2["com.example.repository.AccountRepository"]
+  n3["com.example.repository.AccountRepository.findByDocument"]
+  n4["com.example.repository.AccountRepository.save"]
+  n0 -->|DECLARES| n1
+  n2 -->|DECLARES| n3
+  n1 -->|CALLS| n3
+  n2 -->|DECLARES| n4
+  n1 -->|CALLS| n4

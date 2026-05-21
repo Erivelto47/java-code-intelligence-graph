@@ -1,0 +1,210 @@
+{
+  "schemaVersion" : "1.0",
+  "entrypoint" : "com.example.controllerservice.CustomerController.register",
+  "generatedAt" : "1970-01-01T00:00:00Z",
+  "nodes" : [ {
+    "id" : "class:com.example.controllerservice.CustomerController",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.controllerservice.CustomerController",
+    "displayName" : "CustomerController",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "CustomerController",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.controllerservice",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/controllerservice/CustomerController.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.controllerservice.CustomerController.register",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.controllerservice.CustomerController.register",
+    "displayName" : "register",
+    "attributes" : {
+      "className" : "CustomerController",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "entrypoint" : true,
+      "line" : 10,
+      "methodName" : "register",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.controllerservice.CustomerController",
+      "packageName" : "com.example.controllerservice",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/controllerservice/CustomerController.java"
+    }
+  }, {
+    "id" : "class:com.example.controllerservice.CustomerService",
+    "kind" : "CLASS",
+    "qualifiedName" : "com.example.controllerservice.CustomerService",
+    "displayName" : "CustomerService",
+    "attributes" : {
+      "annotations" : [ ],
+      "className" : "CustomerService",
+      "deterministic" : true,
+      "line" : 3,
+      "packageName" : "com.example.controllerservice",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/controllerservice/CustomerService.java",
+      "typeKind" : "class"
+    }
+  }, {
+    "id" : "method:com.example.controllerservice.CustomerService.register",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.controllerservice.CustomerService.register",
+    "displayName" : "register",
+    "attributes" : {
+      "className" : "CustomerService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 4,
+      "methodName" : "register",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.controllerservice.CustomerService",
+      "packageName" : "com.example.controllerservice",
+      "receiverName" : "customerService",
+      "resolution" : "field",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/controllerservice/CustomerService.java"
+    }
+  }, {
+    "id" : "method:com.example.controllerservice.CustomerService.normalize",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.controllerservice.CustomerService.normalize",
+    "displayName" : "normalize",
+    "attributes" : {
+      "className" : "CustomerService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 9,
+      "methodName" : "normalize",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.controllerservice.CustomerService",
+      "packageName" : "com.example.controllerservice",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/controllerservice/CustomerService.java"
+    }
+  }, {
+    "id" : "method:com.example.controllerservice.CustomerService.persist",
+    "kind" : "METHOD",
+    "qualifiedName" : "com.example.controllerservice.CustomerService.persist",
+    "displayName" : "persist",
+    "attributes" : {
+      "className" : "CustomerService",
+      "declarationOnly" : false,
+      "deterministic" : true,
+      "line" : 12,
+      "methodName" : "persist",
+      "ownerKind" : "class",
+      "ownerType" : "com.example.controllerservice.CustomerService",
+      "packageName" : "com.example.controllerservice",
+      "resolution" : "local",
+      "source" : "source-text",
+      "sourceFile" : "src/main/java/com/example/controllerservice/CustomerService.java"
+    }
+  } ],
+  "edges" : [ {
+    "id" : "declares:class:com.example.controllerservice.CustomerController->method:com.example.controllerservice.CustomerController.register",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.controllerservice.CustomerController",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerController.register",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 10,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.controllerservice.CustomerService->method:com.example.controllerservice.CustomerService.register",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.controllerservice.CustomerService",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerService.register",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 4,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.controllerservice.CustomerController.register->method:com.example.controllerservice.CustomerService.register:11:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.controllerservice.CustomerController.register",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerService.register",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "customerService.register()",
+      "line" : 11,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.controllerservice.CustomerService->method:com.example.controllerservice.CustomerService.normalize",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.controllerservice.CustomerService",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerService.normalize",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 9,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.controllerservice.CustomerService.register->method:com.example.controllerservice.CustomerService.normalize:5:1",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.controllerservice.CustomerService.register",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerService.normalize",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "normalize()",
+      "line" : 5,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "declares:class:com.example.controllerservice.CustomerService->method:com.example.controllerservice.CustomerService.persist",
+    "kind" : "DECLARES",
+    "sourceNodeId" : "class:com.example.controllerservice.CustomerService",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerService.persist",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "line" : 12,
+      "source" : "source-text"
+    }
+  }, {
+    "id" : "calls:method:com.example.controllerservice.CustomerService.register->method:com.example.controllerservice.CustomerService.persist:6:2",
+    "kind" : "CALLS",
+    "sourceNodeId" : "method:com.example.controllerservice.CustomerService.register",
+    "targetNodeId" : "method:com.example.controllerservice.CustomerService.persist",
+    "attributes" : {
+      "confidence" : "HIGH",
+      "deterministic" : true,
+      "evidence" : "FACT",
+      "expression" : "persist()",
+      "line" : 6,
+      "source" : "source-text"
+    }
+  } ],
+  "metadata" : {
+    "analyzer" : "source-text-flow-analyzer",
+    "deterministic" : true,
+    "indexedJavaSourceFiles" : 2,
+    "indexedTypes" : 2,
+    "maxTraversalDepth" : 24,
+    "phase" : "phase-1-mvp",
+    "source" : "source-text"
+  },
+  "unresolved" : [ ],
+  "boundaries" : [ ],
+  "resolutions" : [ ]
+}
