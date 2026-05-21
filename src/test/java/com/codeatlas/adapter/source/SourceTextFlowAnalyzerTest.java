@@ -91,8 +91,8 @@ class SourceTextFlowAnalyzerTest {
         );
 
         assertNodeExists(graph, "method:com.company.FooService.validate");
-        assertNodeExists(graph, "method:repository.save");
-        assertNodeExists(graph, "method:paymentClient.charge");
+        assertNodeExists(graph, "method:com.company.OrderRepository.save");
+        assertNodeExists(graph, "method:com.company.PaymentClient.charge");
         assertNodeExists(graph, "method:com.company.FooService.mapper");
 
         List<String> callExpressions = graph.edges().stream()
@@ -178,6 +178,7 @@ class SourceTextFlowAnalyzerTest {
                         }
 
                         interface UserRegistrationInternal {
+                            void create(UserCreateInternalRequest request);
                         }
 
                         class RegisterRequest {
@@ -195,12 +196,224 @@ class SourceTextFlowAnalyzerTest {
 
         assertNodeExists(graph, "class:com.study.onboarding.modules.auth.api.AuthController");
         assertNodeExists(graph, "method:com.study.onboarding.modules.auth.api.AuthController.register");
-        assertNodeExists(graph, "method:userRegistration.create");
+        assertNodeExists(graph, "interface:com.study.onboarding.modules.auth.api.UserRegistrationInternal");
+        assertNodeExists(graph, "method:com.study.onboarding.modules.auth.api.UserRegistrationInternal.create");
         assertFalse(hasNode(graph, "method:PostMapping"));
 
-        GraphNode callNode = nodeById(graph, "method:userRegistration.create");
-        assertEquals("member-access", callNode.attributes().get("resolution"));
+        GraphNode callNode = nodeById(graph, "method:com.study.onboarding.modules.auth.api.UserRegistrationInternal.create");
+        assertEquals("field", callNode.attributes().get("resolution"));
         assertEquals("userRegistration", callNode.attributes().get("receiverName"));
+        assertTrue(graph.unresolved().stream().anyMatch(unresolved ->
+                unresolved.reason().equals("NO_IMPLEMENTATION")
+                        && unresolved.symbol().equals("com.study.onboarding.modules.auth.api.UserRegistrationInternal.create")
+        ));
+    }
+
+    @Test
+    void resolvesInterfaceReceiverToSingleImplementationAndTraversesImplementation() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/RegistrationController.java"),
+                """
+                        package com.example;
+
+                        public class RegistrationController {
+                            private final RegistrationUseCase registrationUseCase;
+
+                            public RegistrationController(RegistrationUseCase registrationUseCase) {
+                                this.registrationUseCase = registrationUseCase;
+                            }
+
+                            public void register() {
+                                registrationUseCase.create();
+                            }
+                        }
+
+                        interface RegistrationUseCase {
+                            void create();
+                        }
+
+                        @Service
+                        class RegistrationService implements RegistrationUseCase {
+                            public void create() {
+                                validate();
+                            }
+
+                            private void validate() {
+                            }
+                        }
+
+                        @interface Service {
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.RegistrationController.register"
+        );
+
+        assertNodeExists(graph, "method:com.example.RegistrationUseCase.create");
+        assertNodeExists(graph, "method:com.example.RegistrationService.create");
+        assertNodeExists(graph, "method:com.example.RegistrationService.validate");
+        assertTrue(graph.edges().stream().anyMatch(edge ->
+                edge.kind().equals("RESOLVES_TO")
+                        && edge.sourceNodeId().equals("method:com.example.RegistrationUseCase.create")
+                        && edge.targetNodeId().equals("method:com.example.RegistrationService.create")
+        ));
+        assertTrue(graph.resolutions().stream().anyMatch(resolution ->
+                resolution.sourceNodeId().equals("method:com.example.RegistrationUseCase.create")
+                        && resolution.targetNodeId().equals("method:com.example.RegistrationService.create")
+                        && resolution.evidence().equals("INFERRED")
+        ));
+    }
+
+    @Test
+    void recordsMultipleInterfaceImplementationsAsUnresolved() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/NotificationController.java"),
+                """
+                        package com.example;
+
+                        public class NotificationController {
+                            private final NotificationSender notificationSender;
+
+                            public NotificationController(NotificationSender notificationSender) {
+                                this.notificationSender = notificationSender;
+                            }
+
+                            public void send() {
+                                notificationSender.send();
+                            }
+                        }
+
+                        interface NotificationSender {
+                            void send();
+                        }
+
+                        class EmailNotificationSender implements NotificationSender {
+                            public void send() {
+                            }
+                        }
+
+                        class SmsNotificationSender implements NotificationSender {
+                            public void send() {
+                            }
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.NotificationController.send"
+        );
+
+        assertTrue(graph.unresolved().stream().anyMatch(unresolved ->
+                unresolved.reason().equals("MULTIPLE_IMPLEMENTATIONS")
+                        && unresolved.symbol().equals("com.example.NotificationSender.send")
+                        && unresolved.candidates().contains("com.example.EmailNotificationSender.send")
+                        && unresolved.candidates().contains("com.example.SmsNotificationSender.send")
+        ));
+    }
+
+    @Test
+    void recordsRepositoryCallsAsBoundaries() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/AccountService.java"),
+                """
+                        package com.example;
+
+                        import org.springframework.data.jpa.repository.JpaRepository;
+
+                        public class AccountService {
+                            private final AccountRepository accountRepository;
+
+                            public AccountService(AccountRepository accountRepository) {
+                                this.accountRepository = accountRepository;
+                            }
+
+                            public void openAccount() {
+                                accountRepository.findByDocument("123");
+                                accountRepository.save(new Account());
+                            }
+                        }
+
+                        interface AccountRepository extends JpaRepository<Account, Long> {
+                            Account findByDocument(String document);
+                        }
+
+                        class Account {
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.AccountService.openAccount"
+        );
+
+        assertNodeExists(graph, "boundary:com.example.AccountRepository.findByDocument");
+        assertNodeExists(graph, "boundary:com.example.AccountRepository.save");
+        assertTrue(graph.boundaries().stream().anyMatch(boundary ->
+                boundary.kind().equals("REPOSITORY")
+                        && boundary.symbol().equals("com.example.AccountRepository.findByDocument")
+        ));
+        assertTrue(graph.boundaries().stream().anyMatch(boundary ->
+                boundary.kind().equals("REPOSITORY")
+                        && boundary.symbol().equals("com.example.AccountRepository.save")
+        ));
+    }
+
+    @Test
+    void recordsExternalClientFrameworkCallAsBoundaryAfterInterfaceResolution() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/PaymentService.java"),
+                """
+                        package com.example;
+
+                        import org.springframework.web.client.RestClient;
+
+                        public class PaymentService {
+                            private final PaymentGatewayClient paymentGatewayClient;
+
+                            public PaymentService(PaymentGatewayClient paymentGatewayClient) {
+                                this.paymentGatewayClient = paymentGatewayClient;
+                            }
+
+                            public void pay() {
+                                paymentGatewayClient.authorize();
+                            }
+                        }
+
+                        interface PaymentGatewayClient {
+                            void authorize();
+                        }
+
+                        class HttpPaymentGatewayClient implements PaymentGatewayClient {
+                            private final RestClient restClient;
+
+                            HttpPaymentGatewayClient(RestClient restClient) {
+                                this.restClient = restClient;
+                            }
+
+                            public void authorize() {
+                                restClient.post().retrieve();
+                            }
+                        }
+                        """
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.PaymentService.pay"
+        );
+
+        assertNodeExists(graph, "method:com.example.PaymentGatewayClient.authorize");
+        assertNodeExists(graph, "method:com.example.HttpPaymentGatewayClient.authorize");
+        assertNodeExists(graph, "boundary:org.springframework.web.client.RestClient.post");
+        assertTrue(graph.boundaries().stream().anyMatch(boundary ->
+                boundary.kind().equals("HTTP_CLIENT")
+                        && boundary.symbol().equals("org.springframework.web.client.RestClient.post")
+        ));
     }
 
     private static String simpleFooServiceSource() {

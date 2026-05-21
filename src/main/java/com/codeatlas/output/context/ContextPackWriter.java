@@ -3,6 +3,9 @@ package com.codeatlas.output.context;
 import com.codeatlas.core.model.FlowGraph;
 import com.codeatlas.core.model.GraphEdge;
 import com.codeatlas.core.model.GraphNode;
+import com.codeatlas.core.model.BoundarySymbol;
+import com.codeatlas.core.model.Resolution;
+import com.codeatlas.core.model.UnresolvedSymbol;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -28,7 +31,10 @@ public final class ContextPackWriter {
         context.append("- Schema version: `").append(escapeInline(graph.schemaVersion())).append("`\n");
         context.append("- Entrypoint: `").append(escapeInline(graph.entrypoint())).append("`\n");
         context.append("- Node count: ").append(graph.nodes().size()).append("\n");
-        context.append("- Edge count: ").append(graph.edges().size()).append("\n\n");
+        context.append("- Edge count: ").append(graph.edges().size()).append("\n");
+        context.append("- Resolution count: ").append(graph.resolutions().size()).append("\n");
+        context.append("- Boundary count: ").append(graph.boundaries().size()).append("\n");
+        context.append("- Unresolved count: ").append(graph.unresolved().size()).append("\n\n");
 
         context.append("## Nodes\n\n");
         for (GraphNode node : graph.nodes()) {
@@ -55,6 +61,63 @@ public final class ContextPackWriter {
                         .append(" (")
                         .append(escapeInline(edge.kind()))
                         .append(")\n");
+            }
+        }
+
+        context.append("\n## Resolutions\n\n");
+        if (graph.resolutions().isEmpty()) {
+            context.append("No inferred resolutions.\n");
+        } else {
+            for (Resolution resolution : graph.resolutions()) {
+                context.append("- `")
+                        .append(escapeInline(resolution.kind()))
+                        .append("` `")
+                        .append(escapeInline(resolution.sourceNodeId()))
+                        .append("` -> `")
+                        .append(escapeInline(resolution.targetNodeId()))
+                        .append("` evidence=`")
+                        .append(escapeInline(resolution.evidence()))
+                        .append("` confidence=`")
+                        .append(escapeInline(resolution.confidence()))
+                        .append("`\n");
+            }
+        }
+
+        context.append("\n## Boundaries\n\n");
+        if (graph.boundaries().isEmpty()) {
+            context.append("No boundaries.\n");
+        } else {
+            for (BoundarySymbol boundary : graph.boundaries()) {
+                context.append("- `")
+                        .append(escapeInline(boundary.symbol()))
+                        .append("` kind=`")
+                        .append(escapeInline(boundary.kind()))
+                        .append("` from=`")
+                        .append(escapeInline(boundary.fromNodeId()))
+                        .append("` reason=`")
+                        .append(escapeInline(boundary.reason()))
+                        .append("` confidence=`")
+                        .append(escapeInline(boundary.confidence()))
+                        .append("`\n");
+            }
+        }
+
+        context.append("\n## Unresolved\n\n");
+        if (graph.unresolved().isEmpty()) {
+            context.append("No unresolved symbols.\n");
+        } else {
+            for (UnresolvedSymbol unresolved : graph.unresolved()) {
+                context.append("- `")
+                        .append(escapeInline(unresolved.symbol()))
+                        .append("` from=`")
+                        .append(escapeInline(unresolved.fromNodeId()))
+                        .append("` reason=`")
+                        .append(escapeInline(unresolved.reason()))
+                        .append("` confidence=`")
+                        .append(escapeInline(unresolved.confidence()))
+                        .append("` candidates=`")
+                        .append(escapeInline(String.join(", ", unresolved.candidates())))
+                        .append("`\n");
             }
         }
 
