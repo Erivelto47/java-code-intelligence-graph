@@ -1,0 +1,103 @@
+{
+  "schemaVersion": "1.0",
+  "project": "examples/phase-2-spring-entrypoints/03-multiple-http-methods",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "entrypoints": [
+    {
+      "id": "http:GET:/users -> com.example.spring.multiple.UserController.list",
+      "kind": "HTTP_ENDPOINT",
+      "httpMethod": "GET",
+      "path": "/users",
+      "className": "com.example.spring.multiple.UserController",
+      "methodName": "list",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.list",
+      "annotations": {
+        "classLevel": [
+          "@RestController",
+          "@RequestMapping(path = \"/users\")"
+        ],
+        "methodLevel": [
+          "@GetMapping"
+        ]
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/spring/multiple/UserController.java",
+        "line": 14
+      }
+    },
+    {
+      "id": "http:POST:/users -> com.example.spring.multiple.UserController.create",
+      "kind": "HTTP_ENDPOINT",
+      "httpMethod": "POST",
+      "path": "/users",
+      "className": "com.example.spring.multiple.UserController",
+      "methodName": "create",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.create",
+      "annotations": {
+        "classLevel": [
+          "@RestController",
+          "@RequestMapping(path = \"/users\")"
+        ],
+        "methodLevel": [
+          "@PostMapping"
+        ]
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/spring/multiple/UserController.java",
+        "line": 19
+      }
+    },
+    {
+      "id": "http:PUT:/users/{id} -> com.example.spring.multiple.UserController.update",
+      "kind": "HTTP_ENDPOINT",
+      "httpMethod": "PUT",
+      "path": "/users/{id}",
+      "className": "com.example.spring.multiple.UserController",
+      "methodName": "update",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.update",
+      "annotations": {
+        "classLevel": [
+          "@RestController",
+          "@RequestMapping(path = \"/users\")"
+        ],
+        "methodLevel": [
+          "@PutMapping(value = \"/{id}\")"
+        ]
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/spring/multiple/UserController.java",
+        "line": 24
+      }
+    },
+    {
+      "id": "http:DELETE:/users/{id} -> com.example.spring.multiple.UserController.delete",
+      "kind": "HTTP_ENDPOINT",
+      "httpMethod": "DELETE",
+      "path": "/users/{id}",
+      "className": "com.example.spring.multiple.UserController",
+      "methodName": "delete",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.delete",
+      "annotations": {
+        "classLevel": [
+          "@RestController",
+          "@RequestMapping(path = \"/users\")"
+        ],
+        "methodLevel": [
+          "@DeleteMapping(\"/{id}\")"
+        ]
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/spring/multiple/UserController.java",
+        "line": 29
+      }
+    }
+  ],
+  "metadata": {
+    "analyzer": "source-text-spring-entrypoint-discoverer",
+    "deterministic": true,
+    "indexedJavaSourceFiles": 1,
+    "phase": "phase-2-spring-entrypoints",
+    "requestMappingWithoutMethod": "ANY",
+    "source": "source-text"
+  }
+}

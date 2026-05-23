@@ -1,0 +1,37 @@
+{
+  "schemaVersion": "1.0",
+  "project": "examples/phase-2-spring-entrypoints/02-request-mapping-method",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "entrypoints": [
+    {
+      "id": "http:GET:/users/{id} -> com.example.spring.requestmapping.UserController.getById",
+      "kind": "HTTP_ENDPOINT",
+      "httpMethod": "GET",
+      "path": "/users/{id}",
+      "className": "com.example.spring.requestmapping.UserController",
+      "methodName": "getById",
+      "javaEntrypoint": "com.example.spring.requestmapping.UserController.getById",
+      "annotations": {
+        "classLevel": [
+          "@RestController",
+          "@RequestMapping(\"/users\")"
+        ],
+        "methodLevel": [
+          "@RequestMapping(value = \"/{id}\", method = RequestMethod.GET)"
+        ]
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/spring/requestmapping/UserController.java",
+        "line": 11
+      }
+    }
+  ],
+  "metadata": {
+    "analyzer": "source-text-spring-entrypoint-discoverer",
+    "deterministic": true,
+    "indexedJavaSourceFiles": 1,
+    "phase": "phase-2-spring-entrypoints",
+    "requestMappingWithoutMethod": "ANY",
+    "source": "source-text"
+  }
+}

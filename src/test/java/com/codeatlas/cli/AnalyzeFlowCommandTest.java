@@ -142,6 +142,36 @@ class AnalyzeFlowCommandTest {
         assertTrue(Files.isRegularFile(outputDirectory.resolve("agent-handoff.md")));
     }
 
+    @Test
+    void listEntrypointsGeneratesEntrypointsJson() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream outputStream = new PrintStream(outputBytes, true, StandardCharsets.UTF_8);
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "list-entrypoints",
+                        "--project", projectDirectory.toString()
+                },
+                outputStream,
+                errorStream
+        );
+
+        assertEquals(0, exitCode);
+        Path entrypointsJson = projectDirectory.resolve(".code-atlas/entrypoints.json");
+        assertTrue(Files.isRegularFile(entrypointsJson));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8)
+                .contains("POST /auth/register -> com.company.AuthController.register"));
+        JsonNode entrypoint = OBJECT_MAPPER.readTree(entrypointsJson.toFile()).get("entrypoints").get(0);
+        assertEquals("HTTP_ENDPOINT", entrypoint.get("kind").asText());
+        assertEquals("POST", entrypoint.get("httpMethod").asText());
+        assertEquals("/auth/register", entrypoint.get("path").asText());
+        assertEquals("com.company.AuthController.register", entrypoint.get("javaEntrypoint").asText());
+    }
+
     private static void writeJavaFile(Path sourceFile) throws Exception {
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(
@@ -151,6 +181,28 @@ class AnalyzeFlowCommandTest {
 
                         public class FooService {
                             public void processOrder() {
+                            }
+                        }
+                        """
+        );
+    }
+
+    private static void writeSpringController(Path sourceFile) throws Exception {
+        Files.createDirectories(sourceFile.getParent());
+        Files.writeString(
+                sourceFile,
+                """
+                        package com.company;
+
+                        import org.springframework.web.bind.annotation.PostMapping;
+                        import org.springframework.web.bind.annotation.RequestMapping;
+                        import org.springframework.web.bind.annotation.RestController;
+
+                        @RestController
+                        @RequestMapping("/auth")
+                        public class AuthController {
+                            @PostMapping("/register")
+                            public void register() {
                             }
                         }
                         """
