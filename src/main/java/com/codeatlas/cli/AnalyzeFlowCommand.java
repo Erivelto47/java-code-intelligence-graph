@@ -21,6 +21,8 @@ import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.Locale;
 
 public final class AnalyzeFlowCommand {
     private static final String REPOSITORY = "Erivelto47/java-code-intelligence-graph";
@@ -115,23 +117,29 @@ public final class AnalyzeFlowCommand {
         }
 
         try {
+            String javaEntrypoint = arguments.entrypoint();
+            if (arguments.endpoint() != null) {
+                javaEntrypoint = resolveEndpoint(arguments.projectPath(), arguments.endpoint()).javaEntrypoint();
+            }
+
+            Path outputDirectory = arguments.resolvedOutputDirectory(javaEntrypoint);
             FlowAnalyzer selectedAnalyzer = arguments.useStub() ? new StubFlowAnalyzer() : flowAnalyzer;
-            FlowGraph graph = selectedAnalyzer.analyze(arguments.projectPath(), arguments.entrypoint());
-            jsonFlowWriter.write(graph, arguments.outputDirectory());
-            markdownFlowWriter.write(graph, arguments.outputDirectory());
-            mermaidFlowWriter.write(graph, arguments.outputDirectory());
-            contextPackWriter.write(graph, arguments.outputDirectory());
+            FlowGraph graph = selectedAnalyzer.analyze(arguments.projectPath(), javaEntrypoint);
+            jsonFlowWriter.write(graph, outputDirectory);
+            markdownFlowWriter.write(graph, outputDirectory);
+            mermaidFlowWriter.write(graph, outputDirectory);
+            contextPackWriter.write(graph, outputDirectory);
             agentHandoffWriter.write(
                     graph,
                     arguments.projectPath(),
-                    arguments.outputDirectory(),
+                    outputDirectory,
                     REPOSITORY,
                     arguments.outputExplicit(),
                     arguments.useStub()
             );
             if (!arguments.outputExplicit()) {
-                projectIndexWriter.write(graph, arguments.projectPath(), arguments.outputDirectory());
-                flowsIndexMarkdownWriter.write(graph, arguments.projectPath(), arguments.outputDirectory());
+                projectIndexWriter.write(graph, arguments.projectPath(), outputDirectory);
+                flowsIndexMarkdownWriter.write(graph, arguments.projectPath(), outputDirectory);
             }
             return 0;
         } catch (IllegalArgumentException exception) {
@@ -141,6 +149,56 @@ public final class AnalyzeFlowCommand {
             errorStream.println("Failed to write flow outputs: " + exception.getMessage());
             return 1;
         }
+    }
+
+    private EntrypointDescriptor resolveEndpoint(Path projectPath, Endpoint endpoint) throws IOException {
+        EntrypointIndex index = entrypointDiscoverer.discover(projectPath);
+        entrypointJsonWriter.write(index, projectPath.resolve(".code-atlas"));
+
+        List<EntrypointDescriptor> matches = index.entrypoints().stream()
+                .filter(entrypoint -> entrypoint.httpMethod().equals(endpoint.httpMethod()))
+                .filter(entrypoint -> entrypoint.path().equals(endpoint.path()))
+                .toList();
+
+        if (matches.isEmpty()) {
+            throw new IllegalArgumentException("Endpoint not found: " + endpoint.display()
+                    + availableEndpointsMessage(index));
+        }
+        if (matches.size() > 1) {
+            throw new IllegalArgumentException("Ambiguous endpoint: " + endpoint.display()
+                    + candidatesMessage(matches));
+        }
+        return matches.get(0);
+    }
+
+    private static String availableEndpointsMessage(EntrypointIndex index) {
+        if (index.entrypoints().isEmpty()) {
+            return "\nNo Spring HTTP endpoints were discovered.";
+        }
+
+        StringBuilder message = new StringBuilder("\nAvailable endpoints:");
+        for (EntrypointDescriptor entrypoint : index.entrypoints()) {
+            message.append("\n- ")
+                    .append(entrypoint.httpMethod())
+                    .append(" ")
+                    .append(entrypoint.path())
+                    .append(" -> ")
+                    .append(entrypoint.javaEntrypoint());
+        }
+        return message.toString();
+    }
+
+    private static String candidatesMessage(List<EntrypointDescriptor> candidates) {
+        StringBuilder message = new StringBuilder("\nCandidates:");
+        for (EntrypointDescriptor entrypoint : candidates) {
+            message.append("\n- ")
+                    .append(entrypoint.httpMethod())
+                    .append(" ")
+                    .append(entrypoint.path())
+                    .append(" -> ")
+                    .append(entrypoint.javaEntrypoint());
+        }
+        return message.toString();
     }
 
     private int runListEntrypointsCommand(String[] args, PrintStream outputStream, PrintStream errorStream) {
@@ -180,6 +238,7 @@ public final class AnalyzeFlowCommand {
     private static void printUsage(PrintStream errorStream) {
         errorStream.println("Usage:");
         errorStream.println("  analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
+        errorStream.println("  analyze-flow --project <path> --endpoint '<HTTP_METHOD> <path>' [--output <path>] [--stub]");
         errorStream.println("  --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
         errorStream.println("  list-entrypoints --project <path> [--output <path>]");
     }
@@ -187,6 +246,7 @@ public final class AnalyzeFlowCommand {
     private record Arguments(
             Path projectPath,
             String entrypoint,
+            Endpoint endpoint,
             Path outputDirectory,
             boolean outputExplicit,
             boolean useStub
@@ -194,6 +254,7 @@ public final class AnalyzeFlowCommand {
         private static Arguments parse(String[] args, PrintStream errorStream) {
             Path projectPath = null;
             String entrypoint = null;
+            Endpoint endpoint = null;
             Path outputDirectory = null;
             boolean outputExplicit = false;
             boolean useStub = false;
@@ -215,6 +276,17 @@ public final class AnalyzeFlowCommand {
                         }
                         entrypoint = value.trim();
                     }
+                    case "--endpoint" -> {
+                        String value = readValue(args, ++i, arg, errorStream);
+                        if (value == null) {
+                            return null;
+                        }
+                        endpoint = Endpoint.parse(value);
+                        if (endpoint == null) {
+                            errorStream.println("Missing or invalid argument: --endpoint");
+                            return null;
+                        }
+                    }
                     case "--output" -> {
                         String value = readValue(args, ++i, arg, errorStream);
                         if (value == null) {
@@ -235,16 +307,31 @@ public final class AnalyzeFlowCommand {
                 errorStream.println("Missing required argument: --project");
                 return null;
             }
-            if (!isValidEntrypoint(entrypoint)) {
+            if (entrypoint != null && endpoint != null) {
+                errorStream.println("Use either --entrypoint or --endpoint, not both");
+                return null;
+            }
+            if (entrypoint == null && endpoint == null) {
+                errorStream.println("Missing required argument: --entrypoint or --endpoint");
+                return null;
+            }
+            if (entrypoint != null && !isValidEntrypoint(entrypoint)) {
                 errorStream.println("Missing or invalid required argument: --entrypoint");
                 return null;
             }
 
-            Path resolvedOutputDirectory = outputDirectory == null
-                    ? defaultOutputDirectory(projectPath, entrypoint)
-                    : outputDirectory;
+            Path resolvedOutputDirectory = outputDirectory;
+            if (entrypoint != null && outputDirectory == null) {
+                resolvedOutputDirectory = defaultOutputDirectory(projectPath, entrypoint);
+            }
 
-            return new Arguments(projectPath, entrypoint, resolvedOutputDirectory, outputExplicit, useStub);
+            return new Arguments(projectPath, entrypoint, endpoint, resolvedOutputDirectory, outputExplicit, useStub);
+        }
+
+        private Path resolvedOutputDirectory(String javaEntrypoint) {
+            return outputDirectory == null
+                    ? defaultOutputDirectory(projectPath, javaEntrypoint)
+                    : outputDirectory;
         }
 
         private static Path defaultOutputDirectory(Path projectPath, String entrypoint) {
@@ -279,6 +366,52 @@ public final class AnalyzeFlowCommand {
             return firstSeparator > 0
                     && lastSeparator > firstSeparator
                     && lastSeparator < entrypoint.length() - 1;
+        }
+    }
+
+    private record Endpoint(String httpMethod, String path) {
+        private static Endpoint parse(String value) {
+            if (value == null) {
+                return null;
+            }
+            String trimmed = value.trim();
+            if (trimmed.isBlank()) {
+                return null;
+            }
+
+            String[] parts = trimmed.split("\\s+", 2);
+            if (parts.length != 2) {
+                return null;
+            }
+
+            String httpMethod = parts[0].trim().toUpperCase(Locale.ROOT);
+            String path = normalizePath(parts[1].trim());
+            if (!httpMethod.matches("[A-Z]+") || path.isBlank() || path.contains(" ")) {
+                return null;
+            }
+            return new Endpoint(httpMethod, path);
+        }
+
+        private String display() {
+            return httpMethod + " " + path;
+        }
+
+        private static String normalizePath(String value) {
+            if (value == null) {
+                return "";
+            }
+            String normalized = value.trim();
+            if (normalized.isBlank()) {
+                return "";
+            }
+            if (!normalized.startsWith("/")) {
+                normalized = "/" + normalized;
+            }
+            normalized = normalized.replaceAll("/{2,}", "/");
+            while (normalized.length() > 1 && normalized.endsWith("/")) {
+                normalized = normalized.substring(0, normalized.length() - 1);
+            }
+            return normalized;
         }
     }
 

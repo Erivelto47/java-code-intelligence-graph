@@ -172,6 +172,58 @@ class AnalyzeFlowCommandTest {
         assertEquals("com.company.AuthController.register", entrypoint.get("javaEntrypoint").asText());
     }
 
+    @Test
+    void analyzeFlowCanResolveSpringEndpointToJavaEntrypoint() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        Path expectedOutputDirectory = projectDirectory.resolve(
+                ".code-atlas/flows/com/company/AuthController/register"
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "POST /auth/register"
+                }
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/entrypoints.json")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.json")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.mmd")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("context-pack.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("agent-handoff.md")));
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/project-index.json")));
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/flows-index.md")));
+
+        JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowByEndpointFailsWhenEndpointIsUnknown() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "GET /auth/register"
+                },
+                errorStream
+        );
+
+        String errorOutput = errorBytes.toString(StandardCharsets.UTF_8);
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput.contains("Endpoint not found: GET /auth/register"));
+        assertTrue(errorOutput.contains("POST /auth/register -> com.company.AuthController.register"));
+    }
+
     private static void writeJavaFile(Path sourceFile) throws Exception {
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(
