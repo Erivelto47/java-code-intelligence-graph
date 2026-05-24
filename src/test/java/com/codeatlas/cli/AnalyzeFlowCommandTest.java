@@ -31,7 +31,7 @@ class AnalyzeFlowCommandTest {
         );
 
         assertEquals(2, exitCode);
-        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("--entrypoint"));
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("--entrypoint or --endpoint"));
     }
 
     @Test
@@ -143,6 +143,26 @@ class AnalyzeFlowCommandTest {
     }
 
     @Test
+    void explicitAnalyzeFlowSubcommandKeepsEntrypointSupport() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("explicit-output");
+        writeJavaFile(projectDirectory.resolve("src/main/java/com/company/FooService.java"));
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.FooService.processOrder",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.FooService.processOrder", flow.get("entrypoint").asText());
+    }
+
+    @Test
     void listEntrypointsGeneratesEntrypointsJson() throws Exception {
         Path projectDirectory = tempDir.resolve("project");
         writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
@@ -200,6 +220,65 @@ class AnalyzeFlowCommandTest {
 
         JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
         assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowByEndpointNormalizesMethodAndPath() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("endpoint-output");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "post auth/register",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowRejectsEntrypointAndEndpointTogether() {
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", tempDir.toString(),
+                        "--entrypoint", "com.company.FooService.processOrder",
+                        "--endpoint", "POST /auth/register"
+                },
+                errorStream
+        );
+
+        assertEquals(2, exitCode);
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8)
+                .contains("Use either --entrypoint or --endpoint, not both"));
+    }
+
+    @Test
+    void analyzeFlowRejectsMalformedEndpoint() {
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", tempDir.toString(),
+                        "--endpoint", "POST"
+                },
+                errorStream
+        );
+
+        assertEquals(2, exitCode);
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8)
+                .contains("Missing or invalid argument: --endpoint"));
     }
 
     @Test

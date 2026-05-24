@@ -162,6 +162,12 @@ run from a discovered HTTP endpoint. The endpoint is resolved deterministically
 from the Spring MVC entrypoint index to its `javaEntrypoint`, and that Java
 entrypoint is then passed to the existing Phase 1 flow analyzer.
 
+Conceptual flow:
+
+```text
+HTTP endpoint -> entrypoint discovery -> javaEntrypoint -> FlowGraph
+```
+
 ```bash
 ./gradlew run --args="analyze-flow --project ./repo --endpoint 'POST /auth/register'"
 ```
@@ -182,6 +188,26 @@ The legacy Java entrypoint forms remain supported:
 ./gradlew run --args="analyze-flow --project ./repo --entrypoint com.company.Foo.method"
 ./gradlew run --args="--project ./repo --entrypoint com.company.Foo.method"
 ```
+
+Endpoint resolution rules:
+
+- The accepted format is `METHOD /path`, for example `POST /auth/register`.
+- HTTP methods are normalized to uppercase before matching.
+- Paths are normalized with a leading slash, duplicate slashes collapsed, and a
+  trailing slash removed except for `/`.
+- Matching is exact on normalized HTTP method plus normalized path.
+- `ANY` only matches `ANY /path`.
+- If no endpoint matches, the CLI returns a clear not-found error and prints
+  available endpoints.
+- If multiple endpoints match the same method and path, the CLI returns a clear
+  ambiguous-endpoint error and prints the candidates.
+
+Current limitations:
+
+- No Spring runtime path matching is modeled.
+- Path variables are not expanded or interpreted beyond the literal registered
+  path, for example `/users/{id}`.
+- There is no complex disambiguation beyond exact method and path matching.
 
 ## Acceptance Criteria
 
