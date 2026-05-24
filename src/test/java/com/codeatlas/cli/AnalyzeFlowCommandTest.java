@@ -31,7 +31,7 @@ class AnalyzeFlowCommandTest {
         );
 
         assertEquals(2, exitCode);
-        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("--entrypoint"));
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8).contains("--entrypoint or --endpoint"));
     }
 
     @Test
@@ -143,6 +143,26 @@ class AnalyzeFlowCommandTest {
     }
 
     @Test
+    void explicitAnalyzeFlowSubcommandKeepsEntrypointSupport() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("explicit-output");
+        writeJavaFile(projectDirectory.resolve("src/main/java/com/company/FooService.java"));
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.FooService.processOrder",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.FooService.processOrder", flow.get("entrypoint").asText());
+    }
+
+    @Test
     void listEntrypointsGeneratesEntrypointsJson() throws Exception {
         Path projectDirectory = tempDir.resolve("project");
         writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
@@ -170,6 +190,117 @@ class AnalyzeFlowCommandTest {
         assertEquals("POST", entrypoint.get("httpMethod").asText());
         assertEquals("/auth/register", entrypoint.get("path").asText());
         assertEquals("com.company.AuthController.register", entrypoint.get("javaEntrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowCanResolveSpringEndpointToJavaEntrypoint() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        Path expectedOutputDirectory = projectDirectory.resolve(
+                ".code-atlas/flows/com/company/AuthController/register"
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "POST /auth/register"
+                }
+        );
+
+        assertEquals(0, exitCode);
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/entrypoints.json")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.json")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("flow.mmd")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("context-pack.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("agent-handoff.md")));
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/project-index.json")));
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/flows-index.md")));
+
+        JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowByEndpointNormalizesMethodAndPath() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("endpoint-output");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "post auth/register",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowRejectsEntrypointAndEndpointTogether() {
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", tempDir.toString(),
+                        "--entrypoint", "com.company.FooService.processOrder",
+                        "--endpoint", "POST /auth/register"
+                },
+                errorStream
+        );
+
+        assertEquals(2, exitCode);
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8)
+                .contains("Use either --entrypoint or --endpoint, not both"));
+    }
+
+    @Test
+    void analyzeFlowRejectsMalformedEndpoint() {
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", tempDir.toString(),
+                        "--endpoint", "POST"
+                },
+                errorStream
+        );
+
+        assertEquals(2, exitCode);
+        assertTrue(errorBytes.toString(StandardCharsets.UTF_8)
+                .contains("Missing or invalid argument: --endpoint"));
+    }
+
+    @Test
+    void analyzeFlowByEndpointFailsWhenEndpointIsUnknown() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "GET /auth/register"
+                },
+                errorStream
+        );
+
+        String errorOutput = errorBytes.toString(StandardCharsets.UTF_8);
+        assertEquals(2, exitCode);
+        assertTrue(errorOutput.contains("Endpoint not found: GET /auth/register"));
+        assertTrue(errorOutput.contains("POST /auth/register -> com.company.AuthController.register"));
     }
 
     private static void writeJavaFile(Path sourceFile) throws Exception {

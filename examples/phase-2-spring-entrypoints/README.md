@@ -54,3 +54,16 @@ Each example contains:
 ```bash
 ./gradlew run --args="list-entrypoints --project examples/phase-2-spring-entrypoints/01-simple-rest-controller --output build/code-atlas-entrypoint-examples/01"
 ```
+
+## Analyze Flow by Endpoint
+
+The discovered Spring endpoint can also be used directly with the Phase 1 flow
+analyzer:
+
+```bash
+./gradlew run --args="analyze-flow --project examples/phase-2-spring-entrypoints/01-simple-rest-controller --endpoint 'POST /auth/register'"
+```
+
+These fixtures are intentionally small. They validate endpoint discovery and
+endpoint-to-`javaEntrypoint` resolution, but the generated flow is minimal
+because the controller methods do not call richer application services.
