@@ -193,6 +193,82 @@ class AnalyzeFlowCommandTest {
     }
 
     @Test
+    void listEndpointsGeneratesEntrypointsJsonAndReadableConsoleOutput() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeEndpointCatalogController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream outputStream = new PrintStream(outputBytes, true, StandardCharsets.UTF_8);
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "list-endpoints",
+                        "--project", projectDirectory.toString()
+                },
+                outputStream,
+                errorStream
+        );
+
+        assertEquals(0, exitCode);
+        assertEquals("", errorBytes.toString(StandardCharsets.UTF_8));
+
+        String output = outputBytes.toString(StandardCharsets.UTF_8);
+        assertTrue(output.contains("Discovered endpoints: 3"));
+        assertTrue(output.contains("POST /auth/register -> com.company.AuthController.register"));
+        assertTrue(output.contains("GET /auth/status -> com.company.AuthController.status"));
+        assertTrue(output.contains("POST /auth/login -> com.company.AuthController.login"));
+
+        Path entrypointsJson = projectDirectory.resolve(".code-atlas/entrypoints.json");
+        assertTrue(Files.isRegularFile(entrypointsJson));
+        JsonNode root = OBJECT_MAPPER.readTree(entrypointsJson.toFile());
+        assertEquals("1.0", root.get("schemaVersion").asText());
+        assertTrue(root.hasNonNull("generatedAt"));
+        assertEquals(
+                projectDirectory.toAbsolutePath().normalize().toString().replace('\\', '/'),
+                root.get("project").asText()
+        );
+        assertEquals(3, root.get("entrypoints").size());
+
+        JsonNode register = endpoint(root.get("entrypoints"), "POST", "/auth/register");
+        assertEquals("com.company.AuthController.register", register.get("javaEntrypoint").asText());
+        assertEquals("com.company.AuthController", register.get("controllerClass").asText());
+        assertEquals("com.company.AuthController", register.get("className").asText());
+        assertEquals("register", register.get("methodName").asText());
+        assertEquals("src/main/java/com/company/AuthController.java", register.get("sourceFile").asText());
+        assertEquals("@RequestMapping(\"/auth\")", register.get("annotations").get("classLevel").get(1).asText());
+        assertEquals("@PostMapping(\"/register\")", register.get("annotations").get("methodLevel").get(0).asText());
+    }
+
+    @Test
+    void listEndpointsGeneratesEmptyEntrypointsJsonForProjectWithoutEndpoints() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeJavaFile(projectDirectory.resolve("src/main/java/com/company/FooService.java"));
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream outputStream = new PrintStream(outputBytes, true, StandardCharsets.UTF_8);
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "list-endpoints",
+                        "--project", projectDirectory.toString()
+                },
+                outputStream,
+                errorStream
+        );
+
+        assertEquals(0, exitCode);
+        assertEquals("", errorBytes.toString(StandardCharsets.UTF_8));
+        String output = outputBytes.toString(StandardCharsets.UTF_8);
+        assertTrue(output.contains("Discovered endpoints: 0"));
+        assertTrue(output.contains("No Spring HTTP endpoints were discovered."));
+
+        JsonNode root = OBJECT_MAPPER.readTree(projectDirectory.resolve(".code-atlas/entrypoints.json").toFile());
+        assertEquals(0, root.get("entrypoints").size());
+    }
+
+    @Test
     void analyzeFlowCanResolveSpringEndpointToJavaEntrypoint() throws Exception {
         Path projectDirectory = tempDir.resolve("project");
         writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
@@ -338,6 +414,49 @@ class AnalyzeFlowCommandTest {
                         }
                         """
         );
+    }
+
+    private static void writeEndpointCatalogController(Path sourceFile) throws Exception {
+        Files.createDirectories(sourceFile.getParent());
+        Files.writeString(
+                sourceFile,
+                """
+                        package com.company;
+
+                        import org.springframework.web.bind.annotation.GetMapping;
+                        import org.springframework.web.bind.annotation.PostMapping;
+                        import org.springframework.web.bind.annotation.RequestMapping;
+                        import org.springframework.web.bind.annotation.RequestMethod;
+                        import org.springframework.web.bind.annotation.RestController;
+
+                        @RestController
+                        @RequestMapping("/auth")
+                        public class AuthController {
+                            @PostMapping("/register")
+                            public void register() {
+                            }
+
+                            @GetMapping("/status")
+                            public String status() {
+                                return "ok";
+                            }
+
+                            @RequestMapping(value = "/login", method = RequestMethod.POST)
+                            public void login() {
+                            }
+                        }
+                        """
+        );
+    }
+
+    private static JsonNode endpoint(JsonNode entrypoints, String httpMethod, String path) {
+        for (JsonNode entrypoint : entrypoints) {
+            if (entrypoint.get("httpMethod").asText().equals(httpMethod)
+                    && entrypoint.get("path").asText().equals(path)) {
+                return entrypoint;
+            }
+        }
+        throw new AssertionError("Missing endpoint " + httpMethod + " " + path);
     }
 
     private static String portablePath(Path path) {

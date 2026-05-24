@@ -93,7 +93,7 @@ public final class AnalyzeFlowCommand {
     }
 
     int run(String[] args, PrintStream outputStream, PrintStream errorStream) {
-        if (args.length > 0 && args[0].equals("list-entrypoints")) {
+        if (args.length > 0 && (args[0].equals("list-endpoints") || args[0].equals("list-entrypoints"))) {
             return runListEntrypointsCommand(args, outputStream, errorStream);
         }
         if (args.length > 0 && args[0].equals("analyze-flow")) {
@@ -216,10 +216,13 @@ public final class AnalyzeFlowCommand {
         try {
             EntrypointIndex index = entrypointDiscoverer.discover(arguments.projectPath());
             entrypointJsonWriter.write(index, arguments.outputDirectory());
-            outputStream.println("Discovered entrypoints: " + index.entrypoints().size());
+            String label = args[0].equals("list-endpoints") ? "endpoints" : "entrypoints";
+            outputStream.println("Discovered " + label + ": " + index.entrypoints().size());
+            if (index.entrypoints().isEmpty()) {
+                outputStream.println("No Spring HTTP endpoints were discovered.");
+            }
             for (EntrypointDescriptor entrypoint : index.entrypoints()) {
-                outputStream.println("- "
-                        + entrypoint.httpMethod()
+                outputStream.println(entrypoint.httpMethod()
                         + " "
                         + entrypoint.path()
                         + " -> "
@@ -240,6 +243,7 @@ public final class AnalyzeFlowCommand {
         errorStream.println("  analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
         errorStream.println("  analyze-flow --project <path> --endpoint '<HTTP_METHOD> <path>' [--output <path>] [--stub]");
         errorStream.println("  --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
+        errorStream.println("  list-endpoints --project <path>");
         errorStream.println("  list-entrypoints --project <path> [--output <path>]");
     }
 
@@ -434,6 +438,10 @@ public final class AnalyzeFlowCommand {
                         projectPath = Path.of(value);
                     }
                     case "--output" -> {
+                        if (args[0].equals("list-endpoints")) {
+                            errorStream.println("Unknown argument: " + arg);
+                            return null;
+                        }
                         String value = Arguments.readValue(args, ++i, arg, errorStream);
                         if (value == null) {
                             return null;
