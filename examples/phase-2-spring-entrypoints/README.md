@@ -3,10 +3,11 @@
 ## Objective
 
 This folder contains small, versioned, controlled fixtures used to validate the
-Phase 2 MVP - Spring Entrypoints.
+Phase 2 Spring Entrypoints MVPs.
 
-The objective of Phase 2 is to discover Spring MVC HTTP entrypoints from Java
-source code and generate `entrypoints.json`.
+The objective of Phase 2 is to discover Spring MVC HTTP endpoints from Java
+source code, generate `entrypoints.json`, and resolve an HTTP endpoint to the
+Phase 1 `javaEntrypoint` when running `analyze-flow --endpoint`.
 
 ## Relationship with Phase 2
 
@@ -16,6 +17,8 @@ source code and generate `entrypoints.json`.
 - The current adapter is source-text based.
 - The discovered `javaEntrypoint` must be compatible with the Phase 1
   `analyze-flow` command.
+- `list-endpoints` is the canonical listing command.
+- `list-entrypoints` is retained for compatibility.
 
 ## Scope Covered by These Fixtures
 
@@ -50,6 +53,12 @@ Each example contains:
 | `03-multiple-http-methods` | Discovers multiple endpoints declared in the same controller through shortcut mappings. | `@GetMapping`, `@PostMapping`, `@PutMapping`, `@DeleteMapping`, multiple endpoints in the same controller | `GET /users -> com.example.spring.multiple.UserController.list`<br>`POST /users -> com.example.spring.multiple.UserController.create`<br>`PUT /users/{id} -> com.example.spring.multiple.UserController.update`<br>`DELETE /users/{id} -> com.example.spring.multiple.UserController.delete` |
 
 ## Manual Execution
+
+```bash
+./gradlew run --args="list-endpoints --project examples/phase-2-spring-entrypoints/01-simple-rest-controller"
+```
+
+Legacy compatibility command with explicit output:
 
 ```bash
 ./gradlew run --args="list-entrypoints --project examples/phase-2-spring-entrypoints/01-simple-rest-controller --output build/code-atlas-entrypoint-examples/01"

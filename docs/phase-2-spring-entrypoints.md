@@ -2,38 +2,160 @@
 
 ## Status
 
-Status: STARTED / MVP DESIGN
+Status: CLOSED FOR PHASE 2.1 + PHASE 2.2 MVP
+
+Phase 2 Spring Entrypoints is the source-text based Spring MVC entrypoint layer
+on top of the Phase 1 Java Flow Graph MVP.
+
+- Phase 2.1: `analyze-flow --endpoint` resolves an HTTP endpoint to a Java
+  entrypoint and runs the existing Phase 1 flow analyzer.
+- Phase 2.2: `list-endpoints` lists discovered Spring MVC HTTP endpoints and
+  writes `.code-atlas/entrypoints.json`.
+
+No Phase 1 flow graph contract is changed by this phase.
 
 ## Goal
 
-Phase 2 allows Code Atlas to discover Spring entrypoints from the analyzed
-project. The initial MVP focuses on Spring MVC HTTP controllers and endpoints,
-so a user can list available HTTP entrypoints before running the Phase 1 flow
-analyzer on a concrete Java class/method entrypoint.
+Allow Code Atlas users to discover Spring MVC HTTP entrypoints from Java source
+and run flow analysis from either a Java method entrypoint or a Spring endpoint.
 
-## Why
-
-In Phase 1, the user must already know the exact Java method:
+The canonical workflow is:
 
 ```bash
-analyze-flow --project ./repo --entrypoint com.company.Foo.method
+./gradlew run --args="list-endpoints --project ./repo"
+./gradlew run --args="analyze-flow --project ./repo --endpoint 'POST /auth/register'"
 ```
 
-In Phase 2, the user should be able to discover available entrypoints:
+The endpoint is resolved deterministically to a `javaEntrypoint`; the existing
+Phase 1 analyzer then handles the flow graph generation.
+
+```text
+HTTP endpoint -> entrypoint discovery -> javaEntrypoint -> FlowGraph
+```
+
+## Commands
+
+### Analyze Flow by Java Entrypoint
+
+The Phase 1 command remains supported:
 
 ```bash
-list-entrypoints --project ./repo
+./gradlew run --args="analyze-flow --project ./repo --entrypoint com.company.FooService.method"
 ```
 
-The discovered `javaEntrypoint` can then be passed back to the Phase 1 analyzer:
+The legacy no-subcommand form also remains supported:
 
 ```bash
-analyze-flow --project ./repo --entrypoint com.company.Foo.method
+./gradlew run --args="--project ./repo --entrypoint com.company.FooService.method"
 ```
 
-## Scope
+Both forms generate the Phase 1 flow artifacts:
 
-Initial scope:
+- `flow.json`
+- `flow.md`
+- `flow.mmd`
+- `context-pack.md`
+- `agent-handoff.md`
+- `project-index.json` and `flows-index.md` when default project output is used
+
+### Analyze Flow by Spring Endpoint
+
+Phase 2.1 adds endpoint-based analysis:
+
+```bash
+./gradlew run --args="analyze-flow --project ./repo --endpoint 'POST /auth/register'"
+```
+
+Resolution rules:
+
+- Endpoint input format is `METHOD /path`.
+- HTTP methods are normalized to uppercase before matching.
+- Paths are normalized with a leading slash, duplicate slashes collapsed, and a
+  trailing slash removed except for `/`.
+- Matching is exact on normalized HTTP method plus normalized path.
+- `ANY` only matches `ANY /path`.
+- If no endpoint matches, the CLI exits with a not-found error and prints the
+  available endpoints.
+- If multiple endpoints match the same method and path, the CLI exits with an
+  ambiguous-endpoint error and prints the candidates.
+
+The endpoint form writes `.code-atlas/entrypoints.json` as part of resolution
+and then writes the same flow artifacts as `analyze-flow --entrypoint`.
+
+`--entrypoint` and `--endpoint` are mutually exclusive.
+
+### List Spring Endpoints
+
+Phase 2.2 adds the canonical endpoint listing command:
+
+```bash
+./gradlew run --args="list-endpoints --project ./repo"
+```
+
+Default output:
+
+```text
+<project>/.code-atlas/entrypoints.json
+```
+
+Console output is a readable list:
+
+```text
+Discovered endpoints: 1
+POST /auth/register -> com.example.AuthController.register
+```
+
+If no endpoints are found, the command still writes a valid
+`entrypoints.json` with an empty `entrypoints` array.
+
+### Legacy Compatibility: list-entrypoints
+
+`list-entrypoints` is retained for compatibility with earlier Phase 2 docs and
+scripts:
+
+```bash
+./gradlew run --args="list-entrypoints --project ./repo"
+```
+
+It uses the same discovery engine and writes the same JSON contract. The
+compatibility command also supports an explicit output directory:
+
+```bash
+./gradlew run --args="list-entrypoints --project ./repo --output build/code-atlas-entrypoints"
+```
+
+With `--output`, the artifact is written to:
+
+```text
+<output>/entrypoints.json
+```
+
+Current CLI behavior keeps `--output` on `list-entrypoints`; `list-endpoints`
+uses the default project output path.
+
+## Entrypoint JSON Contract
+
+The formal contract for `.code-atlas/entrypoints.json` is documented in:
+
+```text
+docs/phase-2-entrypoints-contract.md
+```
+
+Summary:
+
+- `schemaVersion` is `1.0`.
+- `generatedAt` is deterministic in the current source-text implementation.
+- `project` is the absolute normalized project path in CLI-generated output.
+- `entrypoints` contains deterministic HTTP endpoint descriptors.
+- `metadata.analyzer` is `source-text-spring-entrypoint-discoverer`.
+- `metadata.phase` is `phase-2-spring-entrypoints`.
+- `metadata.source` is `source-text`.
+- `metadata.deterministic` is `true`.
+- `metadata.requestMappingWithoutMethod` is `ANY`.
+
+## Discovery Scope
+
+Included in this MVP:
 
 - Spring MVC HTTP endpoints.
 - `@RestController`.
@@ -46,186 +168,76 @@ Initial scope:
   - `@PutMapping`
   - `@PatchMapping`
   - `@DeleteMapping`
-- Generation of `entrypoints.json`.
-- `list-entrypoints` CLI command.
-- Real benchmark using `AuthController.register` from
-  `aws-fintech-transfer-lab/onboarding`.
+- Multiple string literal paths in supported mapping annotations.
+- `RequestMethod.*` method attributes on `@RequestMapping`.
+- Generation of `.code-atlas/entrypoints.json`.
+- Endpoint-to-`javaEntrypoint` resolution for `analyze-flow --endpoint`.
 
 ## Out of Scope
 
-The initial MVP does not cover:
+This phase does not implement:
 
-- Listeners.
-- Scheduled jobs.
-- Consumers.
-- Workers.
-- Spring Security flow.
-- Runtime route resolution.
-- Actuator.
-- OpenAPI generation.
-- Kotlin.
-- Complete profile, qualifier, or conditional bean resolution.
-- Advanced path matching.
-- Complex controller inheritance.
+- Kotlin support.
+- IntelliJ PSI integration.
+- Complete Java AST parsing.
+- Runtime Spring route resolution.
 - Custom composed annotations.
-- Request parameters or request body analysis.
-- Data flow.
+- Flow analysis for all endpoints at once.
+- Interactive endpoint selection.
+- Neo4j integration.
 - QA or harness generation.
+- Advanced data flow.
+- Automatic decomposition.
+- Listeners, scheduled jobs, consumers, workers, or non-HTTP entrypoints.
+- Spring Security flow.
+- Actuator or OpenAPI generation.
+- Complete profile, qualifier, or conditional bean resolution.
+- Advanced Spring path matching.
+- Complex controller inheritance.
+- Request parameter or request body analysis.
 
-## Entrypoint JSON Contract Draft
+## Examples
 
-`entrypoints.json` is the primary deterministic artifact for entrypoint
-discovery. The initial schema is:
-
-```json
-{
-  "schemaVersion": "1.0",
-  "project": "/path/to/project",
-  "generatedAt": "1970-01-01T00:00:00Z",
-  "entrypoints": [
-    {
-      "id": "http:POST:/auth/register -> com.example.AuthController.register",
-      "kind": "HTTP_ENDPOINT",
-      "httpMethod": "POST",
-      "path": "/auth/register",
-      "className": "com.example.AuthController",
-      "methodName": "register",
-      "javaEntrypoint": "com.example.AuthController.register",
-      "annotations": {
-        "classLevel": ["@RequestMapping(\"/auth\")"],
-        "methodLevel": ["@PostMapping(\"/register\")"]
-      },
-      "sourceLocation": {
-        "file": "src/main/java/com/example/AuthController.java",
-        "line": 123
-      }
-    }
-  ],
-  "metadata": {
-    "analyzer": "source-text-spring-entrypoint-discoverer",
-    "deterministic": true,
-    "phase": "phase-2-spring-entrypoints",
-    "source": "source-text"
-  }
-}
-```
-
-`sourceLocation` is included when the source-text adapter can determine the
-file and method declaration line.
-
-For method-level `@RequestMapping` without an explicit `method` attribute, the
-MVP writes `httpMethod: "ANY"`. This keeps the fact deterministic without
-inferring runtime route constraints.
-
-## CLI
-
-Target command:
-
-```bash
-./gradlew run --args="list-entrypoints --project /path/to/project"
-```
-
-Default output:
+Fixtures live in:
 
 ```text
-<project>/.code-atlas/entrypoints.json
+examples/phase-2-spring-entrypoints/
 ```
 
-The command also supports an explicit output directory:
+Validated fixtures:
+
+- `01-simple-rest-controller`
+- `02-request-mapping-method`
+- `03-multiple-http-methods`
+
+Manual validation commands:
 
 ```bash
-./gradlew run --args="list-entrypoints --project /path/to/project --output /path/to/output"
+./gradlew run --args="list-endpoints --project examples/phase-2-spring-entrypoints/01-simple-rest-controller"
+./gradlew run --args="analyze-flow --project examples/phase-2-spring-entrypoints/01-simple-rest-controller --endpoint 'POST /auth/register'"
 ```
 
-With `--output`, the artifact is written to:
+## Acceptance Status
 
-```text
-<output>/entrypoints.json
-```
+- `list-endpoints --project <path>` works.
+- `list-entrypoints --project <path>` remains available for compatibility.
+- `analyze-flow --project <path> --entrypoint <qualified.class.method>` remains
+  available.
+- `analyze-flow --project <path> --endpoint 'METHOD /path'` works for exact
+  normalized endpoint matches.
+- `.code-atlas/entrypoints.json` is the deterministic endpoint discovery
+  artifact.
+- Generated `javaEntrypoint` values are compatible with the Phase 1 flow
+  analyzer.
+- Phase 1 contracts remain unchanged.
 
-The existing Phase 1 invocation remains supported:
-
-```bash
-./gradlew run --args="--project ./repo --entrypoint com.company.Foo.method"
-```
-
-The explicit subcommand form is also supported:
-
-```bash
-./gradlew run --args="analyze-flow --project ./repo --entrypoint com.company.Foo.method"
-```
-
-## Analyze Flow by Endpoint
-
-In addition to listing Spring entrypoints, Phase 2 allows the flow analyzer to
-run from a discovered HTTP endpoint. The endpoint is resolved deterministically
-from the Spring MVC entrypoint index to its `javaEntrypoint`, and that Java
-entrypoint is then passed to the existing Phase 1 flow analyzer.
-
-Conceptual flow:
-
-```text
-HTTP endpoint -> entrypoint discovery -> javaEntrypoint -> FlowGraph
-```
-
-```bash
-./gradlew run --args="analyze-flow --project ./repo --endpoint 'POST /auth/register'"
-```
-
-The endpoint form generates the same flow artifacts as the Phase 1 analyzer:
-
-- `flow.json`
-- `flow.md`
-- `flow.mmd`
-- `context-pack.md`
-- `agent-handoff.md`
-- `project-index.json` and `flows-index.md` when the default project output is
-  used
-
-The legacy Java entrypoint forms remain supported:
-
-```bash
-./gradlew run --args="analyze-flow --project ./repo --entrypoint com.company.Foo.method"
-./gradlew run --args="--project ./repo --entrypoint com.company.Foo.method"
-```
-
-Endpoint resolution rules:
-
-- The accepted format is `METHOD /path`, for example `POST /auth/register`.
-- HTTP methods are normalized to uppercase before matching.
-- Paths are normalized with a leading slash, duplicate slashes collapsed, and a
-  trailing slash removed except for `/`.
-- Matching is exact on normalized HTTP method plus normalized path.
-- `ANY` only matches `ANY /path`.
-- If no endpoint matches, the CLI returns a clear not-found error and prints
-  available endpoints.
-- If multiple endpoints match the same method and path, the CLI returns a clear
-  ambiguous-endpoint error and prints the candidates.
-
-Current limitations:
-
-- No Spring runtime path matching is modeled.
-- Path variables are not expanded or interpreted beyond the literal registered
-  path, for example `/users/{id}`.
-- There is no complex disambiguation beyond exact method and path matching.
-
-## Acceptance Criteria
-
-- `docs/phase-2-spring-entrypoints.md` exists.
-- `list-entrypoints` works.
-- `entrypoints.json` is generated.
-- `AuthController.register` appears as an HTTP endpoint in the real benchmark.
-- Generated `javaEntrypoint` values are compatible with the Phase 1
-  `analyze-flow` command.
-- Phase 1 tests and contracts keep passing.
-- `./gradlew test` passes.
-- `./gradlew build` passes.
-
-## Initial Limitations
+## Known Limitations
 
 - Discovery is source-text based and conservative.
 - Only directly declared controller annotations are considered.
 - Custom composed annotations are not expanded.
 - Complex inherited controller mappings are not resolved.
-- Advanced Spring path matching is not modeled.
-- `@RequestMapping` with no `method` is represented as `ANY`.
+- Runtime Spring path matching is not modeled.
+- Path variables are matched literally, for example `/users/{id}`.
+- `@RequestMapping` without a method attribute is represented as `ANY`.
+- Endpoint disambiguation is exact method plus exact normalized path only.
