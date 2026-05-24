@@ -74,30 +74,21 @@ class AnalyzeFlowCommandTest {
         assertTrue(handoff.contains(portablePath(expectedOutputDirectory.resolve("context-pack.md"))));
 
         JsonNode projectIndex = OBJECT_MAPPER.readTree(projectDirectory.resolve(".code-atlas/project-index.json").toFile());
-        JsonNode indexedFlow = projectIndex.get("flows").get(0);
         assertEquals("1.0", projectIndex.get("schemaVersion").asText());
         assertEquals(projectDirectory.toString().replace('\\', '/'), projectIndex.get("project").get("root").asText());
-        assertEquals("com.company.FooService.processOrder", indexedFlow.get("entrypoint").asText());
-        assertEquals(
-                ".code-atlas/flows/com/company/FooService/processOrder/flow.json",
-                indexedFlow.get("artifacts").get("flowJson").asText()
-        );
-        assertEquals(
-                ".code-atlas/flows/com/company/FooService/processOrder/context-pack.md",
-                indexedFlow.get("artifacts").get("contextPack").asText()
-        );
-        assertEquals(
-                ".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md",
-                indexedFlow.get("artifacts").get("agentHandoff").asText()
-        );
+        assertEquals("Java", projectIndex.get("language").asText());
+        assertEquals("src/main/java", projectIndex.get("sourceRoots").get(0).asText());
+        JsonNode indexedClass = projectIndex.get("classes").get(0);
+        assertEquals("com.company.FooService", indexedClass.get("fullyQualifiedName").asText());
+        assertEquals("processOrder", indexedClass.get("methods").get(0).get("name").asText());
+        assertEquals("processOrder()", indexedClass.get("methods").get(0).get("signature").asText());
+        assertEquals(0, projectIndex.get("entrypoints").size());
+        assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/entrypoints.json")));
 
         String flowsIndex = Files.readString(projectDirectory.resolve(".code-atlas/flows-index.md"));
-        assertTrue(flowsIndex.contains("Agent handoff"));
-        assertTrue(flowsIndex.contains("com.company.FooService.processOrder"));
-        assertTrue(flowsIndex.contains(".code-atlas/flows/com/company/FooService/processOrder"));
-        assertTrue(flowsIndex.contains(".code-atlas/flows/com/company/FooService/processOrder/agent-handoff.md"));
-        assertTrue(flowsIndex.contains("context-pack.md"));
-        assertTrue(flowsIndex.contains("flow.json"));
+        assertTrue(flowsIndex.contains("# Code Atlas Flows Index"));
+        assertTrue(flowsIndex.contains("## HTTP Endpoints"));
+        assertTrue(flowsIndex.contains("| Method | Path | Java Entrypoint | Source |"));
     }
 
     @Test
@@ -236,8 +227,80 @@ class AnalyzeFlowCommandTest {
         assertEquals("com.company.AuthController", register.get("className").asText());
         assertEquals("register", register.get("methodName").asText());
         assertEquals("src/main/java/com/company/AuthController.java", register.get("sourceFile").asText());
-        assertEquals("@RequestMapping(\"/auth\")", register.get("annotations").get("classLevel").get(1).asText());
-        assertEquals("@PostMapping(\"/register\")", register.get("annotations").get("methodLevel").get(0).asText());
+        assertEquals("RestController", register.get("annotations").get(0).asText());
+        assertEquals("RequestMapping", register.get("annotations").get(1).asText());
+        assertEquals("PostMapping", register.get("annotations").get(2).asText());
+    }
+
+    @Test
+    void indexProjectGeneratesPhase3Artifacts() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        writeJavaFile(
+                projectDirectory.resolve("src/main/java/com/company/UserRegistrationInternal.java"),
+                """
+                        package com.company;
+
+                        public interface UserRegistrationInternal {
+                            void register();
+                        }
+                        """
+        );
+        writeJavaFile(
+                projectDirectory.resolve("src/main/java/com/company/UserServiceImpl.java"),
+                """
+                        package com.company;
+
+                        import org.springframework.stereotype.Service;
+
+                        @Service
+                        public class UserServiceImpl implements UserRegistrationInternal {
+                            public void register() {
+                            }
+                        }
+                        """
+        );
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream outputStream = new PrintStream(outputBytes, true, StandardCharsets.UTF_8);
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "index-project",
+                        "--project", projectDirectory.toString()
+                },
+                outputStream,
+                errorStream
+        );
+
+        assertEquals(0, exitCode);
+        assertEquals("", errorBytes.toString(StandardCharsets.UTF_8));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("HTTP endpoints: 1"));
+
+        JsonNode projectIndex = OBJECT_MAPPER.readTree(projectDirectory.resolve(".code-atlas/project-index.json").toFile());
+        assertEquals("Java", projectIndex.get("language").asText());
+        assertEquals("Spring", projectIndex.get("frameworks").get(0).asText());
+        assertEquals("src/main/java", projectIndex.get("sourceRoots").get(0).asText());
+        assertEquals("com.company.UserRegistrationInternal", projectIndex.get("interfaces").get(0).get("fullyQualifiedName").asText());
+        assertEquals(
+                "com.company.UserRegistrationInternal",
+                projectIndex.get("implementations").get(0).get("interface").asText()
+        );
+        assertEquals(
+                "com.company.UserServiceImpl",
+                projectIndex.get("implementations").get(0).get("implementations").get(0).asText()
+        );
+        assertEquals("com.company.AuthController", projectIndex.get("controllers").get(0).asText());
+        assertEquals("REST_CONTROLLER", projectIndex.get("springBeans").get(0).get("kind").asText());
+        assertEquals("POST", projectIndex.get("entrypoints").get(0).get("httpMethod").asText());
+
+        JsonNode entrypoints = OBJECT_MAPPER.readTree(projectDirectory.resolve(".code-atlas/entrypoints.json").toFile());
+        assertEquals(1, entrypoints.get("entrypoints").size());
+        assertEquals("/auth/register", entrypoints.get("entrypoints").get(0).get("path").asText());
+
+        String flowsIndex = Files.readString(projectDirectory.resolve(".code-atlas/flows-index.md"));
+        assertTrue(flowsIndex.contains("| POST | /auth/register | `com.company.AuthController.register`"));
     }
 
     @Test
@@ -294,6 +357,58 @@ class AnalyzeFlowCommandTest {
         assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/project-index.json")));
         assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/flows-index.md")));
 
+        JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+    }
+
+    @Test
+    void analyzeFlowByEndpointCanUseExistingEntrypointsJson() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writePlainAuthController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));
+        Path codeAtlasDirectory = projectDirectory.resolve(".code-atlas");
+        Files.createDirectories(codeAtlasDirectory);
+        Files.writeString(
+                codeAtlasDirectory.resolve("entrypoints.json"),
+                """
+                        {
+                          "schemaVersion": "1.0",
+                          "generatedAt": "1970-01-01T00:00:00Z",
+                          "project": "%s",
+                          "entrypoints": [
+                            {
+                              "id": "http:POST:/auth/register -> com.company.AuthController.register",
+                              "kind": "HTTP_ENDPOINT",
+                              "httpMethod": "POST",
+                              "path": "/auth/register",
+                              "javaEntrypoint": "com.company.AuthController.register",
+                              "controllerClass": "com.company.AuthController",
+                              "className": "com.company.AuthController",
+                              "methodName": "register",
+                              "sourceFile": "src/main/java/com/company/AuthController.java",
+                              "sourceLocation": {
+                                "file": "src/main/java/com/company/AuthController.java",
+                                "line": 4
+                              },
+                              "annotations": ["PostMapping"]
+                            }
+                          ],
+                          "metadata": {}
+                        }
+                        """.formatted(projectDirectory.toAbsolutePath().normalize().toString().replace('\\', '/'))
+        );
+        Path expectedOutputDirectory = projectDirectory.resolve(
+                ".code-atlas/flows/com/company/AuthController/register"
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--endpoint", "POST /auth/register"
+                }
+        );
+
+        assertEquals(0, exitCode);
         JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
         assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
     }
@@ -380,8 +495,7 @@ class AnalyzeFlowCommandTest {
     }
 
     private static void writeJavaFile(Path sourceFile) throws Exception {
-        Files.createDirectories(sourceFile.getParent());
-        Files.writeString(
+        writeJavaFile(
                 sourceFile,
                 """
                         package com.company;
@@ -392,6 +506,11 @@ class AnalyzeFlowCommandTest {
                         }
                         """
         );
+    }
+
+    private static void writeJavaFile(Path sourceFile, String source) throws Exception {
+        Files.createDirectories(sourceFile.getParent());
+        Files.writeString(sourceFile, source);
     }
 
     private static void writeSpringController(Path sourceFile) throws Exception {
@@ -409,6 +528,21 @@ class AnalyzeFlowCommandTest {
                         @RequestMapping("/auth")
                         public class AuthController {
                             @PostMapping("/register")
+                            public void register() {
+                            }
+                        }
+                        """
+        );
+    }
+
+    private static void writePlainAuthController(Path sourceFile) throws Exception {
+        Files.createDirectories(sourceFile.getParent());
+        Files.writeString(
+                sourceFile,
+                """
+                        package com.company;
+
+                        public class AuthController {
                             public void register() {
                             }
                         }

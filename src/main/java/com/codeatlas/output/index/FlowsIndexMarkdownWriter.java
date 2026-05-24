@@ -1,6 +1,8 @@
 package com.codeatlas.output.index;
 
+import com.codeatlas.core.entrypoint.EntrypointDescriptor;
 import com.codeatlas.core.model.FlowGraph;
+import com.codeatlas.core.project.ProjectIndex;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -9,6 +11,17 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 public final class FlowsIndexMarkdownWriter {
+    public Path write(ProjectIndex index, Path projectPath) throws IOException {
+        Objects.requireNonNull(index, "index must not be null");
+        Objects.requireNonNull(projectPath, "projectPath must not be null");
+
+        Path codeAtlasDirectory = projectPath.resolve(".code-atlas");
+        Files.createDirectories(codeAtlasDirectory);
+        Path outputFile = codeAtlasDirectory.resolve("flows-index.md");
+        Files.writeString(outputFile, render(index), StandardCharsets.UTF_8);
+        return outputFile;
+    }
+
     public Path write(FlowGraph graph, Path projectPath, Path outputDirectory) throws IOException {
         Objects.requireNonNull(graph, "graph must not be null");
         Objects.requireNonNull(projectPath, "projectPath must not be null");
@@ -19,6 +32,27 @@ public final class FlowsIndexMarkdownWriter {
         Path outputFile = codeAtlasDirectory.resolve("flows-index.md");
         Files.writeString(outputFile, render(graph, projectPath, outputDirectory), StandardCharsets.UTF_8);
         return outputFile;
+    }
+
+    private static String render(ProjectIndex index) {
+        StringBuilder markdown = new StringBuilder();
+        markdown.append("# Code Atlas Flows Index\n\n");
+        markdown.append("## HTTP Endpoints\n\n");
+        markdown.append("| Method | Path | Java Entrypoint | Source |\n");
+        markdown.append("| --- | --- | --- | --- |\n");
+        for (EntrypointDescriptor entrypoint : index.entrypoints()) {
+            String source = entrypoint.sourceLocation() == null ? "" : entrypoint.sourceLocation().file();
+            markdown.append("| ")
+                    .append(escapeTable(entrypoint.httpMethod()))
+                    .append(" | ")
+                    .append(escapeTable(entrypoint.path()))
+                    .append(" | `")
+                    .append(escapeTable(entrypoint.javaEntrypoint()))
+                    .append("` | `")
+                    .append(escapeTable(source))
+                    .append("` |\n");
+        }
+        return markdown.toString();
     }
 
     private static String render(FlowGraph graph, Path projectPath, Path outputDirectory) {

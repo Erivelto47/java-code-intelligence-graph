@@ -1,13 +1,19 @@
 package com.codeatlas.cli;
 
 import com.codeatlas.adapter.source.SourceTextFlowAnalyzer;
+import com.codeatlas.adapter.source.SourceTextProjectIndexer;
 import com.codeatlas.adapter.source.SourceTextSpringEntrypointDiscoverer;
 import com.codeatlas.core.analyzer.FlowAnalyzer;
 import com.codeatlas.core.analyzer.StubFlowAnalyzer;
+import com.codeatlas.core.entrypoint.EntrypointAnnotations;
 import com.codeatlas.core.entrypoint.EntrypointDescriptor;
 import com.codeatlas.core.entrypoint.EntrypointDiscoverer;
 import com.codeatlas.core.entrypoint.EntrypointIndex;
+import com.codeatlas.core.entrypoint.EntrypointKind;
+import com.codeatlas.core.entrypoint.SourceLocation;
 import com.codeatlas.core.model.FlowGraph;
+import com.codeatlas.core.project.ProjectIndex;
+import com.codeatlas.core.project.ProjectIndexer;
 import com.codeatlas.output.context.ContextPackWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
 import com.codeatlas.output.index.FlowsIndexMarkdownWriter;
@@ -16,19 +22,30 @@ import com.codeatlas.output.json.EntrypointJsonWriter;
 import com.codeatlas.output.json.JsonFlowWriter;
 import com.codeatlas.output.markdown.MarkdownFlowWriter;
 import com.codeatlas.output.mermaid.MermaidFlowWriter;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.time.format.DateTimeParseException;
+import java.util.ArrayList;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Optional;
 
 public final class AnalyzeFlowCommand {
     private static final String REPOSITORY = "Erivelto47/java-code-intelligence-graph";
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper().registerModule(new JavaTimeModule());
 
     private final FlowAnalyzer flowAnalyzer;
     private final EntrypointDiscoverer entrypointDiscoverer;
+    private final ProjectIndexer projectIndexer;
     private final JsonFlowWriter jsonFlowWriter;
     private final EntrypointJsonWriter entrypointJsonWriter;
     private final MarkdownFlowWriter markdownFlowWriter;
@@ -42,6 +59,7 @@ public final class AnalyzeFlowCommand {
         this(
                 new SourceTextFlowAnalyzer(),
                 new SourceTextSpringEntrypointDiscoverer(),
+                new SourceTextProjectIndexer(),
                 new JsonFlowWriter(),
                 new EntrypointJsonWriter(),
                 new MarkdownFlowWriter(),
@@ -56,6 +74,7 @@ public final class AnalyzeFlowCommand {
     AnalyzeFlowCommand(
             FlowAnalyzer flowAnalyzer,
             EntrypointDiscoverer entrypointDiscoverer,
+            ProjectIndexer projectIndexer,
             JsonFlowWriter jsonFlowWriter,
             EntrypointJsonWriter entrypointJsonWriter,
             MarkdownFlowWriter markdownFlowWriter,
@@ -67,6 +86,7 @@ public final class AnalyzeFlowCommand {
     ) {
         this.flowAnalyzer = flowAnalyzer;
         this.entrypointDiscoverer = entrypointDiscoverer;
+        this.projectIndexer = projectIndexer;
         this.jsonFlowWriter = jsonFlowWriter;
         this.entrypointJsonWriter = entrypointJsonWriter;
         this.markdownFlowWriter = markdownFlowWriter;
@@ -93,6 +113,9 @@ public final class AnalyzeFlowCommand {
     }
 
     int run(String[] args, PrintStream outputStream, PrintStream errorStream) {
+        if (args.length > 0 && args[0].equals("index-project")) {
+            return runIndexProjectCommand(args, outputStream, errorStream);
+        }
         if (args.length > 0 && (args[0].equals("list-endpoints") || args[0].equals("list-entrypoints"))) {
             return runListEntrypointsCommand(args, outputStream, errorStream);
         }
@@ -138,8 +161,7 @@ public final class AnalyzeFlowCommand {
                     arguments.useStub()
             );
             if (!arguments.outputExplicit()) {
-                projectIndexWriter.write(graph, arguments.projectPath(), outputDirectory);
-                flowsIndexMarkdownWriter.write(graph, arguments.projectPath(), outputDirectory);
+                writeProjectIndexOutputs(arguments.projectPath());
             }
             return 0;
         } catch (IllegalArgumentException exception) {
@@ -152,8 +174,15 @@ public final class AnalyzeFlowCommand {
     }
 
     private EntrypointDescriptor resolveEndpoint(Path projectPath, Endpoint endpoint) throws IOException {
-        EntrypointIndex index = entrypointDiscoverer.discover(projectPath);
-        entrypointJsonWriter.write(index, projectPath.resolve(".code-atlas"));
+        Optional<EntrypointIndex> existingIndex = readEntrypointsIndex(projectPath);
+        EntrypointIndex index;
+        if (existingIndex.isPresent()) {
+            index = existingIndex.get();
+        } else {
+            ProjectIndex projectIndex = projectIndexer.index(projectPath);
+            index = entrypointIndex(projectIndex);
+            entrypointJsonWriter.write(index, projectPath.resolve(".code-atlas"));
+        }
 
         List<EntrypointDescriptor> matches = index.entrypoints().stream()
                 .filter(entrypoint -> entrypoint.httpMethod().equals(endpoint.httpMethod()))
@@ -169,6 +198,148 @@ public final class AnalyzeFlowCommand {
                     + candidatesMessage(matches));
         }
         return matches.get(0);
+    }
+
+    private int runIndexProjectCommand(String[] args, PrintStream outputStream, PrintStream errorStream) {
+        ProjectArguments arguments = ProjectArguments.parse(args, errorStream);
+        if (arguments == null) {
+            printUsage(errorStream);
+            return 2;
+        }
+
+        if (!Files.isDirectory(arguments.projectPath())) {
+            errorStream.println("Project path must be an existing directory: " + arguments.projectPath());
+            return 2;
+        }
+
+        try {
+            ProjectIndex index = writeProjectIndexOutputs(arguments.projectPath());
+            outputStream.println("Indexed project: " + index.project().root());
+            outputStream.println("Java types: " + (index.classes().size() + index.interfaces().size()));
+            outputStream.println("HTTP endpoints: " + index.entrypoints().size());
+            return 0;
+        } catch (IllegalArgumentException exception) {
+            errorStream.println(exception.getMessage());
+            return 2;
+        } catch (IOException exception) {
+            errorStream.println("Failed to write project index outputs: " + exception.getMessage());
+            return 1;
+        }
+    }
+
+    private ProjectIndex writeProjectIndexOutputs(Path projectPath) throws IOException {
+        ProjectIndex index = projectIndexer.index(projectPath);
+        projectIndexWriter.write(index, projectPath);
+        entrypointJsonWriter.write(entrypointIndex(index), projectPath.resolve(".code-atlas"));
+        flowsIndexMarkdownWriter.write(index, projectPath);
+        return index;
+    }
+
+    private static EntrypointIndex entrypointIndex(ProjectIndex index) {
+        Map<String, Object> metadata = new LinkedHashMap<>(index.metadata());
+        metadata.put("artifact", "entrypoints");
+        return new EntrypointIndex(
+                index.schemaVersion(),
+                index.project().root(),
+                index.generatedAt(),
+                index.entrypoints(),
+                metadata
+        );
+    }
+
+    private Optional<EntrypointIndex> readEntrypointsIndex(Path projectPath) throws IOException {
+        Path entrypointsJson = projectPath.resolve(".code-atlas/entrypoints.json");
+        if (!Files.isRegularFile(entrypointsJson)) {
+            return Optional.empty();
+        }
+
+        JsonNode root = OBJECT_MAPPER.readTree(entrypointsJson.toFile());
+        String schemaVersion = text(root.get("schemaVersion"), "1.0");
+        String project = text(root.get("project"), projectPath.toAbsolutePath().normalize().toString().replace('\\', '/'));
+        Instant generatedAt = instant(root.get("generatedAt"));
+        List<EntrypointDescriptor> entrypoints = new ArrayList<>();
+        JsonNode entrypointsNode = root.get("entrypoints");
+        if (entrypointsNode != null && entrypointsNode.isArray()) {
+            for (JsonNode entrypointNode : entrypointsNode) {
+                entrypoints.add(readEntrypoint(entrypointNode));
+            }
+        }
+        return Optional.of(new EntrypointIndex(schemaVersion, project, generatedAt, List.copyOf(entrypoints), Map.of()));
+    }
+
+    private static EntrypointDescriptor readEntrypoint(JsonNode node) {
+        String className = text(node.get("className"), text(node.get("controllerClass"), ""));
+        String methodName = text(node.get("methodName"), "");
+        String javaEntrypoint = text(node.get("javaEntrypoint"),
+                className.isBlank() || methodName.isBlank() ? "" : className + "." + methodName);
+        return new EntrypointDescriptor(
+                text(node.get("id"), "http:" + text(node.get("httpMethod"), "") + ":" + text(node.get("path"), "")
+                        + " -> " + javaEntrypoint),
+                EntrypointKind.valueOf(text(node.get("kind"), "HTTP_ENDPOINT")),
+                text(node.get("httpMethod"), ""),
+                text(node.get("path"), ""),
+                className,
+                methodName,
+                javaEntrypoint,
+                readAnnotations(node.get("annotations")),
+                readSourceLocation(node)
+        );
+    }
+
+    private static EntrypointAnnotations readAnnotations(JsonNode annotationsNode) {
+        if (annotationsNode == null || annotationsNode.isNull()) {
+            return new EntrypointAnnotations(List.of(), List.of());
+        }
+        if (annotationsNode.isArray()) {
+            List<String> annotations = new ArrayList<>();
+            for (JsonNode annotation : annotationsNode) {
+                annotations.add(annotation.asText());
+            }
+            return new EntrypointAnnotations(List.of(), List.copyOf(annotations));
+        }
+
+        List<String> classLevel = new ArrayList<>();
+        List<String> methodLevel = new ArrayList<>();
+        JsonNode classLevelNode = annotationsNode.get("classLevel");
+        if (classLevelNode != null && classLevelNode.isArray()) {
+            for (JsonNode annotation : classLevelNode) {
+                classLevel.add(annotation.asText());
+            }
+        }
+        JsonNode methodLevelNode = annotationsNode.get("methodLevel");
+        if (methodLevelNode != null && methodLevelNode.isArray()) {
+            for (JsonNode annotation : methodLevelNode) {
+                methodLevel.add(annotation.asText());
+            }
+        }
+        return new EntrypointAnnotations(List.copyOf(classLevel), List.copyOf(methodLevel));
+    }
+
+    private static SourceLocation readSourceLocation(JsonNode node) {
+        JsonNode sourceLocation = node.get("sourceLocation");
+        if (sourceLocation != null && sourceLocation.isObject()) {
+            return new SourceLocation(
+                    text(sourceLocation.get("file"), text(node.get("sourceFile"), "")),
+                    sourceLocation.has("line") ? sourceLocation.get("line").asInt() : 0
+            );
+        }
+        String sourceFile = text(node.get("sourceFile"), "");
+        return sourceFile.isBlank() ? null : new SourceLocation(sourceFile, 0);
+    }
+
+    private static String text(JsonNode node, String fallback) {
+        return node == null || node.isNull() ? fallback : node.asText();
+    }
+
+    private static Instant instant(JsonNode node) {
+        if (node == null || node.isNull()) {
+            return Instant.EPOCH;
+        }
+        try {
+            return Instant.parse(node.asText());
+        } catch (DateTimeParseException exception) {
+            return Instant.EPOCH;
+        }
     }
 
     private static String availableEndpointsMessage(EntrypointIndex index) {
@@ -240,6 +411,7 @@ public final class AnalyzeFlowCommand {
 
     private static void printUsage(PrintStream errorStream) {
         errorStream.println("Usage:");
+        errorStream.println("  index-project --project <path>");
         errorStream.println("  analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
         errorStream.println("  analyze-flow --project <path> --endpoint '<HTTP_METHOD> <path>' [--output <path>] [--stub]");
         errorStream.println("  --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
@@ -370,6 +542,35 @@ public final class AnalyzeFlowCommand {
             return firstSeparator > 0
                     && lastSeparator > firstSeparator
                     && lastSeparator < entrypoint.length() - 1;
+        }
+    }
+
+    private record ProjectArguments(Path projectPath) {
+        private static ProjectArguments parse(String[] args, PrintStream errorStream) {
+            Path projectPath = null;
+
+            for (int i = 1; i < args.length; i++) {
+                String arg = args[i];
+                switch (arg) {
+                    case "--project" -> {
+                        String value = Arguments.readValue(args, ++i, arg, errorStream);
+                        if (value == null) {
+                            return null;
+                        }
+                        projectPath = Path.of(value);
+                    }
+                    default -> {
+                        errorStream.println("Unknown argument: " + arg);
+                        return null;
+                    }
+                }
+            }
+
+            if (projectPath == null) {
+                errorStream.println("Missing required argument: --project");
+                return null;
+            }
+            return new ProjectArguments(projectPath);
         }
     }
 

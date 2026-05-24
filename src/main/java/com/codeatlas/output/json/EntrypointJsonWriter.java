@@ -1,6 +1,5 @@
 package com.codeatlas.output.json;
 
-import com.codeatlas.core.entrypoint.EntrypointAnnotations;
 import com.codeatlas.core.entrypoint.EntrypointDescriptor;
 import com.codeatlas.core.entrypoint.EntrypointIndex;
 import com.codeatlas.core.entrypoint.EntrypointKind;
@@ -80,7 +79,7 @@ public final class EntrypointJsonWriter {
             String methodName,
             String sourceFile,
             SourceLocation sourceLocation,
-            EntrypointAnnotations annotations
+            List<String> annotations
     ) {
         private static EntrypointDocument from(EntrypointDescriptor entrypoint) {
             SourceLocation sourceLocation = entrypoint.sourceLocation();
@@ -95,8 +94,36 @@ public final class EntrypointJsonWriter {
                     entrypoint.methodName(),
                     sourceLocation == null ? null : sourceLocation.file(),
                     sourceLocation,
-                    entrypoint.annotations()
+                    flattenedAnnotations(entrypoint)
             );
+        }
+
+        private static List<String> flattenedAnnotations(EntrypointDescriptor entrypoint) {
+            if (entrypoint.annotations() == null) {
+                return List.of();
+            }
+            return java.util.stream.Stream.concat(
+                            entrypoint.annotations().classLevel().stream(),
+                            entrypoint.annotations().methodLevel().stream()
+                    )
+                    .map(EntrypointDocument::annotationName)
+                    .distinct()
+                    .toList();
+        }
+
+        private static String annotationName(String annotationSource) {
+            String value = annotationSource == null ? "" : annotationSource.trim();
+            if (value.startsWith("@")) {
+                value = value.substring(1);
+            }
+            int end = 0;
+            while (end < value.length()
+                    && (Character.isJavaIdentifierPart(value.charAt(end)) || value.charAt(end) == '.')) {
+                end++;
+            }
+            String qualifiedName = end == 0 ? value : value.substring(0, end);
+            int separator = qualifiedName.lastIndexOf('.');
+            return separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1);
         }
     }
 }

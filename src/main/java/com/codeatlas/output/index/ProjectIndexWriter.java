@@ -1,7 +1,16 @@
 package com.codeatlas.output.index;
 
-import com.codeatlas.core.model.FlowGraph;
-import com.codeatlas.core.model.GraphNode;
+import com.codeatlas.core.entrypoint.EntrypointDescriptor;
+import com.codeatlas.core.entrypoint.EntrypointKind;
+import com.codeatlas.core.entrypoint.SourceLocation;
+import com.codeatlas.core.project.ImplementationDescriptor;
+import com.codeatlas.core.project.JavaTypeDescriptor;
+import com.codeatlas.core.project.ProjectDescriptor;
+import com.codeatlas.core.project.ProjectIndex;
+import com.codeatlas.core.project.SpringBeanDescriptor;
+import com.codeatlas.core.project.UnresolvedProjectSymbol;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -10,14 +19,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
-import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
-import java.util.Set;
 
 public final class ProjectIndexWriter {
-    private static final String INDEX_SCHEMA_VERSION = "1.0";
-
     private final ObjectMapper objectMapper;
 
     public ProjectIndexWriter() {
@@ -28,106 +34,133 @@ public final class ProjectIndexWriter {
         this.objectMapper = Objects.requireNonNull(objectMapper, "objectMapper must not be null");
     }
 
-    public Path write(FlowGraph graph, Path projectPath, Path outputDirectory) throws IOException {
-        Objects.requireNonNull(graph, "graph must not be null");
+    public Path write(ProjectIndex index, Path projectPath) throws IOException {
+        Objects.requireNonNull(index, "index must not be null");
         Objects.requireNonNull(projectPath, "projectPath must not be null");
-        Objects.requireNonNull(outputDirectory, "outputDirectory must not be null");
 
         Path codeAtlasDirectory = projectPath.resolve(".code-atlas");
         Files.createDirectories(codeAtlasDirectory);
         Path outputFile = codeAtlasDirectory.resolve("project-index.json");
-        objectMapper.writeValue(outputFile.toFile(), projectIndex(graph, projectPath, outputDirectory));
+        objectMapper.writeValue(outputFile.toFile(), ProjectIndexDocument.from(index));
         return outputFile;
-    }
-
-    private static ProjectIndex projectIndex(FlowGraph graph, Path projectPath, Path outputDirectory) {
-        String flowPath = projectRelativePath(projectPath, outputDirectory);
-        Artifacts artifacts = new Artifacts(
-                artifactPath(flowPath, "flow.json"),
-                artifactPath(flowPath, "flow.md"),
-                artifactPath(flowPath, "flow.mmd"),
-                artifactPath(flowPath, "context-pack.md"),
-                artifactPath(flowPath, "agent-handoff.md")
-        );
-        Flow flow = new Flow(
-                graph.entrypoint(),
-                flowPath,
-                sourceFiles(graph),
-                artifacts
-        );
-        return new ProjectIndex(
-                INDEX_SCHEMA_VERSION,
-                new Project(portablePath(projectPath.normalize())),
-                graph.generatedAt(),
-                List.of(flow)
-        );
-    }
-
-    private static List<String> sourceFiles(FlowGraph graph) {
-        Set<String> sourceFiles = new LinkedHashSet<>();
-        for (GraphNode node : graph.nodes()) {
-            Object sourceFile = node.attributes().get("sourceFile");
-            if (sourceFile != null && !sourceFile.toString().isBlank()) {
-                sourceFiles.add(portablePath(Path.of(sourceFile.toString())));
-            }
-        }
-        return List.copyOf(sourceFiles);
-    }
-
-    private static String artifactPath(String flowPath, String fileName) {
-        if (flowPath.isBlank()) {
-            return fileName;
-        }
-        return flowPath + "/" + fileName;
-    }
-
-    private static String projectRelativePath(Path projectPath, Path path) {
-        Path absoluteProjectPath = projectPath.toAbsolutePath().normalize();
-        Path absolutePath = path.toAbsolutePath().normalize();
-        try {
-            return portablePath(absoluteProjectPath.relativize(absolutePath));
-        } catch (IllegalArgumentException exception) {
-            return portablePath(path.normalize());
-        }
-    }
-
-    private static String portablePath(Path path) {
-        return path.toString().replace('\\', '/');
     }
 
     private static ObjectMapper defaultObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+        mapper.setSerializationInclusion(JsonInclude.Include.NON_NULL);
         mapper.enable(SerializationFeature.INDENT_OUTPUT);
+        mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
     }
 
-    private record ProjectIndex(
+    private record ProjectIndexDocument(
             String schemaVersion,
-            Project project,
             Instant generatedAt,
-            List<Flow> flows
+            ProjectDescriptor project,
+            String language,
+            List<String> frameworks,
+            List<String> sourceRoots,
+            List<JavaTypeDescriptor> classes,
+            List<JavaTypeDescriptor> interfaces,
+            List<ImplementationDocument> implementations,
+            List<SpringBeanDescriptor> springBeans,
+            List<String> controllers,
+            List<String> repositories,
+            List<String> clients,
+            List<EntrypointDocument> entrypoints,
+            List<UnresolvedProjectSymbol> unresolved,
+            Map<String, Object> metadata
     ) {
+        private static ProjectIndexDocument from(ProjectIndex index) {
+            return new ProjectIndexDocument(
+                    index.schemaVersion(),
+                    index.generatedAt(),
+                    index.project(),
+                    index.language(),
+                    index.frameworks(),
+                    index.sourceRoots(),
+                    index.classes(),
+                    index.interfaces(),
+                    index.implementations().stream().map(ImplementationDocument::from).toList(),
+                    index.springBeans(),
+                    index.controllers(),
+                    index.repositories(),
+                    index.clients(),
+                    index.entrypoints().stream().map(EntrypointDocument::from).toList(),
+                    index.unresolved(),
+                    index.metadata()
+            );
+        }
     }
 
-    private record Project(String root) {
+    private record ImplementationDocument(
+            @JsonProperty("interface")
+            String interfaceName,
+            List<String> implementations
+    ) {
+        private static ImplementationDocument from(ImplementationDescriptor implementation) {
+            return new ImplementationDocument(implementation.interfaceName(), implementation.implementations());
+        }
     }
 
-    private record Flow(
-            String entrypoint,
-            String flowPath,
-            List<String> sourceFiles,
-            Artifacts artifacts
+    private record EntrypointDocument(
+            String id,
+            EntrypointKind kind,
+            String httpMethod,
+            String path,
+            String javaEntrypoint,
+            String controllerClass,
+            String className,
+            String methodName,
+            String sourceFile,
+            SourceLocation sourceLocation,
+            List<String> annotations
     ) {
-    }
+        private static EntrypointDocument from(EntrypointDescriptor entrypoint) {
+            SourceLocation sourceLocation = entrypoint.sourceLocation();
+            return new EntrypointDocument(
+                    entrypoint.id(),
+                    entrypoint.kind(),
+                    entrypoint.httpMethod(),
+                    entrypoint.path(),
+                    entrypoint.javaEntrypoint(),
+                    entrypoint.className(),
+                    entrypoint.className(),
+                    entrypoint.methodName(),
+                    sourceLocation == null ? null : sourceLocation.file(),
+                    sourceLocation,
+                    flattenedAnnotations(entrypoint)
+            );
+        }
 
-    private record Artifacts(
-            String flowJson,
-            String flowMarkdown,
-            String flowMermaid,
-            String contextPack,
-            String agentHandoff
-    ) {
+        private static List<String> flattenedAnnotations(EntrypointDescriptor entrypoint) {
+            if (entrypoint.annotations() == null) {
+                return List.of();
+            }
+            return java.util.stream.Stream.concat(
+                            entrypoint.annotations().classLevel().stream(),
+                            entrypoint.annotations().methodLevel().stream()
+                    )
+                    .map(EntrypointDocument::annotationName)
+                    .distinct()
+                    .toList();
+        }
+
+        private static String annotationName(String annotationSource) {
+            String value = annotationSource == null ? "" : annotationSource.trim();
+            if (value.startsWith("@")) {
+                value = value.substring(1);
+            }
+            int end = 0;
+            while (end < value.length()
+                    && (Character.isJavaIdentifierPart(value.charAt(end)) || value.charAt(end) == '.')) {
+                end++;
+            }
+            String qualifiedName = end == 0 ? value : value.substring(0, end);
+            int separator = qualifiedName.lastIndexOf('.');
+            return separator < 0 ? qualifiedName : qualifiedName.substring(separator + 1);
+        }
     }
 }
