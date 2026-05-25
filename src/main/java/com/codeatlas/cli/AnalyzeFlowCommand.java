@@ -12,8 +12,11 @@ import com.codeatlas.core.entrypoint.EntrypointIndex;
 import com.codeatlas.core.entrypoint.EntrypointKind;
 import com.codeatlas.core.entrypoint.SourceLocation;
 import com.codeatlas.core.model.FlowGraph;
+import com.codeatlas.core.project.ImplementationDescriptor;
+import com.codeatlas.core.project.ProjectDescriptor;
 import com.codeatlas.core.project.ProjectIndex;
 import com.codeatlas.core.project.ProjectIndexer;
+import com.codeatlas.core.project.SpringBeanDescriptor;
 import com.codeatlas.output.context.ContextPackWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
 import com.codeatlas.output.index.FlowsIndexMarkdownWriter;
@@ -147,7 +150,7 @@ public final class AnalyzeFlowCommand {
 
             Path outputDirectory = arguments.resolvedOutputDirectory(javaEntrypoint);
             FlowAnalyzer selectedAnalyzer = arguments.useStub() ? new StubFlowAnalyzer() : flowAnalyzer;
-            FlowGraph graph = selectedAnalyzer.analyze(arguments.projectPath(), javaEntrypoint);
+            FlowGraph graph = analyze(arguments.projectPath(), javaEntrypoint, selectedAnalyzer);
             jsonFlowWriter.write(graph, outputDirectory);
             markdownFlowWriter.write(graph, outputDirectory);
             mermaidFlowWriter.write(graph, outputDirectory);
@@ -235,6 +238,107 @@ public final class AnalyzeFlowCommand {
         return index;
     }
 
+    private FlowGraph analyze(Path projectPath, String javaEntrypoint, FlowAnalyzer selectedAnalyzer) {
+        if (selectedAnalyzer instanceof SourceTextFlowAnalyzer sourceTextAnalyzer) {
+            ProjectIndexContext projectIndexContext = loadOrBuildProjectIndex(projectPath);
+            return sourceTextAnalyzer.analyze(
+                    projectPath,
+                    javaEntrypoint,
+                    projectIndexContext.index(),
+                    projectIndexContext.source()
+            );
+        }
+        return selectedAnalyzer.analyze(projectPath, javaEntrypoint);
+    }
+
+    private ProjectIndexContext loadOrBuildProjectIndex(Path projectPath) {
+        Optional<ProjectIndex> existingIndex = readProjectIndex(projectPath);
+        if (existingIndex.isPresent()) {
+            return new ProjectIndexContext(existingIndex.get(), "json");
+        }
+        return new ProjectIndexContext(projectIndexer.index(projectPath), "memory");
+    }
+
+    private Optional<ProjectIndex> readProjectIndex(Path projectPath) {
+        Path projectIndexJson = projectPath.resolve(".code-atlas/project-index.json");
+        if (!Files.isRegularFile(projectIndexJson)) {
+            return Optional.empty();
+        }
+
+        try {
+            JsonNode root = OBJECT_MAPPER.readTree(projectIndexJson.toFile());
+            String projectRoot = projectPath.toAbsolutePath().normalize().toString().replace('\\', '/');
+            JsonNode projectNode = root.get("project");
+            if (projectNode != null && projectNode.isObject()) {
+                projectRoot = text(projectNode.get("root"), projectRoot);
+            }
+
+            return Optional.of(new ProjectIndex(
+                    text(root.get("schemaVersion"), "1.0"),
+                    instant(root.get("generatedAt")),
+                    new ProjectDescriptor(projectRoot),
+                    text(root.get("language"), "Java"),
+                    readStringArray(root.get("frameworks")),
+                    readStringArray(root.get("sourceRoots")),
+                    List.of(),
+                    List.of(),
+                    readImplementations(root.get("implementations")),
+                    readSpringBeans(root.get("springBeans")),
+                    readStringArray(root.get("controllers")),
+                    readStringArray(root.get("repositories")),
+                    readStringArray(root.get("clients")),
+                    List.of(),
+                    List.of(),
+                    Map.of("source", "project-index-json")
+            ));
+        } catch (IOException | RuntimeException exception) {
+            return Optional.empty();
+        }
+    }
+
+    private static List<ImplementationDescriptor> readImplementations(JsonNode implementationsNode) {
+        if (implementationsNode == null || !implementationsNode.isArray()) {
+            return List.of();
+        }
+        List<ImplementationDescriptor> implementations = new ArrayList<>();
+        for (JsonNode implementationNode : implementationsNode) {
+            implementations.add(new ImplementationDescriptor(
+                    text(implementationNode.get("interface"), ""),
+                    readStringArray(implementationNode.get("implementations"))
+            ));
+        }
+        return List.copyOf(implementations);
+    }
+
+    private static List<SpringBeanDescriptor> readSpringBeans(JsonNode springBeansNode) {
+        if (springBeansNode == null || !springBeansNode.isArray()) {
+            return List.of();
+        }
+        List<SpringBeanDescriptor> springBeans = new ArrayList<>();
+        for (JsonNode springBeanNode : springBeansNode) {
+            springBeans.add(new SpringBeanDescriptor(
+                    text(springBeanNode.get("id"), ""),
+                    text(springBeanNode.get("kind"), ""),
+                    text(springBeanNode.get("beanType"), ""),
+                    readStringArray(springBeanNode.get("annotations")),
+                    text(springBeanNode.get("sourceFile"), ""),
+                    readSourceLocation(springBeanNode)
+            ));
+        }
+        return List.copyOf(springBeans);
+    }
+
+    private static List<String> readStringArray(JsonNode node) {
+        if (node == null || !node.isArray()) {
+            return List.of();
+        }
+        List<String> values = new ArrayList<>();
+        for (JsonNode value : node) {
+            values.add(value.asText());
+        }
+        return List.copyOf(values);
+    }
+
     private static EntrypointIndex entrypointIndex(ProjectIndex index) {
         Map<String, Object> metadata = new LinkedHashMap<>(index.metadata());
         metadata.put("artifact", "entrypoints");
@@ -245,6 +349,9 @@ public final class AnalyzeFlowCommand {
                 index.entrypoints(),
                 metadata
         );
+    }
+
+    private record ProjectIndexContext(ProjectIndex index, String source) {
     }
 
     private Optional<EntrypointIndex> readEntrypointsIndex(Path projectPath) throws IOException {

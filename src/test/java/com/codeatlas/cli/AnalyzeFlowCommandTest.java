@@ -85,6 +85,10 @@ class AnalyzeFlowCommandTest {
         assertEquals(0, projectIndex.get("entrypoints").size());
         assertTrue(Files.isRegularFile(projectDirectory.resolve(".code-atlas/entrypoints.json")));
 
+        JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
+        assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
+        assertEquals("memory", flow.get("metadata").get("projectIndexSource").asText());
+
         String flowsIndex = Files.readString(projectDirectory.resolve(".code-atlas/flows-index.md"));
         assertTrue(flowsIndex.contains("# Code Atlas Flows Index"));
         assertTrue(flowsIndex.contains("## HTTP Endpoints"));
@@ -359,6 +363,98 @@ class AnalyzeFlowCommandTest {
 
         JsonNode flow = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("flow.json").toFile());
         assertEquals("com.company.AuthController.register", flow.get("entrypoint").asText());
+        assertEquals(0, flow.get("unresolved").size());
+    }
+
+    @Test
+    void analyzeFlowCanUseExistingProjectIndexForInterfaceResolution() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("project-index-assisted-output");
+        writeJavaFile(
+                projectDirectory.resolve("src/main/java/com/company/RegistrationController.java"),
+                """
+                        package com.company;
+
+                        public class RegistrationController {
+                            private final RegistrationUseCase registrationUseCase;
+
+                            public RegistrationController(RegistrationUseCase registrationUseCase) {
+                                this.registrationUseCase = registrationUseCase;
+                            }
+
+                            public void register() {
+                                registrationUseCase.create();
+                            }
+                        }
+
+                        interface RegistrationUseCase {
+                            void create();
+                        }
+
+                        class RegistrationService {
+                            public void create() {
+                                validate();
+                            }
+
+                            private void validate() {
+                            }
+                        }
+                        """
+        );
+        Path codeAtlasDirectory = projectDirectory.resolve(".code-atlas");
+        Files.createDirectories(codeAtlasDirectory);
+        Files.writeString(
+                codeAtlasDirectory.resolve("project-index.json"),
+                """
+                        {
+                          "schemaVersion": "1.0",
+                          "generatedAt": "1970-01-01T00:00:00Z",
+                          "project": {
+                            "root": "%s"
+                          },
+                          "language": "Java",
+                          "frameworks": [],
+                          "sourceRoots": ["src/main/java"],
+                          "classes": [],
+                          "interfaces": [],
+                          "implementations": [
+                            {
+                              "interface": "com.company.RegistrationUseCase",
+                              "implementations": ["com.company.RegistrationService"]
+                            }
+                          ],
+                          "springBeans": [],
+                          "controllers": [],
+                          "repositories": [],
+                          "clients": [],
+                          "entrypoints": [],
+                          "unresolved": [],
+                          "metadata": {}
+                        }
+                        """.formatted(projectDirectory.toAbsolutePath().normalize().toString().replace('\\', '/'))
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.RegistrationController.register",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertEquals("com.company.RegistrationController.register", flow.get("entrypoint").asText());
+        assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
+        assertEquals("json", flow.get("metadata").get("projectIndexSource").asText());
+        assertEquals(0, flow.get("unresolved").size());
+        assertTrue(hasResolution(
+                flow,
+                "method:com.company.RegistrationUseCase.create",
+                "method:com.company.RegistrationService.create",
+                "INTERFACE_SINGLE_IMPLEMENTATION"
+        ));
     }
 
     @Test
@@ -591,6 +687,17 @@ class AnalyzeFlowCommandTest {
             }
         }
         throw new AssertionError("Missing endpoint " + httpMethod + " " + path);
+    }
+
+    private static boolean hasResolution(JsonNode flow, String sourceNodeId, String targetNodeId, String kind) {
+        for (JsonNode resolution : flow.get("resolutions")) {
+            if (resolution.get("sourceNodeId").asText().equals(sourceNodeId)
+                    && resolution.get("targetNodeId").asText().equals(targetNodeId)
+                    && resolution.get("kind").asText().equals(kind)) {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static String portablePath(Path path) {

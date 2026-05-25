@@ -7,6 +7,8 @@ import com.codeatlas.core.model.GraphEdge;
 import com.codeatlas.core.model.GraphNode;
 import com.codeatlas.core.model.Resolution;
 import com.codeatlas.core.model.UnresolvedSymbol;
+import com.codeatlas.core.project.ImplementationDescriptor;
+import com.codeatlas.core.project.ProjectIndex;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -84,10 +86,14 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
 
     @Override
     public FlowGraph analyze(Path projectPath, String entrypoint) {
+        return analyze(projectPath, entrypoint, null, "none");
+    }
+
+    public FlowGraph analyze(Path projectPath, String entrypoint, ProjectIndex projectIndex, String projectIndexSource) {
         Objects.requireNonNull(projectPath, "projectPath must not be null");
         Entrypoint parsedEntrypoint = Entrypoint.parse(entrypoint);
         Path normalizedProjectPath = projectPath.toAbsolutePath().normalize();
-        ProjectSymbolIndex index = ProjectSymbolIndex.build(normalizedProjectPath);
+        ProjectSymbolIndex index = ProjectSymbolIndex.build(normalizedProjectPath, projectIndex);
 
         JavaType entryType = index.type(parsedEntrypoint.classQualifiedName());
         if (entryType == null) {
@@ -150,6 +156,9 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         metadata.put("indexedJavaSourceFiles", index.sourceFileCount());
         metadata.put("indexedTypes", index.typeCount());
         metadata.put("maxTraversalDepth", MAX_TRAVERSAL_DEPTH);
+        metadata.put("projectIndexAssisted", projectIndex != null);
+        metadata.put("projectIndexSource", projectIndex == null ? "none" : projectIndexSource);
+        metadata.put("projectIndexImplementations", projectIndex == null ? 0 : projectIndex.implementations().size());
 
         return new FlowGraph(
                 SCHEMA_VERSION,
@@ -447,7 +456,7 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
             return implementations;
         }
         List<JavaType> beanImplementations = implementations.stream()
-                .filter(SourceTextFlowAnalyzer::hasBeanAnnotation)
+                .filter(SourceTextFlowAnalyzer::isSpringBean)
                 .toList();
         if (beanImplementations.size() == 1) {
             return beanImplementations;
@@ -455,7 +464,10 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         return implementations;
     }
 
-    private static boolean hasBeanAnnotation(JavaType type) {
+    private static boolean isSpringBean(JavaType type) {
+        if (type.index.isProjectIndexSpringBean(type.qualifiedName)) {
+            return true;
+        }
         for (String annotation : type.annotations) {
             if (BEAN_ANNOTATIONS.contains(annotation)) {
                 return true;
@@ -682,6 +694,9 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         if (!"interface".equals(type.kind)) {
             return false;
         }
+        if (type.index.isProjectIndexRepository(type.qualifiedName)) {
+            return true;
+        }
         if (type.simpleName.endsWith("Repository") || type.annotations.contains("Repository")) {
             return true;
         }
@@ -697,6 +712,9 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
     }
 
     private static boolean isExternalClientBoundary(JavaType type) {
+        if (type.index.isProjectIndexClient(type.qualifiedName)) {
+            return true;
+        }
         return type.simpleName.endsWith("Client")
                 || type.simpleName.endsWith("Gateway")
                 || type.simpleName.endsWith("Port");
@@ -1584,6 +1602,9 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         private final Map<String, JavaType> typesByQualifiedName = new LinkedHashMap<>();
         private final Map<String, List<JavaType>> typesBySimpleName = new LinkedHashMap<>();
         private final Map<String, List<JavaType>> implementationsByInterface = new LinkedHashMap<>();
+        private final Set<String> projectIndexSpringBeans = new LinkedHashSet<>();
+        private final Set<String> projectIndexRepositories = new LinkedHashSet<>();
+        private final Set<String> projectIndexClients = new LinkedHashSet<>();
         private int sourceFileCount;
 
         private ProjectSymbolIndex(Path projectPath) {
@@ -1591,6 +1612,10 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         }
 
         private static ProjectSymbolIndex build(Path projectPath) {
+            return build(projectPath, null);
+        }
+
+        private static ProjectSymbolIndex build(Path projectPath, ProjectIndex projectIndex) {
             if (!Files.isDirectory(projectPath)) {
                 throw new IllegalArgumentException("Project path must be an existing directory: " + projectPath);
             }
@@ -1603,7 +1628,40 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
             }
             index.resolveTypeReferences();
             index.indexImplementations();
+            index.applyProjectIndex(projectIndex);
             return index;
+        }
+
+        private void applyProjectIndex(ProjectIndex projectIndex) {
+            if (projectIndex == null) {
+                return;
+            }
+
+            projectIndex.springBeans().forEach(bean -> projectIndexSpringBeans.add(bean.beanType()));
+            projectIndex.repositories().forEach(projectIndexRepositories::add);
+            projectIndex.clients().forEach(projectIndexClients::add);
+
+            for (ImplementationDescriptor implementation : projectIndex.implementations()) {
+                JavaType interfaceType = typesByQualifiedName.get(implementation.interfaceName());
+                if (interfaceType == null || !"interface".equals(interfaceType.kind)) {
+                    continue;
+                }
+                List<JavaType> targetImplementations = implementationsByInterface.computeIfAbsent(
+                        implementation.interfaceName(),
+                        ignored -> new ArrayList<>()
+                );
+                for (String implementationName : implementation.implementations()) {
+                    JavaType implementationType = typesByQualifiedName.get(implementationName);
+                    if (implementationType == null || !implementationType.isConcrete()) {
+                        continue;
+                    }
+                    if (targetImplementations.stream().noneMatch(existing ->
+                            existing.qualifiedName.equals(implementationType.qualifiedName))) {
+                        targetImplementations.add(implementationType);
+                    }
+                }
+                targetImplementations.sort((left, right) -> left.qualifiedName.compareTo(right.qualifiedName));
+            }
         }
 
         private static List<Path> javaSourceFiles(Path projectPath) {
@@ -1713,6 +1771,18 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
 
         private List<JavaType> implementations(String interfaceName) {
             return implementationsByInterface.getOrDefault(interfaceName, List.of());
+        }
+
+        private boolean isProjectIndexSpringBean(String qualifiedName) {
+            return projectIndexSpringBeans.contains(qualifiedName);
+        }
+
+        private boolean isProjectIndexRepository(String qualifiedName) {
+            return projectIndexRepositories.contains(qualifiedName);
+        }
+
+        private boolean isProjectIndexClient(String qualifiedName) {
+            return projectIndexClients.contains(qualifiedName);
         }
 
         private int sourceFileCount() {
