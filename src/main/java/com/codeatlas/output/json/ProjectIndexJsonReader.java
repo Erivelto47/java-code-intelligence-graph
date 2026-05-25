@@ -12,6 +12,7 @@ import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
 import java.time.Instant;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
@@ -19,8 +20,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Stream;
 
 public final class ProjectIndexJsonReader {
+    private static final String STALE_REASON = "project-index.json is older than at least one Java source file";
+
     private final ObjectMapper objectMapper;
 
     public ProjectIndexJsonReader() {
@@ -32,13 +36,18 @@ public final class ProjectIndexJsonReader {
     }
 
     public Optional<ProjectIndex> read(Path projectPath) {
+        return readResult(projectPath).index();
+    }
+
+    public ReadResult readResult(Path projectPath) {
         Objects.requireNonNull(projectPath, "projectPath must not be null");
 
         Path projectIndexJson = projectPath.resolve(".code-atlas/project-index.json");
         if (!Files.isRegularFile(projectIndexJson)) {
-            return Optional.empty();
+            return ReadResult.missing("project-index.json not found");
         }
 
+        StaleCheck staleCheck = staleCheck(projectPath, projectIndexJson);
         try {
             JsonNode root = objectMapper.readTree(projectIndexJson.toFile());
             String projectRoot = projectPath.toAbsolutePath().normalize().toString().replace('\\', '/');
@@ -47,7 +56,7 @@ public final class ProjectIndexJsonReader {
                 projectRoot = text(projectNode.get("root"), projectRoot);
             }
 
-            return Optional.of(new ProjectIndex(
+            ProjectIndex index = new ProjectIndex(
                     text(root.get("schemaVersion"), "1.0"),
                     instant(root.get("generatedAt")),
                     new ProjectDescriptor(projectRoot),
@@ -64,9 +73,55 @@ public final class ProjectIndexJsonReader {
                     List.of(),
                     List.of(),
                     Map.of("source", "project-index-json")
-            ));
+            );
+            return ReadResult.loaded(index, staleCheck);
         } catch (IOException | RuntimeException exception) {
-            return Optional.empty();
+            List<String> diagnostics = new ArrayList<>();
+            diagnostics.add("Failed to read project-index.json: " + message(exception));
+            diagnostics.addAll(staleCheck.diagnostics());
+            return ReadResult.invalid(diagnostics, staleCheck.staleSuspected(), staleCheck.staleReasons());
+        }
+    }
+
+    public enum ReadStatus {
+        LOADED,
+        MISSING,
+        INVALID
+    }
+
+    public record ReadResult(
+            Optional<ProjectIndex> index,
+            ReadStatus status,
+            List<String> diagnostics,
+            boolean staleSuspected,
+            List<String> staleReasons
+    ) {
+        public ReadResult {
+            index = index == null ? Optional.empty() : index;
+            diagnostics = diagnostics == null ? List.of() : List.copyOf(diagnostics);
+            staleReasons = staleReasons == null ? List.of() : List.copyOf(staleReasons);
+        }
+
+        private static ReadResult loaded(ProjectIndex index, StaleCheck staleCheck) {
+            return new ReadResult(
+                    Optional.of(index),
+                    ReadStatus.LOADED,
+                    staleCheck.diagnostics(),
+                    staleCheck.staleSuspected(),
+                    staleCheck.staleReasons()
+            );
+        }
+
+        private static ReadResult missing(String diagnostic) {
+            return new ReadResult(Optional.empty(), ReadStatus.MISSING, List.of(diagnostic), false, List.of());
+        }
+
+        private static ReadResult invalid(
+                List<String> diagnostics,
+                boolean staleSuspected,
+                List<String> staleReasons
+        ) {
+            return new ReadResult(Optional.empty(), ReadStatus.INVALID, diagnostics, staleSuspected, staleReasons);
         }
     }
 
@@ -141,6 +196,53 @@ public final class ProjectIndexJsonReader {
             return Instant.parse(node.asText());
         } catch (DateTimeParseException exception) {
             return Instant.EPOCH;
+        }
+    }
+
+    private static StaleCheck staleCheck(Path projectPath, Path projectIndexJson) {
+        Path sourceRoot = projectPath.resolve("src/main/java");
+        if (!Files.isDirectory(sourceRoot)) {
+            return StaleCheck.current();
+        }
+
+        try {
+            FileTime projectIndexModifiedAt = Files.getLastModifiedTime(projectIndexJson);
+            try (Stream<Path> paths = Files.walk(sourceRoot)) {
+                for (Path sourceFile : paths
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.getFileName().toString().endsWith(".java"))
+                        .toList()) {
+                    if (Files.getLastModifiedTime(sourceFile).compareTo(projectIndexModifiedAt) > 0) {
+                        return StaleCheck.stale();
+                    }
+                }
+            }
+            return StaleCheck.current();
+        } catch (IOException | RuntimeException exception) {
+            return StaleCheck.unknown("Failed to evaluate project-index staleness: " + message(exception));
+        }
+    }
+
+    private static String message(Exception exception) {
+        String message = exception.getMessage();
+        return message == null || message.isBlank() ? exception.getClass().getSimpleName() : message;
+    }
+
+    private record StaleCheck(
+            boolean staleSuspected,
+            List<String> staleReasons,
+            List<String> diagnostics
+    ) {
+        private static StaleCheck current() {
+            return new StaleCheck(false, List.of(), List.of());
+        }
+
+        private static StaleCheck stale() {
+            return new StaleCheck(true, List.of(STALE_REASON), List.of(STALE_REASON));
+        }
+
+        private static StaleCheck unknown(String diagnostic) {
+            return new StaleCheck(false, List.of(), List.of(diagnostic));
         }
     }
 }

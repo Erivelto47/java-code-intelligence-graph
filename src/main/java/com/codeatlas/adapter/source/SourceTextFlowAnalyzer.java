@@ -9,6 +9,7 @@ import com.codeatlas.core.model.Resolution;
 import com.codeatlas.core.model.UnresolvedSymbol;
 import com.codeatlas.core.project.ProjectIndex;
 import com.codeatlas.core.project.ProjectIndexHints;
+import com.codeatlas.core.project.ProjectIndexUsage;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -90,19 +91,34 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
     }
 
     public FlowGraph analyze(Path projectPath, String entrypoint, ProjectIndex projectIndex, String projectIndexSource) {
+        ProjectIndexHints projectIndexHints = projectIndex == null ? null : ProjectIndexHints.from(projectIndex);
         return analyze(
                 projectPath,
                 entrypoint,
-                projectIndex == null ? null : ProjectIndexHints.from(projectIndex),
-                projectIndexSource
+                projectIndexHints,
+                projectIndexHints == null
+                        ? ProjectIndexUsage.notUsed()
+                        : ProjectIndexUsage.legacy(projectIndexSource, projectIndexHints.implementationMappingCount())
         );
     }
 
     public FlowGraph analyze(Path projectPath, String entrypoint, ProjectIndexHints projectIndexHints, String projectIndexSource) {
+        return analyze(
+                projectPath,
+                entrypoint,
+                projectIndexHints,
+                projectIndexHints == null
+                        ? ProjectIndexUsage.notUsed()
+                        : ProjectIndexUsage.legacy(projectIndexSource, projectIndexHints.implementationMappingCount())
+        );
+    }
+
+    public FlowGraph analyze(Path projectPath, String entrypoint, ProjectIndexHints projectIndexHints, ProjectIndexUsage projectIndexUsage) {
         Objects.requireNonNull(projectPath, "projectPath must not be null");
         Entrypoint parsedEntrypoint = Entrypoint.parse(entrypoint);
         Path normalizedProjectPath = projectPath.toAbsolutePath().normalize();
         ProjectSymbolIndex index = ProjectSymbolIndex.build(normalizedProjectPath, projectIndexHints);
+        ProjectIndexUsage usage = projectIndexUsage == null ? ProjectIndexUsage.notUsed() : projectIndexUsage;
 
         JavaType entryType = index.type(parsedEntrypoint.classQualifiedName());
         if (entryType == null) {
@@ -165,9 +181,13 @@ public final class SourceTextFlowAnalyzer implements FlowAnalyzer {
         metadata.put("indexedJavaSourceFiles", index.sourceFileCount());
         metadata.put("indexedTypes", index.typeCount());
         metadata.put("maxTraversalDepth", MAX_TRAVERSAL_DEPTH);
-        metadata.put("projectIndexAssisted", projectIndexHints != null);
-        metadata.put("projectIndexSource", projectIndexHints == null ? "none" : projectIndexSource);
-        metadata.put("projectIndexImplementations", projectIndexHints == null ? 0 : projectIndexHints.implementationMappingCount());
+        metadata.put("projectIndexAssisted", usage.assisted());
+        metadata.put("projectIndexSource", usage.source());
+        metadata.put("projectIndexImplementations", usage.implementations());
+        metadata.put("projectIndexStatus", usage.status());
+        metadata.put("projectIndexDiagnostics", usage.diagnostics());
+        metadata.put("projectIndexStaleSuspected", usage.staleSuspected());
+        metadata.put("projectIndexStaleReasons", usage.staleReasons());
 
         return new FlowGraph(
                 SCHEMA_VERSION,

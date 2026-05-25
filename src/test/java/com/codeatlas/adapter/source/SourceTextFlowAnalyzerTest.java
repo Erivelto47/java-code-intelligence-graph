@@ -77,6 +77,24 @@ class SourceTextFlowAnalyzerTest {
     }
 
     @Test
+    void defaultAnalyzeFlowReportsProjectIndexNotUsed() throws Exception {
+        writeJavaFile(tempDir.resolve("src/main/java/com/company/FooService.java"), simpleFooServiceSource());
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.company.FooService.processOrder"
+        );
+
+        assertEquals(false, graph.metadata().get("projectIndexAssisted"));
+        assertEquals("none", graph.metadata().get("projectIndexSource"));
+        assertEquals("NOT_USED", graph.metadata().get("projectIndexStatus"));
+        assertEquals(0, graph.metadata().get("projectIndexImplementations"));
+        assertEquals(List.of(), graph.metadata().get("projectIndexDiagnostics"));
+        assertEquals(false, graph.metadata().get("projectIndexStaleSuspected"));
+        assertEquals(List.of(), graph.metadata().get("projectIndexStaleReasons"));
+    }
+
+    @Test
     void createsDeclaresEdgeFromClassToEntrypointMethod() throws Exception {
         writeJavaFile(tempDir.resolve("src/main/java/com/company/FooService.java"), simpleFooServiceSource());
 

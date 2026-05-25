@@ -259,6 +259,31 @@ Resolution order:
 3. Resolve the HTTP endpoint to `javaEntrypoint`.
 4. Execute the existing `analyze-flow` implementation.
 
+## `analyze-flow` ProjectIndex Assistance Metadata
+
+`analyze-flow` can consume `<project>/.code-atlas/project-index.json` as an
+auxiliary deterministic source for flow resolution. This does not change the
+`project-index.json` contract. The flow output can report how the ProjectIndex
+was used through `flow.json` metadata:
+
+| Field | Type | Description |
+| --- | --- | --- |
+| `projectIndexAssisted` | boolean | Whether ProjectIndex-derived hints assisted the flow analysis. |
+| `projectIndexSource` | string | Source of the hints: `json`, `memory`, or `none`. |
+| `projectIndexStatus` | string | Usage status: `LOADED_FROM_JSON`, `FALLBACK_MEMORY_MISSING_JSON`, `FALLBACK_MEMORY_INVALID_JSON`, or `NOT_USED`. |
+| `projectIndexImplementations` | number | Count of implementation mappings available to the flow analyzer. |
+| `projectIndexStaleSuspected` | boolean | Whether the existing `project-index.json` may be stale. |
+| `projectIndexDiagnostics` | array | Short deterministic diagnostic messages about ProjectIndex usage or fallback. |
+| `projectIndexStaleReasons` | array | Short deterministic reasons for stale suspicion. |
+
+Stale detection is intentionally simple: when `project-index.json` exists, the
+analyzer compares its last modification time with `.java` files under
+`src/main/java`. If at least one Java source file is newer, stale is suspected.
+
+Stale detection is observational only. It does not block analysis and does not
+force automatic reindexing. Missing or invalid `project-index.json` can still
+fall back to an in-memory ProjectIndex.
+
 ## Out Of Scope
 
 - IntelliJ PSI dependency in core.

@@ -10,8 +10,11 @@ import java.io.PrintStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class AnalyzeFlowCommandTest {
@@ -449,6 +452,10 @@ class AnalyzeFlowCommandTest {
         assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
         assertEquals("json", flow.get("metadata").get("projectIndexSource").asText());
         assertEquals(1, flow.get("metadata").get("projectIndexImplementations").asInt());
+        assertEquals("LOADED_FROM_JSON", flow.get("metadata").get("projectIndexStatus").asText());
+        assertEquals(0, flow.get("metadata").get("projectIndexDiagnostics").size());
+        assertFalse(flow.get("metadata").get("projectIndexStaleSuspected").asBoolean());
+        assertEquals(0, flow.get("metadata").get("projectIndexStaleReasons").size());
         assertEquals(0, flow.get("unresolved").size());
         assertTrue(hasResolution(
                 flow,
@@ -478,6 +485,10 @@ class AnalyzeFlowCommandTest {
         assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
         assertEquals("memory", flow.get("metadata").get("projectIndexSource").asText());
         assertEquals(1, flow.get("metadata").get("projectIndexImplementations").asInt());
+        assertEquals("FALLBACK_MEMORY_MISSING_JSON", flow.get("metadata").get("projectIndexStatus").asText());
+        assertTrue(flowDiagnosticsContain(flow, "project-index.json not found"));
+        assertTrue(flowDiagnosticsContain(flow, "Using in-memory ProjectIndex fallback"));
+        assertFalse(flow.get("metadata").get("projectIndexStaleSuspected").asBoolean());
         assertEquals(0, flow.get("unresolved").size());
         assertTrue(hasResolution(
                 flow,
@@ -510,6 +521,10 @@ class AnalyzeFlowCommandTest {
         assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
         assertEquals("memory", flow.get("metadata").get("projectIndexSource").asText());
         assertEquals(1, flow.get("metadata").get("projectIndexImplementations").asInt());
+        assertEquals("FALLBACK_MEMORY_INVALID_JSON", flow.get("metadata").get("projectIndexStatus").asText());
+        assertTrue(flowDiagnosticsContain(flow, "Failed to read project-index.json:"));
+        assertTrue(flowDiagnosticsContain(flow, "Using in-memory ProjectIndex fallback"));
+        assertFalse(flow.get("metadata").get("projectIndexStaleSuspected").asBoolean());
         assertEquals(0, flow.get("unresolved").size());
         assertTrue(hasResolution(
                 flow,
@@ -517,6 +532,98 @@ class AnalyzeFlowCommandTest {
                 "method:com.company.RegistrationService.create",
                 "INTERFACE_SINGLE_IMPLEMENTATION"
         ));
+    }
+
+    @Test
+    void analyzeFlowMarksExistingProjectIndexAsStaleWhenJavaSourceIsNewer() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("stale-project-index-output");
+        writeJavaFile(
+                projectDirectory.resolve("src/main/java/com/company/RegistrationController.java"),
+                """
+                        package com.company;
+
+                        public class RegistrationController {
+                            private final RegistrationUseCase registrationUseCase;
+
+                            public RegistrationController(RegistrationUseCase registrationUseCase) {
+                                this.registrationUseCase = registrationUseCase;
+                            }
+
+                            public void register() {
+                                registrationUseCase.create();
+                            }
+                        }
+
+                        interface RegistrationUseCase {
+                            void create();
+                        }
+
+                        class RegistrationService {
+                            public void create() {
+                            }
+                        }
+                        """
+        );
+        Path codeAtlasDirectory = projectDirectory.resolve(".code-atlas");
+        Files.createDirectories(codeAtlasDirectory);
+        Path projectIndexJson = codeAtlasDirectory.resolve("project-index.json");
+        Files.writeString(
+                projectIndexJson,
+                """
+                        {
+                          "schemaVersion": "1.0",
+                          "generatedAt": "1970-01-01T00:00:00Z",
+                          "project": {
+                            "root": "%s"
+                          },
+                          "language": "Java",
+                          "frameworks": [],
+                          "sourceRoots": ["src/main/java"],
+                          "classes": [],
+                          "interfaces": [],
+                          "implementations": [
+                            {
+                              "interface": "com.company.RegistrationUseCase",
+                              "implementations": ["com.company.RegistrationService"]
+                            }
+                          ],
+                          "springBeans": [],
+                          "controllers": [],
+                          "repositories": [],
+                          "clients": [],
+                          "entrypoints": [],
+                          "unresolved": [],
+                          "metadata": {}
+                        }
+                        """.formatted(projectDirectory.toAbsolutePath().normalize().toString().replace('\\', '/'))
+        );
+        Files.setLastModifiedTime(projectIndexJson, FileTime.from(Instant.parse("2020-01-01T00:00:00Z")));
+        Files.setLastModifiedTime(
+                projectDirectory.resolve("src/main/java/com/company/RegistrationController.java"),
+                FileTime.from(Instant.parse("2020-01-01T00:00:10Z"))
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.RegistrationController.register",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertEquals("json", flow.get("metadata").get("projectIndexSource").asText());
+        assertEquals("LOADED_FROM_JSON", flow.get("metadata").get("projectIndexStatus").asText());
+        assertTrue(flow.get("metadata").get("projectIndexStaleSuspected").asBoolean());
+        assertEquals(
+                "project-index.json is older than at least one Java source file",
+                flow.get("metadata").get("projectIndexStaleReasons").get(0).asText()
+        );
+        assertTrue(flowDiagnosticsContain(flow, "project-index.json is older than at least one Java source file"));
+        assertEquals(0, flow.get("unresolved").size());
     }
 
     @Test
@@ -786,6 +893,15 @@ class AnalyzeFlowCommandTest {
             if (resolution.get("sourceNodeId").asText().equals(sourceNodeId)
                     && resolution.get("targetNodeId").asText().equals(targetNodeId)
                     && resolution.get("kind").asText().equals(kind)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private static boolean flowDiagnosticsContain(JsonNode flow, String expected) {
+        for (JsonNode diagnostic : flow.get("metadata").get("projectIndexDiagnostics")) {
+            if (diagnostic.asText().contains(expected)) {
                 return true;
             }
         }

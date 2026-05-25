@@ -14,6 +14,7 @@ import com.codeatlas.core.entrypoint.SourceLocation;
 import com.codeatlas.core.model.FlowGraph;
 import com.codeatlas.core.project.ProjectIndex;
 import com.codeatlas.core.project.ProjectIndexHints;
+import com.codeatlas.core.project.ProjectIndexUsage;
 import com.codeatlas.core.project.ProjectIndexer;
 import com.codeatlas.output.context.ContextPackWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
@@ -22,6 +23,8 @@ import com.codeatlas.output.index.ProjectIndexWriter;
 import com.codeatlas.output.json.EntrypointJsonWriter;
 import com.codeatlas.output.json.JsonFlowWriter;
 import com.codeatlas.output.json.ProjectIndexJsonReader;
+import com.codeatlas.output.json.ProjectIndexJsonReader.ReadResult;
+import com.codeatlas.output.json.ProjectIndexJsonReader.ReadStatus;
 import com.codeatlas.output.markdown.MarkdownFlowWriter;
 import com.codeatlas.output.mermaid.MermaidFlowWriter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -248,18 +251,39 @@ public final class AnalyzeFlowCommand {
                     projectPath,
                     javaEntrypoint,
                     projectIndexContext.hints(),
-                    projectIndexContext.source()
+                    projectIndexContext.usage()
             );
         }
         return selectedAnalyzer.analyze(projectPath, javaEntrypoint);
     }
 
     private ProjectIndexContext loadOrBuildProjectIndex(Path projectPath) {
-        Optional<ProjectIndex> existingIndex = projectIndexJsonReader.read(projectPath);
-        if (existingIndex.isPresent()) {
-            return new ProjectIndexContext(ProjectIndexHints.from(existingIndex.get()), "json");
+        ReadResult readResult = projectIndexJsonReader.readResult(projectPath);
+        if (readResult.index().isPresent()) {
+            ProjectIndexHints hints = ProjectIndexHints.from(readResult.index().get());
+            return new ProjectIndexContext(
+                    hints,
+                    ProjectIndexUsage.loadedFromJson(
+                            hints.implementationMappingCount(),
+                            readResult.diagnostics(),
+                            readResult.staleSuspected(),
+                            readResult.staleReasons()
+                    )
+            );
         }
-        return new ProjectIndexContext(ProjectIndexHints.from(projectIndexer.index(projectPath)), "memory");
+
+        ProjectIndexHints hints = ProjectIndexHints.from(projectIndexer.index(projectPath));
+        List<String> diagnostics = new ArrayList<>(readResult.diagnostics());
+        diagnostics.add("Using in-memory ProjectIndex fallback");
+        ProjectIndexUsage usage = readResult.status() == ReadStatus.INVALID
+                ? ProjectIndexUsage.fallbackMemoryInvalidJson(
+                        hints.implementationMappingCount(),
+                        diagnostics,
+                        readResult.staleSuspected(),
+                        readResult.staleReasons()
+                )
+                : ProjectIndexUsage.fallbackMemoryMissingJson(hints.implementationMappingCount(), diagnostics);
+        return new ProjectIndexContext(hints, usage);
     }
 
     private static EntrypointIndex entrypointIndex(ProjectIndex index) {
@@ -274,7 +298,7 @@ public final class AnalyzeFlowCommand {
         );
     }
 
-    private record ProjectIndexContext(ProjectIndexHints hints, String source) {
+    private record ProjectIndexContext(ProjectIndexHints hints, ProjectIndexUsage usage) {
     }
 
     private Optional<EntrypointIndex> readEntrypointsIndex(Path projectPath) throws IOException {
