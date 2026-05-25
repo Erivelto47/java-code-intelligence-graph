@@ -3,6 +3,7 @@ package com.codeatlas.adapter.source;
 import com.codeatlas.core.model.FlowGraph;
 import com.codeatlas.core.model.GraphEdge;
 import com.codeatlas.core.model.GraphNode;
+import com.codeatlas.core.project.ProjectIndexHints;
 import com.codeatlas.output.context.ContextPackWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
 import com.codeatlas.output.markdown.MarkdownFlowWriter;
@@ -14,6 +15,8 @@ import org.junit.jupiter.api.io.TempDir;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -71,6 +74,24 @@ class SourceTextFlowAnalyzerTest {
         assertEquals("com.company.FooService.processOrder", methodNode.qualifiedName());
         assertEquals(true, methodNode.attributes().get("entrypoint"));
         assertEquals("local", methodNode.attributes().get("resolution"));
+    }
+
+    @Test
+    void defaultAnalyzeFlowReportsProjectIndexNotUsed() throws Exception {
+        writeJavaFile(tempDir.resolve("src/main/java/com/company/FooService.java"), simpleFooServiceSource());
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.company.FooService.processOrder"
+        );
+
+        assertEquals(false, graph.metadata().get("projectIndexAssisted"));
+        assertEquals("none", graph.metadata().get("projectIndexSource"));
+        assertEquals("NOT_USED", graph.metadata().get("projectIndexStatus"));
+        assertEquals(0, graph.metadata().get("projectIndexImplementations"));
+        assertEquals(List.of(), graph.metadata().get("projectIndexDiagnostics"));
+        assertEquals(false, graph.metadata().get("projectIndexStaleSuspected"));
+        assertEquals(List.of(), graph.metadata().get("projectIndexStaleReasons"));
     }
 
     @Test
@@ -282,6 +303,60 @@ class SourceTextFlowAnalyzerTest {
                 .orElseThrow();
         assertEquals("INFERRED", resolutionEdge.attributes().get("evidence"));
         assertEquals("HIGH", resolutionEdge.attributes().get("confidence"));
+    }
+
+    @Test
+    void usesProjectIndexHintsForInterfaceResolution() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/RegistrationController.java"),
+                """
+                        package com.example;
+
+                        public class RegistrationController {
+                            private final RegistrationUseCase registrationUseCase;
+
+                            public RegistrationController(RegistrationUseCase registrationUseCase) {
+                                this.registrationUseCase = registrationUseCase;
+                            }
+
+                            public void register() {
+                                registrationUseCase.create();
+                            }
+                        }
+
+                        interface RegistrationUseCase {
+                            void create();
+                        }
+
+                        class RegistrationService {
+                            public void create() {
+                            }
+                        }
+                        """
+        );
+        ProjectIndexHints hints = new ProjectIndexHints(
+                Map.of("com.example.RegistrationUseCase", List.of("com.example.RegistrationService")),
+                Set.of(),
+                Set.of(),
+                Set.of(),
+                1
+        );
+
+        FlowGraph graph = new SourceTextFlowAnalyzer().analyze(
+                tempDir,
+                "com.example.RegistrationController.register",
+                hints,
+                "test"
+        );
+
+        assertEquals(true, graph.metadata().get("projectIndexAssisted"));
+        assertEquals("test", graph.metadata().get("projectIndexSource"));
+        assertEquals(1, graph.metadata().get("projectIndexImplementations"));
+        assertTrue(graph.resolutions().stream().anyMatch(resolution ->
+                resolution.sourceNodeId().equals("method:com.example.RegistrationUseCase.create")
+                        && resolution.targetNodeId().equals("method:com.example.RegistrationService.create")
+                        && resolution.kind().equals("INTERFACE_SINGLE_IMPLEMENTATION")
+        ));
     }
 
     @Test

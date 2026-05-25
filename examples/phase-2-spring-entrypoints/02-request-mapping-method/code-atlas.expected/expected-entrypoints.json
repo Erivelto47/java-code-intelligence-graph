@@ -8,9 +8,11 @@
       "kind": "HTTP_ENDPOINT",
       "httpMethod": "GET",
       "path": "/users/{id}",
+      "javaEntrypoint": "com.example.spring.requestmapping.UserController.getById",
+      "controllerClass": "com.example.spring.requestmapping.UserController",
       "className": "com.example.spring.requestmapping.UserController",
       "methodName": "getById",
-      "javaEntrypoint": "com.example.spring.requestmapping.UserController.getById",
+      "sourceFile": "src/main/java/com/example/spring/requestmapping/UserController.java",
       "annotations": {
         "classLevel": [
           "@RestController",

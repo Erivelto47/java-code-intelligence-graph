@@ -8,9 +8,11 @@
       "kind": "HTTP_ENDPOINT",
       "httpMethod": "POST",
       "path": "/auth/register",
+      "javaEntrypoint": "com.example.spring.simple.AuthController.register",
+      "controllerClass": "com.example.spring.simple.AuthController",
       "className": "com.example.spring.simple.AuthController",
       "methodName": "register",
-      "javaEntrypoint": "com.example.spring.simple.AuthController.register",
+      "sourceFile": "src/main/java/com/example/spring/simple/AuthController.java",
       "annotations": {
         "classLevel": [
           "@RestController",

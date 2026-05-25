@@ -17,12 +17,13 @@ Transformar código Java existente em grafos técnicos úteis para:
 
 ## Fase atual
 
-**Fase 1: Java Flow Graph MVP**
+**Fase 1: Java Flow Graph MVP** esta fechada para o MVP de grafo de fluxo por
+entrypoint Java.
 
-Entrada:
+Entrada por metodo Java:
 
 ```bash
-./gradlew run --args="--project ./repo --entrypoint com.company.FooService.method"
+./gradlew run --args="analyze-flow --project ./repo --entrypoint com.company.FooService.method"
 ```
 
 Saídas:
@@ -36,6 +37,17 @@ Saídas:
 .code-atlas/flows/<package-path>/<ClassName>/<methodName>/context-pack.md
 .code-atlas/flows/<package-path>/<ClassName>/<methodName>/agent-handoff.md
 ```
+
+**Fase 2: Spring Entrypoints** esta fechada para os MVPs 2.1 e 2.2:
+
+```bash
+./gradlew run --args="list-endpoints --project ./repo"
+./gradlew run --args="analyze-flow --project ./repo --endpoint 'POST /auth/register'"
+```
+
+O contrato da Fase 2 fica documentado em
+`docs/phase-2-entrypoints-contract.md`, e a visao geral da fase fica em
+`docs/phase-2-spring-entrypoints.md`.
 
 ## Princípios do projeto
 
@@ -60,8 +72,11 @@ src/main/java/com/codeatlas/
 docs/
   phase-1.md
   graph-contract.md
+  phase-2-spring-entrypoints.md
+  phase-2-entrypoints-contract.md
 examples/
   sample-flow.json
+  phase-2-spring-entrypoints/
 ```
 
 ## Desenvolvimento
@@ -75,7 +90,7 @@ Rodar testes:
 Gerar artefatos com o analyzer textual real:
 
 ```bash
-./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder"
+./gradlew run --args="analyze-flow --project examples/java-simple --entrypoint com.company.FooService.processOrder"
 ```
 
 Gerar artefatos com o analyzer stub:
@@ -108,7 +123,7 @@ Esses índices ajudam agentes que conseguem ler arquivos por caminho exato, mas 
 Use `--output` para sobrescrever explicitamente esse destino:
 
 ```bash
-./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder --output build/code-atlas-output"
+./gradlew run --args="analyze-flow --project examples/java-simple --entrypoint com.company.FooService.processOrder --output build/code-atlas-output"
 ```
 
 Com `--output`, os artefatos do flow continuam sendo gravados no diretório informado. Nessa forma, a CLI também grava `agent-handoff.md` no diretório de output, mas não grava obrigatoriamente `project-index.json` ou `flows-index.md` em `.code-atlas`.
@@ -136,7 +151,7 @@ O analyzer padrão da Fase 1 lê arquivos `.java` diretamente e faz parsing text
 Exemplo analisado:
 
 ```bash
-./gradlew run --args="--project examples/java-simple --entrypoint com.company.FooService.processOrder"
+./gradlew run --args="analyze-flow --project examples/java-simple --entrypoint com.company.FooService.processOrder"
 ```
 
 O `flow.json` gerado contém nós como:
@@ -159,4 +174,4 @@ Limitações explícitas desta fase:
 
 ## Status
 
-O MVP atual resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os quatro artefatos derivados. A análise PSI ainda não foi implementada.
+A Fase 1 resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os artefatos derivados de flow. A Fase 2.1 + 2.2 adiciona descoberta e listagem source-text de endpoints Spring MVC e resolução de `analyze-flow --endpoint` para `javaEntrypoint`. A análise PSI ainda não foi implementada.

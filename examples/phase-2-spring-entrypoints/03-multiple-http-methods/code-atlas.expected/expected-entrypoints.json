@@ -8,9 +8,11 @@
       "kind": "HTTP_ENDPOINT",
       "httpMethod": "GET",
       "path": "/users",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.list",
+      "controllerClass": "com.example.spring.multiple.UserController",
       "className": "com.example.spring.multiple.UserController",
       "methodName": "list",
-      "javaEntrypoint": "com.example.spring.multiple.UserController.list",
+      "sourceFile": "src/main/java/com/example/spring/multiple/UserController.java",
       "annotations": {
         "classLevel": [
           "@RestController",
@@ -30,9 +32,11 @@
       "kind": "HTTP_ENDPOINT",
       "httpMethod": "POST",
       "path": "/users",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.create",
+      "controllerClass": "com.example.spring.multiple.UserController",
       "className": "com.example.spring.multiple.UserController",
       "methodName": "create",
-      "javaEntrypoint": "com.example.spring.multiple.UserController.create",
+      "sourceFile": "src/main/java/com/example/spring/multiple/UserController.java",
       "annotations": {
         "classLevel": [
           "@RestController",
@@ -52,9 +56,11 @@
       "kind": "HTTP_ENDPOINT",
       "httpMethod": "PUT",
       "path": "/users/{id}",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.update",
+      "controllerClass": "com.example.spring.multiple.UserController",
       "className": "com.example.spring.multiple.UserController",
       "methodName": "update",
-      "javaEntrypoint": "com.example.spring.multiple.UserController.update",
+      "sourceFile": "src/main/java/com/example/spring/multiple/UserController.java",
       "annotations": {
         "classLevel": [
           "@RestController",
@@ -74,9 +80,11 @@
       "kind": "HTTP_ENDPOINT",
       "httpMethod": "DELETE",
       "path": "/users/{id}",
+      "javaEntrypoint": "com.example.spring.multiple.UserController.delete",
+      "controllerClass": "com.example.spring.multiple.UserController",
       "className": "com.example.spring.multiple.UserController",
       "methodName": "delete",
-      "javaEntrypoint": "com.example.spring.multiple.UserController.delete",
+      "sourceFile": "src/main/java/com/example/spring/multiple/UserController.java",
       "annotations": {
         "classLevel": [
           "@RestController",
