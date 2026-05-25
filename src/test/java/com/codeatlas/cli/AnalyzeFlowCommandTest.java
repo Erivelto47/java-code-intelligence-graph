@@ -448,6 +448,68 @@ class AnalyzeFlowCommandTest {
         assertEquals("com.company.RegistrationController.register", flow.get("entrypoint").asText());
         assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
         assertEquals("json", flow.get("metadata").get("projectIndexSource").asText());
+        assertEquals(1, flow.get("metadata").get("projectIndexImplementations").asInt());
+        assertEquals(0, flow.get("unresolved").size());
+        assertTrue(hasResolution(
+                flow,
+                "method:com.company.RegistrationUseCase.create",
+                "method:com.company.RegistrationService.create",
+                "INTERFACE_SINGLE_IMPLEMENTATION"
+        ));
+    }
+
+    @Test
+    void analyzeFlowFallsBackToMemoryProjectIndexWhenProjectIndexJsonDoesNotExist() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("missing-project-index-output");
+        writeResolvableRegistrationProject(projectDirectory);
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.RegistrationController.register",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
+        assertEquals("memory", flow.get("metadata").get("projectIndexSource").asText());
+        assertEquals(1, flow.get("metadata").get("projectIndexImplementations").asInt());
+        assertEquals(0, flow.get("unresolved").size());
+        assertTrue(hasResolution(
+                flow,
+                "method:com.company.RegistrationUseCase.create",
+                "method:com.company.RegistrationService.create",
+                "INTERFACE_SINGLE_IMPLEMENTATION"
+        ));
+    }
+
+    @Test
+    void analyzeFlowFallsBackToMemoryProjectIndexWhenProjectIndexJsonIsInvalid() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        Path outputDirectory = tempDir.resolve("invalid-project-index-output");
+        writeResolvableRegistrationProject(projectDirectory);
+        Path codeAtlasDirectory = projectDirectory.resolve(".code-atlas");
+        Files.createDirectories(codeAtlasDirectory);
+        Files.writeString(codeAtlasDirectory.resolve("project-index.json"), "{ invalid-json");
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-flow",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.company.RegistrationController.register",
+                        "--output", outputDirectory.toString()
+                }
+        );
+
+        assertEquals(0, exitCode);
+        JsonNode flow = OBJECT_MAPPER.readTree(outputDirectory.resolve("flow.json").toFile());
+        assertTrue(flow.get("metadata").get("projectIndexAssisted").asBoolean());
+        assertEquals("memory", flow.get("metadata").get("projectIndexSource").asText());
+        assertEquals(1, flow.get("metadata").get("projectIndexImplementations").asInt());
         assertEquals(0, flow.get("unresolved").size());
         assertTrue(hasResolution(
                 flow,
@@ -640,6 +702,36 @@ class AnalyzeFlowCommandTest {
 
                         public class AuthController {
                             public void register() {
+                            }
+                        }
+                        """
+        );
+    }
+
+    private static void writeResolvableRegistrationProject(Path projectDirectory) throws Exception {
+        writeJavaFile(
+                projectDirectory.resolve("src/main/java/com/company/RegistrationController.java"),
+                """
+                        package com.company;
+
+                        public class RegistrationController {
+                            private final RegistrationUseCase registrationUseCase;
+
+                            public RegistrationController(RegistrationUseCase registrationUseCase) {
+                                this.registrationUseCase = registrationUseCase;
+                            }
+
+                            public void register() {
+                                registrationUseCase.create();
+                            }
+                        }
+
+                        interface RegistrationUseCase {
+                            void create();
+                        }
+
+                        class RegistrationService implements RegistrationUseCase {
+                            public void create() {
                             }
                         }
                         """

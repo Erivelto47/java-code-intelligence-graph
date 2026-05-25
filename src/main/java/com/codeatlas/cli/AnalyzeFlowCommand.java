@@ -12,17 +12,16 @@ import com.codeatlas.core.entrypoint.EntrypointIndex;
 import com.codeatlas.core.entrypoint.EntrypointKind;
 import com.codeatlas.core.entrypoint.SourceLocation;
 import com.codeatlas.core.model.FlowGraph;
-import com.codeatlas.core.project.ImplementationDescriptor;
-import com.codeatlas.core.project.ProjectDescriptor;
 import com.codeatlas.core.project.ProjectIndex;
+import com.codeatlas.core.project.ProjectIndexHints;
 import com.codeatlas.core.project.ProjectIndexer;
-import com.codeatlas.core.project.SpringBeanDescriptor;
 import com.codeatlas.output.context.ContextPackWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
 import com.codeatlas.output.index.FlowsIndexMarkdownWriter;
 import com.codeatlas.output.index.ProjectIndexWriter;
 import com.codeatlas.output.json.EntrypointJsonWriter;
 import com.codeatlas.output.json.JsonFlowWriter;
+import com.codeatlas.output.json.ProjectIndexJsonReader;
 import com.codeatlas.output.markdown.MarkdownFlowWriter;
 import com.codeatlas.output.mermaid.MermaidFlowWriter;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -55,6 +54,7 @@ public final class AnalyzeFlowCommand {
     private final MermaidFlowWriter mermaidFlowWriter;
     private final ContextPackWriter contextPackWriter;
     private final ProjectIndexWriter projectIndexWriter;
+    private final ProjectIndexJsonReader projectIndexJsonReader;
     private final FlowsIndexMarkdownWriter flowsIndexMarkdownWriter;
     private final AgentHandoffWriter agentHandoffWriter;
 
@@ -69,6 +69,7 @@ public final class AnalyzeFlowCommand {
                 new MermaidFlowWriter(),
                 new ContextPackWriter(),
                 new ProjectIndexWriter(),
+                new ProjectIndexJsonReader(),
                 new FlowsIndexMarkdownWriter(),
                 new AgentHandoffWriter()
         );
@@ -84,6 +85,7 @@ public final class AnalyzeFlowCommand {
             MermaidFlowWriter mermaidFlowWriter,
             ContextPackWriter contextPackWriter,
             ProjectIndexWriter projectIndexWriter,
+            ProjectIndexJsonReader projectIndexJsonReader,
             FlowsIndexMarkdownWriter flowsIndexMarkdownWriter,
             AgentHandoffWriter agentHandoffWriter
     ) {
@@ -96,6 +98,7 @@ public final class AnalyzeFlowCommand {
         this.mermaidFlowWriter = mermaidFlowWriter;
         this.contextPackWriter = contextPackWriter;
         this.projectIndexWriter = projectIndexWriter;
+        this.projectIndexJsonReader = projectIndexJsonReader;
         this.flowsIndexMarkdownWriter = flowsIndexMarkdownWriter;
         this.agentHandoffWriter = agentHandoffWriter;
     }
@@ -244,7 +247,7 @@ public final class AnalyzeFlowCommand {
             return sourceTextAnalyzer.analyze(
                     projectPath,
                     javaEntrypoint,
-                    projectIndexContext.index(),
+                    projectIndexContext.hints(),
                     projectIndexContext.source()
             );
         }
@@ -252,91 +255,11 @@ public final class AnalyzeFlowCommand {
     }
 
     private ProjectIndexContext loadOrBuildProjectIndex(Path projectPath) {
-        Optional<ProjectIndex> existingIndex = readProjectIndex(projectPath);
+        Optional<ProjectIndex> existingIndex = projectIndexJsonReader.read(projectPath);
         if (existingIndex.isPresent()) {
-            return new ProjectIndexContext(existingIndex.get(), "json");
+            return new ProjectIndexContext(ProjectIndexHints.from(existingIndex.get()), "json");
         }
-        return new ProjectIndexContext(projectIndexer.index(projectPath), "memory");
-    }
-
-    private Optional<ProjectIndex> readProjectIndex(Path projectPath) {
-        Path projectIndexJson = projectPath.resolve(".code-atlas/project-index.json");
-        if (!Files.isRegularFile(projectIndexJson)) {
-            return Optional.empty();
-        }
-
-        try {
-            JsonNode root = OBJECT_MAPPER.readTree(projectIndexJson.toFile());
-            String projectRoot = projectPath.toAbsolutePath().normalize().toString().replace('\\', '/');
-            JsonNode projectNode = root.get("project");
-            if (projectNode != null && projectNode.isObject()) {
-                projectRoot = text(projectNode.get("root"), projectRoot);
-            }
-
-            return Optional.of(new ProjectIndex(
-                    text(root.get("schemaVersion"), "1.0"),
-                    instant(root.get("generatedAt")),
-                    new ProjectDescriptor(projectRoot),
-                    text(root.get("language"), "Java"),
-                    readStringArray(root.get("frameworks")),
-                    readStringArray(root.get("sourceRoots")),
-                    List.of(),
-                    List.of(),
-                    readImplementations(root.get("implementations")),
-                    readSpringBeans(root.get("springBeans")),
-                    readStringArray(root.get("controllers")),
-                    readStringArray(root.get("repositories")),
-                    readStringArray(root.get("clients")),
-                    List.of(),
-                    List.of(),
-                    Map.of("source", "project-index-json")
-            ));
-        } catch (IOException | RuntimeException exception) {
-            return Optional.empty();
-        }
-    }
-
-    private static List<ImplementationDescriptor> readImplementations(JsonNode implementationsNode) {
-        if (implementationsNode == null || !implementationsNode.isArray()) {
-            return List.of();
-        }
-        List<ImplementationDescriptor> implementations = new ArrayList<>();
-        for (JsonNode implementationNode : implementationsNode) {
-            implementations.add(new ImplementationDescriptor(
-                    text(implementationNode.get("interface"), ""),
-                    readStringArray(implementationNode.get("implementations"))
-            ));
-        }
-        return List.copyOf(implementations);
-    }
-
-    private static List<SpringBeanDescriptor> readSpringBeans(JsonNode springBeansNode) {
-        if (springBeansNode == null || !springBeansNode.isArray()) {
-            return List.of();
-        }
-        List<SpringBeanDescriptor> springBeans = new ArrayList<>();
-        for (JsonNode springBeanNode : springBeansNode) {
-            springBeans.add(new SpringBeanDescriptor(
-                    text(springBeanNode.get("id"), ""),
-                    text(springBeanNode.get("kind"), ""),
-                    text(springBeanNode.get("beanType"), ""),
-                    readStringArray(springBeanNode.get("annotations")),
-                    text(springBeanNode.get("sourceFile"), ""),
-                    readSourceLocation(springBeanNode)
-            ));
-        }
-        return List.copyOf(springBeans);
-    }
-
-    private static List<String> readStringArray(JsonNode node) {
-        if (node == null || !node.isArray()) {
-            return List.of();
-        }
-        List<String> values = new ArrayList<>();
-        for (JsonNode value : node) {
-            values.add(value.asText());
-        }
-        return List.copyOf(values);
+        return new ProjectIndexContext(ProjectIndexHints.from(projectIndexer.index(projectPath)), "memory");
     }
 
     private static EntrypointIndex entrypointIndex(ProjectIndex index) {
@@ -351,7 +274,7 @@ public final class AnalyzeFlowCommand {
         );
     }
 
-    private record ProjectIndexContext(ProjectIndex index, String source) {
+    private record ProjectIndexContext(ProjectIndexHints hints, String source) {
     }
 
     private Optional<EntrypointIndex> readEntrypointsIndex(Path projectPath) throws IOException {
