@@ -1,0 +1,9 @@
+flowchart TD
+  entry["UserRegistrationService.register"]
+  decision_1{"request.name() == null || request.name().isBlank()"}
+  throw_1["THROW InvalidUserNameException"]
+  continue_1["CONTINUE"]
+
+  entry --> decision_1
+  decision_1 -- true --> throw_1
+  decision_1 -- false --> continue_1

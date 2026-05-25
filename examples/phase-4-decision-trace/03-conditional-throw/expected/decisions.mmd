@@ -1,0 +1,9 @@
+flowchart TD
+  entry["EmailRegistrationService.register"]
+  decision_1{"userRepository.existsByEmail(request.email())"}
+  throw_1["THROW EmailAlreadyExistsException"]
+  continue_1["CONTINUE"]
+
+  entry --> decision_1
+  decision_1 -- true --> throw_1
+  decision_1 -- false --> continue_1

@@ -49,6 +49,32 @@ O contrato da Fase 2 fica documentado em
 `docs/phase-2-entrypoints-contract.md`, e a visao geral da fase fica em
 `docs/phase-2-spring-entrypoints.md`.
 
+**Fase 3: Project Index** esta fechada para o inventario estrutural
+deterministico do projeto:
+
+```bash
+./gradlew run --args="index-project --project ./repo"
+```
+
+O contrato da Fase 3 fica documentado em
+`docs/phase-3-project-index-contract.md`.
+
+**Fase 4: Decision Trace** inicia com contrato e fixtures em
+`docs/phase-4-decision-trace-contract.md` e
+`examples/phase-4-decision-trace/`. A Fase 4 deve gerar artefatos
+deterministicos separados para decisoes, validacoes, throws condicionais,
+returns antecipados e outcomes.
+
+Comando MVP da Fase 4.1:
+
+```bash
+./gradlew run --args="analyze-decisions --project ./repo --entrypoint com.company.FooService.method"
+```
+
+**Fase 5: AI Interpretation Layer** fica reservada para consumir Project Index,
+Flow Graph e Decision Trace sem misturar interpretacao de IA nos artefatos
+deterministicos.
+
 ## Princípios do projeto
 
 1. O core não depende de IntelliJ PSI.
@@ -74,9 +100,12 @@ docs/
   graph-contract.md
   phase-2-spring-entrypoints.md
   phase-2-entrypoints-contract.md
+  phase-3-project-index-contract.md
+  phase-4-decision-trace-contract.md
 examples/
   sample-flow.json
   phase-2-spring-entrypoints/
+  phase-4-decision-trace/
 ```
 
 ## Desenvolvimento
@@ -174,4 +203,4 @@ Limitações explícitas desta fase:
 
 ## Status
 
-A Fase 1 resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os artefatos derivados de flow. A Fase 2.1 + 2.2 adiciona descoberta e listagem source-text de endpoints Spring MVC e resolução de `analyze-flow --endpoint` para `javaEntrypoint`. A análise PSI ainda não foi implementada.
+A Fase 1 resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os artefatos derivados de flow. A Fase 2.1 + 2.2 adiciona descoberta e listagem source-text de endpoints Spring MVC e resolução de `analyze-flow --endpoint` para `javaEntrypoint`. A Fase 3 adiciona Project Index, `entrypoints.json`, `flows-index.md`, hints e diagnosticos de uso do indice no flow. A Fase 4 esta definida como Decision Trace deterministico. A Fase 5 fica reservada para interpretacao de IA. A análise PSI ainda não foi implementada.

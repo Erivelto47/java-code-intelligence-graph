@@ -1,0 +1,73 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/03-conditional-throw",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.conditionalthrow.EmailRegistrationService.register",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:03-conditional-throw:register:email-exists",
+      "kind": "CONDITIONAL_THROW",
+      "category": "VALIDATION",
+      "method": "com.example.decisiontrace.conditionalthrow.EmailRegistrationService.register",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/conditionalthrow/EmailRegistrationService.java",
+        "line": 11
+      },
+      "expression": {
+        "text": "userRepository.existsByEmail(request.email())",
+        "normalized": "existsByEmail(request.email)"
+      },
+      "subjects": [
+        {
+          "name": "request.email",
+          "kind": "INPUT_FIELD"
+        },
+        {
+          "name": "userRepository.existsByEmail",
+          "kind": "REPOSITORY_QUERY"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "THROW",
+          "target": "EmailAlreadyExistsException",
+          "meaning": "E-mail is rejected because it already exists"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "meaning": "E-mail can continue registration after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (userRepository.existsByEmail(request.email())) { throw new EmailAlreadyExistsException(request.email()); }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [
+          "com.example.decisiontrace.conditionalthrow.EmailRegistrationService.UserRepository.existsByEmail"
+        ],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "fixture": true,
+    "phase": "phase-4.0-decision-trace-contract",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

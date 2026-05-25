@@ -1,0 +1,9 @@
+flowchart TD
+  entry["ImportService.process"]
+  decision_1{"request.processed()"}
+  return_1["RETURN ProcessingResult.alreadyProcessed"]
+  continue_1["CONTINUE"]
+
+  entry --> decision_1
+  decision_1 -- true --> return_1
+  decision_1 -- false --> continue_1
