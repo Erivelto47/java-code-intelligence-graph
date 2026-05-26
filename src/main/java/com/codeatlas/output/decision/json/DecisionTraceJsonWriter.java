@@ -1,4 +1,4 @@
-package com.codeatlas.output.json;
+package com.codeatlas.output.decision.json;
 
 import com.codeatlas.core.decision.DecisionTrace;
 import com.fasterxml.jackson.databind.ObjectMapper;

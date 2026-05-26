@@ -1,4 +1,4 @@
-package com.codeatlas.output.mermaid;
+package com.codeatlas.output.decision.mermaid;
 
 import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;

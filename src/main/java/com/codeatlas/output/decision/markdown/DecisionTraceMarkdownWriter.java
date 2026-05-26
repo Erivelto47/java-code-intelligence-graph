@@ -1,4 +1,4 @@
-package com.codeatlas.output.markdown;
+package com.codeatlas.output.decision.markdown;
 
 import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;

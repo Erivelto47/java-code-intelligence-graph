@@ -1,4 +1,4 @@
-package com.codeatlas.adapter.source;
+package com.codeatlas.adapter.java.source.decision;
 
 import com.codeatlas.core.decision.DecisionArtifactSource;
 import com.codeatlas.core.decision.DecisionCategory;
@@ -14,7 +14,6 @@ import com.codeatlas.core.decision.DecisionSource;
 import com.codeatlas.core.decision.DecisionSourceLocation;
 import com.codeatlas.core.decision.DecisionSubject;
 import com.codeatlas.core.decision.DecisionTrace;
-import com.codeatlas.core.decision.DecisionTraceExtractor;
 import com.codeatlas.core.decision.DecisionTraceMetadata;
 import com.codeatlas.core.decision.UnresolvedDecision;
 
@@ -30,7 +29,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
-public final class IfThrowDecisionExtractor implements DecisionTraceExtractor {
+public final class JavaIfThrowDecisionExtractor {
     private static final String SCHEMA_VERSION = "1.0";
     private static final Instant DETERMINISTIC_GENERATED_AT = Instant.EPOCH;
     private static final Pattern PACKAGE_PATTERN = Pattern.compile(
@@ -43,7 +42,6 @@ public final class IfThrowDecisionExtractor implements DecisionTraceExtractor {
             "\\b([a-z_$][A-Za-z0-9_$]*)\\.([A-Za-z_$][A-Za-z0-9_$]*)\\s*\\("
     );
 
-    @Override
     public DecisionTrace analyze(Path projectPath, String entrypoint) {
         Objects.requireNonNull(projectPath, "projectPath must not be null");
         Entrypoint parsedEntrypoint = Entrypoint.parse(entrypoint);

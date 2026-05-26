@@ -90,11 +90,16 @@ deterministicos.
 
 ```text
 src/main/java/com/codeatlas/
-  cli/                 CLI analyze-flow
+  cli/                 CLI analyze-flow, analyze-decisions e comandos auxiliares
+  application/decision/ Orquestração de Decision Trace por adapter de linguagem
   core/                Modelo e contratos independentes de PSI
+  core/decision/       Contrato comum e linguagem-agnóstico de Decision Trace
+  adapter/java/source/decision/
+                       Adapter source-text Java para Decision Trace
   adapter/source/      Analyzer textual determinístico para arquivos .java
   adapter/psi/         Adapter futuro para IntelliJ PSI
   output/              Geradores derivados: JSON, Markdown, Mermaid, context pack
+  output/decision/     Writers de Decision Trace por formato
 docs/
   phase-1.md
   graph-contract.md

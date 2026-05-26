@@ -550,10 +550,21 @@ Phase 4.0 - Contract and examples:
 Phase 4.1 - Minimal source-text decision analyzer:
 
 - Add `analyze-decisions`.
-- Support Java method and Spring endpoint scopes.
-- Extract `IF_CONDITION`, `CONDITIONAL_THROW`, and `EARLY_RETURN`.
+- Support Java method scope through `--entrypoint`.
+- Extract `CONDITIONAL_THROW` for direct `if (...) { throw new ...; }`
+  decisions.
 - Emit separate decision artifacts under `.code-atlas/decisions/...`.
 - Keep analyzer deterministic and independent from IntelliJ PSI.
+
+Phase 4.1.1 - Decision package architecture refactor:
+
+- Keep `com.codeatlas.core.decision` language-agnostic.
+- Route `analyze-decisions` through `com.codeatlas.application.decision`.
+- Keep Java source-text extraction in
+  `com.codeatlas.adapter.java.source.decision`.
+- Keep Decision Trace writers under `com.codeatlas.output.decision`.
+- Add future Kotlin and JS/TS support through new language adapters instead of
+  expanding the core with language-specific AST concepts.
 
 Phase 4.2 - Linking:
 

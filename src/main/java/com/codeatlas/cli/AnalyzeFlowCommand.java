@@ -1,13 +1,15 @@
 package com.codeatlas.cli;
 
-import com.codeatlas.adapter.source.IfThrowDecisionExtractor;
+import com.codeatlas.adapter.java.source.decision.JavaSourceDecisionAdapter;
 import com.codeatlas.adapter.source.SourceTextFlowAnalyzer;
 import com.codeatlas.adapter.source.SourceTextProjectIndexer;
 import com.codeatlas.adapter.source.SourceTextSpringEntrypointDiscoverer;
+import com.codeatlas.application.decision.DecisionAnalysisRequest;
+import com.codeatlas.application.decision.DecisionAnalysisResult;
+import com.codeatlas.application.decision.DecisionAnalyzer;
+import com.codeatlas.application.decision.DecisionOutputPathResolver;
 import com.codeatlas.core.analyzer.FlowAnalyzer;
 import com.codeatlas.core.analyzer.StubFlowAnalyzer;
-import com.codeatlas.core.decision.DecisionTrace;
-import com.codeatlas.core.decision.DecisionTraceExtractor;
 import com.codeatlas.core.entrypoint.EntrypointAnnotations;
 import com.codeatlas.core.entrypoint.EntrypointDescriptor;
 import com.codeatlas.core.entrypoint.EntrypointDiscoverer;
@@ -20,18 +22,18 @@ import com.codeatlas.core.project.ProjectIndexHints;
 import com.codeatlas.core.project.ProjectIndexUsage;
 import com.codeatlas.core.project.ProjectIndexer;
 import com.codeatlas.output.context.ContextPackWriter;
+import com.codeatlas.output.decision.json.DecisionTraceJsonWriter;
+import com.codeatlas.output.decision.markdown.DecisionTraceMarkdownWriter;
+import com.codeatlas.output.decision.mermaid.DecisionTraceMermaidWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
 import com.codeatlas.output.index.FlowsIndexMarkdownWriter;
 import com.codeatlas.output.index.ProjectIndexWriter;
-import com.codeatlas.output.json.DecisionTraceJsonWriter;
 import com.codeatlas.output.json.EntrypointJsonWriter;
 import com.codeatlas.output.json.JsonFlowWriter;
 import com.codeatlas.output.json.ProjectIndexJsonReader;
 import com.codeatlas.output.json.ProjectIndexJsonReader.ReadResult;
 import com.codeatlas.output.json.ProjectIndexJsonReader.ReadStatus;
-import com.codeatlas.output.markdown.DecisionTraceMarkdownWriter;
 import com.codeatlas.output.markdown.MarkdownFlowWriter;
-import com.codeatlas.output.mermaid.DecisionTraceMermaidWriter;
 import com.codeatlas.output.mermaid.MermaidFlowWriter;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -66,10 +68,8 @@ public final class AnalyzeFlowCommand {
     private final ProjectIndexJsonReader projectIndexJsonReader;
     private final FlowsIndexMarkdownWriter flowsIndexMarkdownWriter;
     private final AgentHandoffWriter agentHandoffWriter;
-    private final DecisionTraceExtractor decisionTraceExtractor;
-    private final DecisionTraceJsonWriter decisionTraceJsonWriter;
-    private final DecisionTraceMarkdownWriter decisionTraceMarkdownWriter;
-    private final DecisionTraceMermaidWriter decisionTraceMermaidWriter;
+    private final DecisionAnalyzer decisionAnalyzer;
+    private final DecisionOutputPathResolver decisionOutputPathResolver;
 
     public AnalyzeFlowCommand() {
         this(
@@ -85,10 +85,13 @@ public final class AnalyzeFlowCommand {
                 new ProjectIndexJsonReader(),
                 new FlowsIndexMarkdownWriter(),
                 new AgentHandoffWriter(),
-                new IfThrowDecisionExtractor(),
-                new DecisionTraceJsonWriter(),
-                new DecisionTraceMarkdownWriter(),
-                new DecisionTraceMermaidWriter()
+                new DecisionAnalyzer(
+                        List.of(new JavaSourceDecisionAdapter()),
+                        new DecisionTraceJsonWriter(),
+                        new DecisionTraceMarkdownWriter(),
+                        new DecisionTraceMermaidWriter()
+                ),
+                new DecisionOutputPathResolver()
         );
     }
 
@@ -105,10 +108,8 @@ public final class AnalyzeFlowCommand {
             ProjectIndexJsonReader projectIndexJsonReader,
             FlowsIndexMarkdownWriter flowsIndexMarkdownWriter,
             AgentHandoffWriter agentHandoffWriter,
-            DecisionTraceExtractor decisionTraceExtractor,
-            DecisionTraceJsonWriter decisionTraceJsonWriter,
-            DecisionTraceMarkdownWriter decisionTraceMarkdownWriter,
-            DecisionTraceMermaidWriter decisionTraceMermaidWriter
+            DecisionAnalyzer decisionAnalyzer,
+            DecisionOutputPathResolver decisionOutputPathResolver
     ) {
         this.flowAnalyzer = flowAnalyzer;
         this.entrypointDiscoverer = entrypointDiscoverer;
@@ -122,10 +123,8 @@ public final class AnalyzeFlowCommand {
         this.projectIndexJsonReader = projectIndexJsonReader;
         this.flowsIndexMarkdownWriter = flowsIndexMarkdownWriter;
         this.agentHandoffWriter = agentHandoffWriter;
-        this.decisionTraceExtractor = decisionTraceExtractor;
-        this.decisionTraceJsonWriter = decisionTraceJsonWriter;
-        this.decisionTraceMarkdownWriter = decisionTraceMarkdownWriter;
-        this.decisionTraceMermaidWriter = decisionTraceMermaidWriter;
+        this.decisionAnalyzer = decisionAnalyzer;
+        this.decisionOutputPathResolver = decisionOutputPathResolver;
     }
 
     public static void main(String[] args) {
@@ -174,12 +173,19 @@ public final class AnalyzeFlowCommand {
         }
 
         try {
-            DecisionTrace trace = decisionTraceExtractor.analyze(arguments.projectPath(), arguments.entrypoint());
-            decisionTraceJsonWriter.write(trace, arguments.outputDirectory());
-            decisionTraceMarkdownWriter.write(trace, arguments.outputDirectory());
-            decisionTraceMermaidWriter.write(trace, arguments.outputDirectory());
-            outputStream.println("Analyzed decisions: " + trace.decisions().size());
-            outputStream.println("Decision artifacts: " + arguments.outputDirectory());
+            Path outputDirectory = decisionOutputPathResolver.resolve(
+                    arguments.projectPath(),
+                    arguments.entrypoint(),
+                    arguments.outputDirectory()
+            );
+            DecisionAnalysisResult result = decisionAnalyzer.analyze(new DecisionAnalysisRequest(
+                    arguments.projectPath(),
+                    arguments.entrypoint(),
+                    "java",
+                    outputDirectory
+            ));
+            outputStream.println("Analyzed decisions: " + result.trace().decisions().size());
+            outputStream.println("Decision artifacts: " + result.outputDirectory());
             return 0;
         } catch (IllegalArgumentException exception) {
             errorStream.println(exception.getMessage());
@@ -578,25 +584,7 @@ public final class AnalyzeFlowCommand {
                 return null;
             }
 
-            Path resolvedOutputDirectory = outputDirectory == null
-                    ? defaultOutputDirectory(projectPath, entrypoint)
-                    : outputDirectory;
-            return new DecisionArguments(projectPath, entrypoint, resolvedOutputDirectory);
-        }
-
-        private static Path defaultOutputDirectory(Path projectPath, String entrypoint) {
-            int methodSeparator = entrypoint.lastIndexOf('.');
-            String classQualifiedName = entrypoint.substring(0, methodSeparator);
-            String methodName = entrypoint.substring(methodSeparator + 1);
-            int classSeparator = classQualifiedName.lastIndexOf('.');
-            String packageName = classQualifiedName.substring(0, classSeparator);
-            String className = classQualifiedName.substring(classSeparator + 1);
-
-            Path outputDirectory = projectPath.resolve(".code-atlas").resolve("decisions");
-            for (String packageSegment : packageName.split("\\.")) {
-                outputDirectory = outputDirectory.resolve(packageSegment);
-            }
-            return outputDirectory.resolve(className).resolve(methodName);
+            return new DecisionArguments(projectPath, entrypoint, outputDirectory);
         }
     }
 

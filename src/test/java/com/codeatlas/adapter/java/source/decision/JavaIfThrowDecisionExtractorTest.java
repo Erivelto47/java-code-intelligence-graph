@@ -1,4 +1,4 @@
-package com.codeatlas.adapter.source;
+package com.codeatlas.adapter.java.source.decision;
 
 import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;
@@ -11,7 +11,7 @@ import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class IfThrowDecisionExtractorTest {
+class JavaIfThrowDecisionExtractorTest {
     @TempDir
     Path tempDir;
 
@@ -32,7 +32,7 @@ class IfThrowDecisionExtractorTest {
                         """
         );
 
-        DecisionTrace trace = new IfThrowDecisionExtractor().analyze(tempDir, "com.example.UserService.create");
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.UserService.create");
 
         assertEquals("1.0", trace.schemaVersion());
         assertEquals("com.example.UserService.create", trace.scope().entrypoint());
