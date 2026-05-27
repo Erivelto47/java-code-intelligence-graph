@@ -22,3 +22,8 @@ temporarios devem ser tratados com cuidado para evitar ruido no repositorio.
 - report esperado;
 - criterios de aceite;
 - riscos conhecidos.
+
+## Pacotes versionados
+
+- `phase-4-2-java-decision-unresolved-early-return.blueprint.md`: blueprint da
+  Fase 4.2 para Decision Trace Java unresolved + early return.

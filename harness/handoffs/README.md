@@ -17,3 +17,8 @@ deixando proxima acao clara.
 
 Handoffs temporarios devem evitar ruido no repositorio. Handoffs versionados
 devem representar contexto estavel ou decisao operacional relevante.
+
+## Pacotes versionados
+
+- `phase-4-2-java-decision-unresolved-early-return.handoff.md`: handoff da
+  Fase 4.2 do ChatGPT Web Architect para o Codex CLI Executor.

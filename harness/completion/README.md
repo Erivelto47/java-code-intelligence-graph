@@ -6,3 +6,8 @@ done.
 Use `completion-criteria.template.md` to make acceptance explicit before or
 during execution. Completion requires reviewable evidence, not only a clean
 diff.
+
+## Versioned packages
+
+- `phase-4-2-java-decision-unresolved-early-return.completion.md`: completion
+  criteria for the future Phase 4.2 execution.
