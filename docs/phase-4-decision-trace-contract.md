@@ -102,6 +102,14 @@ implementation should focus on `analyze-decisions` by method or endpoint.
 `decisions.json` is the primary Phase 4 artifact. Markdown and Mermaid outputs
 are derived views.
 
+`decisions.json` is also a canonical text artifact. The output writer must use
+deterministic pretty printing with two-space indentation, record/model field
+order, sorted map entries when maps are present, empty arrays as `[]`, and one
+final newline. Fixture tests may compare generated JSON against
+`expected/decisions.json` as raw text. This formatting policy does not change
+the semantic contract and belongs to `com.codeatlas.output.decision.json`, not
+to `com.codeatlas.core.decision`.
+
 Top-level fields:
 
 | Field | Type | Required | Description |
@@ -565,6 +573,15 @@ Phase 4.1.1 - Decision package architecture refactor:
 - Keep Decision Trace writers under `com.codeatlas.output.decision`.
 - Add future Kotlin and JS/TS support through new language adapters instead of
   expanding the core with language-specific AST concepts.
+
+Phase 4.1.2 - Canonical Decision JSON formatting:
+
+- Keep the `decisions.json` semantic contract unchanged.
+- Make generated `decisions.json` stable enough for raw text fixture
+  comparison.
+- Keep canonical formatting responsibility in
+  `com.codeatlas.output.decision.json`.
+- Keep the core independent from Jackson and output writer concerns.
 
 Phase 4.2 - Linking:
 

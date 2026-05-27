@@ -1,8 +1,10 @@
 package com.codeatlas.examples;
 
+import com.codeatlas.cli.AnalyzeFlowCommand;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -47,6 +49,26 @@ class DecisionTraceFixtureContractTest {
             "FILTER",
             "UNKNOWN"
     );
+
+    @Test
+    void ifThrowValidationFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        Path fixture = Path.of("examples/phase-4-decision-trace/01-if-throw-validation");
+        Path expected = fixture.resolve("expected");
+        Path generated = tempDir.resolve("generated-decisions");
+
+        int exitCode = new AnalyzeFlowCommand().run(new String[]{
+                "analyze-decisions",
+                "--project", fixture.toString(),
+                "--entrypoint", "com.example.UserService.create",
+                "--output", generated.toString()
+        });
+
+        assertEquals(0, exitCode);
+        assertArtifactMatches(expected, generated, "decisions.json");
+        assertArtifactMatches(expected, generated, "decisions.md");
+        assertArtifactMatches(expected, generated, "decisions.mmd");
+        assertTrue(Files.readString(generated.resolve("decisions.json")).endsWith("\n"));
+    }
 
     @Test
     void phaseFourDecisionFixturesContainValidDecisionJson() throws Exception {
@@ -119,5 +141,13 @@ class DecisionTraceFixtureContractTest {
     private static void assertNonBlank(Path file, JsonNode node, String fieldName) {
         assertTrue(node.has(fieldName), file + " missing field " + fieldName);
         assertFalse(node.path(fieldName).asText().isBlank(), file + " field " + fieldName + " must not be blank");
+    }
+
+    private static void assertArtifactMatches(Path expectedDirectory, Path generatedDirectory, String fileName) throws Exception {
+        assertEquals(
+                Files.readString(expectedDirectory.resolve(fileName)),
+                Files.readString(generatedDirectory.resolve(fileName)),
+                fileName + " must match the expected fixture exactly"
+        );
     }
 }

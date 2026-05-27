@@ -24,6 +24,19 @@ Decision Trace must not inflate `flow.json`, `project-index.json`, or
 
 JSON is the primary artifact. Markdown and Mermaid are derived views.
 
+## Canonical JSON Formatting
+
+Phase 4.1.2 makes `decisions.json` a canonical text artifact. The JSON writer
+uses deterministic pretty printing with two-space indentation, stable record
+field order, sorted map entries if maps are ever introduced, empty arrays as
+`[]`, and a final newline. This lets fixture tests compare
+`expected/decisions.json` against generated output as raw text when the semantic
+contract is unchanged.
+
+Canonical formatting is owned by `com.codeatlas.output.decision.json`. The core
+Decision Trace records do not depend on Jackson, output packages, or writer
+configuration.
+
 ## Package Architecture
 
 Phase 4.1.1 separates Decision Trace into language-agnostic product contracts,
@@ -137,6 +150,12 @@ behavior. `analyze-decisions` still produces the same Decision Trace artifacts
 for the Phase 4.1 Java `if` plus `throw` fixture, but the CLI now goes through
 the application layer and the Java extractor lives under the Java adapter
 package.
+
+## Phase 4.1.2 Scope
+
+Phase 4.1.2 stabilizes only the textual formatting of `decisions.json`. The
+Decision Trace semantic contract, field names, generated data, Markdown output,
+and Mermaid output remain unchanged.
 
 ## Next Steps
 
