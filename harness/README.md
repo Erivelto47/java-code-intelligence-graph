@@ -53,6 +53,44 @@ Se algum derivado divergir do blueprint, a execucao deve pausar para corrigir
 o derivado. Uma fase nao deve ser executada apenas a partir de handoff sem
 blueprint correspondente aprovado.
 
+## Blueprint runner skeleton
+
+Harness 0.3 adiciona um runner simples para preparar artefatos operacionais a
+partir de um blueprint aprovado:
+
+```bash
+./harness/bin/run-phase.sh harness/blueprints/<phase>.blueprint.md
+```
+
+O blueprint continua sendo o input primario e a fonte de verdade. O runner
+deriva o phase id a partir de `harness/blueprints/<phase>.blueprint.md`,
+calcula os paths esperados e cria, quando ausentes:
+
+- `harness/handoffs/<phase>.handoff.md`
+- `harness/validations/<phase>.validation.md`
+- `harness/completion/<phase>.completion.md`
+
+O runtime report path sempre aponta para `harness/reports/runs/`, por exemplo:
+
+```text
+harness/reports/runs/PHASE_4_2_JAVA_DECISION_UNRESOLVED_EARLY_RETURN_REPORT.md
+```
+
+Arquivos derivados existentes sao preservados por padrao. O runner imprime
+branch, `git status --short`, paths derivados e o proximo passo. Ele bloqueia
+`master` por padrao; o override `HARNESS_ALLOW_MASTER=1` deve ser usado apenas
+com aprovacao humana explicita.
+
+Modo dry-run:
+
+```bash
+./harness/bin/run-phase.sh --dry-run harness/blueprints/<phase>.blueprint.md
+```
+
+Limitacao atual: o runner nao executa fases autonomamente, nao implementa
+escopo de produto, nao chama modelos, nao faz push, nao faz merge e nao escreve
+o report runtime. Ele apenas prepara o pacote operacional derivado.
+
 ## Roles operacionais
 
 ### ChatGPT Web Architect
@@ -79,8 +117,9 @@ role humana, nao um agente autonomo.
 
 1. Registrar ou revisar o blueprint em `harness/blueprints/`.
 2. Obter aprovacao humana do blueprint antes de executar a fase.
-3. Derivar ou atualizar handoff, validation checklist e completion criteria a
-   partir do blueprint e dos templates do harness.
+3. Usar `./harness/bin/run-phase.sh harness/blueprints/<phase>.blueprint.md`
+   para derivar handoff, validation checklist, completion criteria e report
+   path a partir do blueprint e dos templates do harness.
 4. Verificar `git status` e `git branch --show-current` antes de alterar
    arquivos.
 5. Executar a implementacao somente na branch de trabalho da fase, usando o
@@ -149,6 +188,7 @@ Ele nao e equivalente a `.code-atlas/decisions/`, aos pacotes
 
 ```text
 harness/
+  bin/            Scripts operacionais leves do harness.
   workflows/      Workflows operacionais versionados.
   roles/          Roles e responsabilidades operacionais.
   blueprints/     Entradas primarias e fontes de verdade das fases.

@@ -23,12 +23,14 @@ decisao humana.
 1. Human Reviewer / requester inicia a intencao.
 2. ChatGPT Web Architect transforma a intencao em blueprint.
 3. Human Reviewer revisa e aprova o blueprint.
-4. Codex CLI Executor deriva ou atualiza handoff, validation e completion.
-5. Codex CLI Executor executa no repositorio usando blueprint como fonte
+4. Codex CLI Executor usa o runner para derivar artefatos operacionais a partir
+   do blueprint aprovado.
+5. Codex CLI Executor revisa os derivados quando necessario.
+6. Codex CLI Executor executa no repositorio usando blueprint como fonte
    primaria e derivados como apoio operacional.
-6. Codex CLI Executor gera report factual.
-7. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
-8. Human Reviewer decide aprovar, iterar, fazer push, fazer merge, pausar ou
+7. Codex CLI Executor gera report factual.
+8. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
+9. Human Reviewer decide aprovar, iterar, fazer push, fazer merge, pausar ou
    alterar escopo.
 
 ## Entradas
@@ -84,16 +86,34 @@ nao deve avancar para execucao sem essa aprovacao.
 
 ### 4. Derived package generation
 
-O Codex CLI Executor, guiado pelo harness, gera ou atualiza:
+O Codex CLI Executor, guiado pelo harness, usa o runner para gerar derivados a
+partir do blueprint aprovado:
+
+```bash
+./harness/bin/run-phase.sh harness/blueprints/<phase>.blueprint.md
+```
+
+O runner calcula:
 
 - `harness/handoffs/<phase>.handoff.md`
 - `harness/validations/<phase>.validation.md`
 - `harness/completion/<phase>.completion.md`
+- `harness/reports/runs/<PHASE>_REPORT.md`
 
 Esses artefatos devem ser derivados do blueprint, dos templates do harness, dos
 padroes do projeto e de validacoes existentes. Eles traduzem o blueprint em
 instrucoes operacionais, mas nao podem ampliar escopo. Se houver conflito, o
 blueprint vence e os derivados devem ser corrigidos.
+
+O runner nao implementa a fase, nao chama modelos, nao faz push, nao faz merge
+e nao escreve o report runtime. Ele prepara o pacote operacional para revisao e
+execucao posterior.
+
+Modo dry-run:
+
+```bash
+./harness/bin/run-phase.sh --dry-run harness/blueprints/<phase>.blueprint.md
+```
 
 ### 5. Branch check
 
@@ -113,6 +133,8 @@ Regras:
   branch de trabalho atual;
 - se uma microfase precisar de isolamento, criar branch a partir da branch
   atual, nao da `master`;
+- o blueprint runner bloqueia `master` por padrao, salvo override explicito com
+  `HARNESS_ALLOW_MASTER=1` aprovado pelo Human Reviewer;
 - merge para `master` somente depois de aprovacao humana do harness e da Fase 4
   consolidados;
 - nao fazer merge para `master` sem decisao humana;

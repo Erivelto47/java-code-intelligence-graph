@@ -43,6 +43,24 @@ Os artefatos abaixo devem ser derivados do blueprint e nao devem divergir dele:
 Se houver conflito entre um derivado e o blueprint, o blueprint vence e o
 derivado deve ser corrigido antes da execucao.
 
+## Runner
+
+O blueprint runner consome blueprints aprovados com o formato:
+
+```text
+harness/blueprints/<phase>.blueprint.md
+```
+
+Comando:
+
+```bash
+./harness/bin/run-phase.sh harness/blueprints/<phase>.blueprint.md
+```
+
+Ele deriva o phase id, cria derivados ausentes a partir dos templates e calcula
+o runtime report path em `harness/reports/runs/`. O runner nao substitui a
+aprovacao humana do blueprint nem executa a fase de produto.
+
 ## Pacotes versionados
 
 - `phase-4-2-java-decision-unresolved-early-return.blueprint.md`: blueprint da

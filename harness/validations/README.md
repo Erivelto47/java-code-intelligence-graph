@@ -14,6 +14,17 @@ ser justificados no report. Se houver conflito entre validation checklist e
 blueprint, o blueprint vence e a checklist deve ser corrigida antes da
 execucao.
 
+Validation checklists podem ser geradas pelo blueprint runner:
+
+```bash
+./harness/bin/run-phase.sh harness/blueprints/<phase>.blueprint.md
+```
+
+Quando a checklist ja existe, o runner nao sobrescreve por padrao e imprime
+`exists, left unchanged`. O conteudo gerado inclui referencia ao blueprint
+primario, paths derivados, report path em `harness/reports/runs/` e aviso para
+nao ampliar escopo.
+
 ## Pacotes versionados
 
 - `phase-4-2-java-decision-unresolved-early-return.validation.md`: checklist
