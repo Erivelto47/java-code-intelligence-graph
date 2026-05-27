@@ -75,6 +75,13 @@ Comando MVP da Fase 4.1:
 Flow Graph e Decision Trace sem misturar interpretacao de IA nos artefatos
 deterministicos.
 
+## Agentic Harness
+
+O protocolo operacional para execucao guiada por blueprint fica em
+`harness/README.md`. Ele documenta papeis, handoffs, reports, estado,
+validacoes e criterios de completion para reduzir perda de contexto entre
+arquitetura, execucao por CLI e revisao humana.
+
 ## Princípios do projeto
 
 1. O core não depende de IntelliJ PSI.
