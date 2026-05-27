@@ -1,5 +1,9 @@
 # <PHASE_OR_TASK_NAME>_REPORT
 
+Reports reais gerados a partir deste template devem ser salvos em
+`.harness/reports/runs/` e permanecer ignorados pelo Git. Templates e
+convencoes permanecem versionados em `.harness/reports/`.
+
 ## Resumo
 
 Descreva em poucas linhas o resultado real da execução.

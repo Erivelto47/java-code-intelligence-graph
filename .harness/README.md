@@ -28,7 +28,7 @@ Decide quando executar, entrega prompts ao Executor CLI, retorna reports ao Plan
 2. Human Operator executa o prompt no Executor CLI.
 3. Executor CLI le o harness e aplica as mudancas.
 4. Executor CLI roda validacoes.
-5. Executor CLI gera report em `/Users/eriveltomuller/Documents/GitHub/reports`.
+5. Executor CLI gera report real ou temporario em `.harness/reports/runs/`.
 6. Human Operator retorna o report ao Planner/Reviewer.
 7. Planner/Reviewer revisa o resultado e define a proxima etapa.
 
@@ -38,7 +38,7 @@ Decide quando executar, entrega prompts ao Executor CLI, retorna reports ao Plan
 - `blueprints/`: registra a intencao arquitetural antes da execucao.
 - `agents/`: descreve papeis especializados, nao vendors.
 - `handoffs/`: preserva contexto entre etapas.
-- `reports/`: registra resultados de execucao quando forem versionaveis.
+- `reports/`: guarda convencoes e templates versionados de reports.
 - `logs/`: guarda rastros operacionais quando necessario.
 - `state/`: guarda estado leve e versionavel do andamento do projeto.
 
@@ -51,6 +51,10 @@ Decide quando executar, entrega prompts ao Executor CLI, retorna reports ao Plan
 - Agents descrevem papeis, nao vendors.
 - State deve ser leve e versionavel.
 - Logs devem ser usados com cuidado para evitar ruido.
+- Reports reais ou temporarios devem ser gerados em `.harness/reports/runs/`,
+  como caminho relativo ao root do repositorio, e ignorados pelo Git.
+- Templates e convencoes de reports permanecem versionados em
+  `.harness/reports/`.
 - Codigo de producao nao deve ser alterado sem blueprint ou tarefa explicita.
 - Mudancas fora de escopo devem ser registradas no report.
 

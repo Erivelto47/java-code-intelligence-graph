@@ -16,5 +16,9 @@ Report = detailed fact record of a completed execution.
 Handoff = condensed context for continuation.
 ```
 
+Real or temporary execution reports must be written to
+`.harness/reports/runs/` and remain ignored by Git. Versioned report conventions
+and templates stay under `.harness/reports/`.
+
 Handoffs may be versioned when they represent stable project context. Temporary
 handoffs should be handled carefully to avoid repository noise.
