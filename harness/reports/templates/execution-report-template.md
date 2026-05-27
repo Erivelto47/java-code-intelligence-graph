@@ -1,8 +1,9 @@
 # <PHASE_OR_TASK_NAME> Report
 
 Reports reais gerados a partir deste template devem ser salvos em
-`harness/reports/` e permanecer ignorados pelo Git, salvo decisao explicita de
-versionar um report especifico. Templates e convencoes permanecem versionados.
+`harness/reports/runs/<REPORT_NAME>.md` e permanecer ignorados pelo Git, salvo
+decisao explicita de versionar um report especifico. Templates e convencoes
+permanecem versionados em `harness/reports/`.
 
 ## Summary
 

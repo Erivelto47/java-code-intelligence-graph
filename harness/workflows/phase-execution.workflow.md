@@ -38,7 +38,7 @@ decisao humana.
 
 - Mudancas versionaveis no repositorio, quando houver.
 - Validacoes executadas e seus resultados.
-- Report factual em `harness/reports/`.
+- Report factual em `harness/reports/runs/`.
 - Handoff ou estado atualizado, quando necessario.
 - Recomendacao de proxima etapa para revisao humana.
 
@@ -102,8 +102,15 @@ Falhas ou checks nao executados devem ser registrados com detalhe.
 
 ### 7. Report
 
-O Executor gera report factual em `harness/reports/`. Reports temporarios sao
-ignorados pelo Git por padrao. Templates e READMEs continuam versionados.
+O Executor gera report factual em `harness/reports/runs/`. Reports
+temporarios reais sao ignorados pelo Git por padrao. Templates, READMEs e
+marcadores continuam versionados em `harness/reports/`.
+
+Exemplo:
+
+```text
+harness/reports/runs/PHASE_4_2_JAVA_DECISION_UNRESOLVED_EARLY_RETURN_REPORT.md
+```
 
 O report deve registrar arquivos alterados, validacoes, resultados, riscos,
 pendencias, fora de escopo e proxima etapa sugerida.
@@ -120,9 +127,13 @@ a proxima fase. A decisao de merge para `master` nunca e automatica.
 
 ## Politica de reports
 
-- Reports temporarios de Codex devem ficar em `harness/reports/`.
-- Reports root-level em `harness/reports/*.md` sao ignorados pelo Git por
-  padrao.
+- Reports temporarios reais de Codex devem ficar em `harness/reports/runs/`.
+- Root-level `harness/reports/` e reservado para politica de reports,
+  marcadores de diretorio e templates versionados.
+- Temporary real reports must be generated under `harness/reports/runs/`.
+- Root-level `harness/reports/` is reserved for report policy, directory
+  markers and versioned templates.
+- Reports em `harness/reports/runs/` sao ignorados pelo Git por padrao.
 - `harness/reports/.gitkeep`, `README.md` e templates podem ser versionados.
 - Reports de fase podem ser versionados somente por decisao explicita.
 - Reports anexados ao chat podem apoiar revisao, mas nao sao necessariamente

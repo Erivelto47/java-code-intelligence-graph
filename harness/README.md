@@ -54,7 +54,7 @@ humana, nao um agente autonomo.
    arquivos.
 4. Executar a implementacao somente na branch de trabalho da fase.
 5. Rodar as validacoes registradas no blueprint ou checklist.
-6. Gerar report factual em `harness/reports/`.
+6. Gerar report factual em `harness/reports/runs/`.
 7. Enviar o report para revisao humana ou para o Architect.
 8. Decidir a proxima etapa somente depois da revisao.
 
@@ -77,9 +77,16 @@ O workflow completo fica em
 
 ## Politica de reports
 
-- Reports temporarios gerados por executor devem ficar em `harness/reports/`.
-- `harness/reports/` existe no Git via `.gitkeep` e `README.md`.
-- Reports temporarios `harness/reports/*.md` sao ignorados pelo Git, salvo
+- Reports temporarios reais gerados por executor devem ficar em
+  `harness/reports/runs/`.
+- `harness/reports/` fica reservado para politica versionada, marcadores de
+  diretorio e templates.
+- Temporary real reports must be generated under `harness/reports/runs/`.
+- Root-level `harness/reports/` is reserved for report policy, directory
+  markers and versioned templates.
+- `harness/reports/` existe no Git via `.gitkeep`, `README.md` e
+  `templates/`.
+- Reports temporarios em `harness/reports/runs/` sao ignorados pelo Git, salvo
   decisao explicita de versionar um report especifico.
 - Templates, READMEs, `.gitkeep` e convencoes do harness permanecem
   versionados.
@@ -114,7 +121,7 @@ harness/
   roles/          Roles e responsabilidades operacionais.
   blueprints/     Planos tecnicos antes da execucao.
   handoffs/       Transferencia de contexto entre roles.
-  reports/        Politica e reports temporarios ignorados.
+  reports/        Politica, marcadores, templates e runs ignorados.
   state/          Templates de estado de execucao.
   validations/    Checklists de validacao.
   completion/     Criterios de conclusao.

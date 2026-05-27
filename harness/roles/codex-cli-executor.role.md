@@ -16,7 +16,7 @@ resultado e registrar um report factual para revisao.
   arquivos.
 - Aplicar mudancas dentro do escopo.
 - Rodar validacoes definidas pela fase.
-- Gerar report factual em `harness/reports/`.
+- Gerar report factual em `harness/reports/runs/`.
 - Registrar riscos, limitacoes e checks nao executados.
 - Respeitar a estrategia de branch da fase.
 

@@ -48,7 +48,7 @@ Codex CLI Executor
 
 ## Last report path
 
-`harness/reports/HARNESS_0_2_ROLES_STATE_HANDOFF_REFINEMENT_REPORT.md`
+`harness/reports/runs/HARNESS_0_2_ROLES_STATE_HANDOFF_REFINEMENT_REPORT.md`
 
 ## Last validation commands
 
@@ -64,7 +64,7 @@ Example placeholder.
 
 ## Current risks
 
-- Report files under `harness/reports/*.md` are temporary and ignored by
+- Report files under `harness/reports/runs/` are temporary and ignored by
   default.
 - Human approval is required before push or merge.
 

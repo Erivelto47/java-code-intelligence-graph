@@ -71,7 +71,7 @@ git diff --check
 
 ## Expected report path
 
-`harness/reports/HARNESS_0_2_ROLES_STATE_HANDOFF_REFINEMENT_REPORT.md`
+`harness/reports/runs/HARNESS_0_2_ROLES_STATE_HANDOFF_REFINEMENT_REPORT.md`
 
 ## Completion criteria
 
@@ -85,8 +85,8 @@ git diff --check
 
 - Existing historical reports may still mention previous Harness 0.1
   terminology.
-- Temporary reports are ignored and may not be committed unless explicitly
-  requested.
+- Temporary reports under `harness/reports/runs/` are ignored and may not be
+  committed unless explicitly requested.
 
 ## Open questions
 
