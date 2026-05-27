@@ -78,9 +78,9 @@ deterministicos.
 ## Agentic Harness
 
 O protocolo operacional para execucao guiada por blueprint fica em
-`harness/README.md`. Ele documenta papeis, handoffs, reports, estado,
-validacoes e criterios de completion para reduzir perda de contexto entre
-arquitetura, execucao por CLI e revisao humana.
+`harness/README.md`. Ele documenta roles operacionais, handoffs, reports,
+estado, validacoes e criterios de completion para reduzir perda de contexto
+entre arquitetura assistida por IA, execucao por CLI e revisao humana.
 
 ## Princípios do projeto
 
@@ -159,7 +159,7 @@ Também são escritos dois índices no projeto analisado:
 <projectPath>/.code-atlas/flows-index.md
 ```
 
-Esses índices ajudam agentes que conseguem ler arquivos por caminho exato, mas não conseguem navegar livremente pela árvore do repositório. O `project-index.json` é o índice estruturado com o flow atual, arquivos fonte e caminhos dos artefatos. O `flows-index.md` é a versão humana para localizar rapidamente o flow, o context pack e o JSON primário.
+Esses índices ajudam ferramentas que conseguem ler arquivos por caminho exato, mas não conseguem navegar livremente pela árvore do repositório. O `project-index.json` é o índice estruturado com o flow atual, arquivos fonte e caminhos dos artefatos. O `flows-index.md` é a versão humana para localizar rapidamente o flow, o context pack e o JSON primário.
 
 Use `--output` para sobrescrever explicitamente esse destino:
 
@@ -183,7 +183,7 @@ examples/java-simple/.code-atlas/
     agent-handoff.md
 ```
 
-O `agent-handoff.md` resume o repositório, o projeto, o entrypoint, os arquivos fonte, os artefatos gerados, a contagem de nós e arestas, e os nós/arestas detectados. Ele pode conter orientação operacional para outros agentes, mas não adiciona interpretação de IA.
+O `agent-handoff.md` resume o repositório, o projeto, o entrypoint, os arquivos fonte, os artefatos gerados, a contagem de nós e arestas, e os nós/arestas detectados. Ele pode conter orientação operacional para outros consumidores automatizados, mas não adiciona interpretação de IA.
 
 ## SourceTextFlowAnalyzer
 

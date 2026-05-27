@@ -7,7 +7,7 @@ papeis, entradas, saidas, validacao, report e revisao para que uma execucao
 seja repetivel e auditavel.
 
 Workflows devem permanecer simples, humanos e independentes de uma ferramenta
-unica. Quando citarem ferramentas atuais, devem deixar claro o papel:
+unica. Quando citarem ferramentas atuais, devem deixar claro a role:
 ChatGPT Web Architect, Codex CLI Executor e Human Reviewer.
 
 ## Workflows iniciais

@@ -8,6 +8,7 @@ Um prompt de execucao deve conter:
 - contexto do projeto;
 - fase ou microfase;
 - objetivo;
+- roles envolvidas;
 - escopo;
 - fora de escopo;
 - branch strategy;

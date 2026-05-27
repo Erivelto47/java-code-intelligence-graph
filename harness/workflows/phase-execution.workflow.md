@@ -6,14 +6,24 @@ Padronizar a execucao de uma fase do Code Atlas guiada por blueprint, mantendo
 rastreabilidade entre intencao, branch, implementacao, validacao, report e
 decisao humana.
 
-## Papeis
+## Roles
 
 - ChatGPT Web Architect: transforma intencao em blueprint tecnico, define
   escopo e fora de escopo, gera prompt de execucao e revisa o report.
 - Codex CLI Executor: executa no repositorio, aplica mudancas, roda validacoes,
   gera report e registra riscos sem extrapolar o escopo.
-- Human Reviewer: aprova a fase, decide push, merge e ajustes, e interrompe a
-  execucao se branch ou escopo estiverem errados.
+- Human Reviewer: role humana que aprova ou rejeita a fase, decide push, merge
+  e ajustes, e interrompe a execucao se branch ou escopo estiverem errados.
+
+## Sequencia de roles
+
+1. Human Reviewer / requester inicia a intencao.
+2. ChatGPT Web Architect transforma a intencao em blueprint ou prompt.
+3. Codex CLI Executor executa no repositorio.
+4. Codex CLI Executor gera report factual.
+5. Human Reviewer revisa diff, report e validacoes.
+6. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
+7. Human Reviewer decide push, merge, ajustes ou proxima fase.
 
 ## Entradas
 
@@ -61,10 +71,14 @@ git branch --show-current
 Regras:
 
 - confirmar a branch ativa;
-- nao voltar para `master` durante ciclos que devem continuar em branch de
-  trabalho;
+- no ciclo atual, nao criar branches a partir de `master` a menos que o Human
+  Reviewer declare explicitamente que a branch de trabalho foi consolidada;
+- durante consolidacao da Fase 4 / harness, criar novas branches a partir da
+  branch de trabalho atual;
 - se uma microfase precisar de isolamento, criar branch a partir da branch
   atual, nao da `master`;
+- merge para `master` somente depois de aprovacao humana do harness e da Fase 4
+  consolidados;
 - nao fazer merge para `master` sem decisao humana;
 - nao fazer push automatico.
 
@@ -107,9 +121,12 @@ a proxima fase. A decisao de merge para `master` nunca e automatica.
 ## Politica de reports
 
 - Reports temporarios de Codex devem ficar em `harness/reports/`.
-- `harness/reports/*.md` e ignorado pelo Git, exceto `README.md`.
-- `harness/reports/.gitkeep` preserva o diretorio.
+- Reports root-level em `harness/reports/*.md` sao ignorados pelo Git por
+  padrao.
+- `harness/reports/.gitkeep`, `README.md` e templates podem ser versionados.
 - Reports de fase podem ser versionados somente por decisao explicita.
+- Reports anexados ao chat podem apoiar revisao, mas nao sao necessariamente
+  artefatos permanentes do repositorio.
 - Artefatos de fixture e examples podem ser versionados quando forem parte do
   contrato da fase.
 

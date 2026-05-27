@@ -1,27 +1,35 @@
 # Handoff Template
 
-## From
+## Handoff id
 
-## To
+## Date
+
+## From role
+
+## To role
 
 ## Phase
 
 ## Objective
 
+## Context
+
+## Branch strategy
+
 ## Scope
 
-## Constraints
+## Out of scope
 
-## Files/areas expected to change
+## Expected files or areas
 
-## Validation required
+## Required validations
 
-## Report expected
+## Expected report path
 
 ## Completion criteria
 
-## Current branch
+## Risks
 
 ## Open questions
 
-## Known risks
+## Human approval required before merge/push

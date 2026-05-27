@@ -2,22 +2,32 @@
 
 ## Current branch
 
+## Current working branch strategy
+
 ## Current phase
 
 ## Last completed phase
 
 ## Active objective
 
+## Active role owner
+
 ## In scope
 
 ## Out of scope
 
-## Last validation commands
+## Last handoff path
 
 ## Last report path
 
+## Last validation commands
+
+## Last validation result
+
+## Current risks
+
+## Open decisions
+
 ## Next recommended step
 
-## Open questions
-
-## Risks
+## Human approval status

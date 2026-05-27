@@ -6,12 +6,16 @@ Eles capturam o que o Executor realmente fez: arquivos criados, alterados ou
 removidos, validacoes executadas, testes, falhas, riscos, pendencias e proxima
 etapa sugerida.
 
-## Politica inicial
+## Politica
 
 - Reports temporarios gerados por Codex devem ficar em `harness/reports/`.
-- Arquivos `harness/reports/*.md` sao ignorados pelo Git por padrao.
-- `README.md` e `.gitkeep` permanecem versionados.
+- Reports root-level em `harness/reports/*.md` sao ignorados pelo Git por
+  padrao.
+- `README.md`, `.gitkeep` e templates podem permanecer versionados.
+- Templates em `harness/reports/templates/` podem ser versionados.
 - Um report temporario so deve ser versionado por decisao explicita.
+- Reports anexados ao chat podem ser usados para revisao, mas nao sao
+  necessariamente artefatos permanentes do repositorio.
 - Reports nao devem inventar sucesso: falhas, limitacoes e checks pulados
   devem ser registrados.
 

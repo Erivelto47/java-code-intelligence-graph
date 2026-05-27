@@ -8,6 +8,10 @@ Este harness nao executa codigo por si so. Ele e uma estrutura simples de
 Markdown e arquivos leves para preservar contexto entre ChatGPT Web, Codex CLI
 ou qualquer ferramenta equivalente.
 
+O harness usa "agentic workflow" como nome do estilo de colaboracao. Os atores
+operacionais sao documentados como roles: responsabilidades que podem ser
+executadas por humanos, IA assistida ou ferramentas.
+
 ## Por que existe
 
 O projeto evolui em fases com contratos, fixtures e artefatos deterministas.
@@ -15,13 +19,13 @@ Sem um protocolo operacional, cada fase depende de prompts soltos e memoria de
 chat. O harness reduz esse risco registrando:
 
 - blueprints antes da execucao;
-- prompts e handoffs entre papeis;
+- prompts e handoffs entre roles;
 - reports depois da execucao;
 - estado atual e validacoes;
 - criterios objetivos de completion;
 - decisoes operacionais sobre branch, merge, reports e artefatos.
 
-## Papeis
+## Roles operacionais
 
 ### ChatGPT Web Architect
 
@@ -38,7 +42,8 @@ merge ou push sem instrucao explicita.
 ### Human Reviewer
 
 Aprova ou rejeita a fase, decide push, merge e ajustes de escopo, e interrompe
-a execucao se branch, escopo ou validacoes estiverem errados.
+a execucao se branch, escopo ou validacoes estiverem errados. E uma role
+humana, nao um agente autonomo.
 
 ## Como executar uma fase
 
@@ -59,10 +64,14 @@ O workflow completo fica em
 ## Politica de branches
 
 - A branch deve ser verificada antes de qualquer alteracao.
-- Durante o ciclo atual de Fase 4 / harness, nao voltar para `master` para
-  criar branch nova.
+- No ciclo atual, nao criar branches a partir de `master` a menos que o Human
+  Reviewer declare explicitamente que a branch de trabalho foi consolidada.
+- Durante consolidacao da Fase 4 / harness, criar branches a partir da branch
+  de trabalho atual.
 - Se uma microfase precisar de isolamento, criar a branch a partir da branch de
   trabalho atual.
+- Merge para `master` somente depois de aprovacao humana do harness e da Fase 4
+  consolidados.
 - Nao fazer merge para `master` sem decisao humana explicita.
 - Nao fazer push automatico.
 
@@ -72,7 +81,10 @@ O workflow completo fica em
 - `harness/reports/` existe no Git via `.gitkeep` e `README.md`.
 - Reports temporarios `harness/reports/*.md` sao ignorados pelo Git, salvo
   decisao explicita de versionar um report especifico.
-- Templates, READMEs e convencoes do harness permanecem versionados.
+- Templates, READMEs, `.gitkeep` e convencoes do harness permanecem
+  versionados.
+- Reports anexados ao chat podem apoiar revisao, mas nao sao necessariamente
+  artefatos permanentes do repositorio.
 - Artefatos de fixture ou examples podem ser versionados quando fizerem parte
   de um contrato do produto.
 
@@ -99,9 +111,9 @@ Ele nao e equivalente a `.code-atlas/decisions/`, aos pacotes
 ```text
 harness/
   workflows/      Workflows operacionais versionados.
-  agents/         Papeis e responsabilidades.
+  roles/          Roles e responsabilidades operacionais.
   blueprints/     Planos tecnicos antes da execucao.
-  handoffs/       Transferencia de contexto entre papeis.
+  handoffs/       Transferencia de contexto entre roles.
   reports/        Politica e reports temporarios ignorados.
   state/          Templates de estado de execucao.
   validations/    Checklists de validacao.

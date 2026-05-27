@@ -10,4 +10,6 @@ out/
 harness/reports/*.md
 !harness/reports/README.md
 !harness/reports/.gitkeep
+!harness/reports/templates/
+!harness/reports/templates/*.md
 harness/reports/runs/
