@@ -1,8 +1,9 @@
 # Agentic Harness do Code Atlas
 
 O `harness/` e o protocolo operacional versionado do Code Atlas para fases
-guiadas por blueprint. Ele organiza como uma intencao tecnica vira plano,
-execucao no repositorio, validacao, report e decisao humana de continuidade.
+guiadas por blueprint como entrada primaria. Ele organiza como uma intencao
+tecnica vira blueprint aprovado, artefatos derivados, execucao no repositorio,
+validacao, report e decisao humana de continuidade.
 
 Este harness nao executa codigo por si so. Ele e uma estrutura simples de
 Markdown e arquivos leves para preservar contexto entre ChatGPT Web, Codex CLI
@@ -18,45 +19,76 @@ O projeto evolui em fases com contratos, fixtures e artefatos deterministas.
 Sem um protocolo operacional, cada fase depende de prompts soltos e memoria de
 chat. O harness reduz esse risco registrando:
 
-- blueprints antes da execucao;
-- prompts e handoffs entre roles;
+- blueprints como fonte primaria da fase;
+- handoffs, validation checklists e completion criteria derivados do blueprint;
 - reports depois da execucao;
 - estado atual e validacoes;
 - criterios objetivos de completion;
 - decisoes operacionais sobre branch, merge, reports e artefatos.
+
+## Politica blueprint-driven
+
+O blueprint e a entrada primaria e a fonte de verdade da fase.
+
+```text
+Primary input:
+harness/blueprints/<phase>.blueprint.md
+
+Derived artifacts:
+harness/handoffs/<phase>.handoff.md
+harness/validations/<phase>.validation.md
+harness/completion/<phase>.completion.md
+
+Runtime output:
+harness/reports/runs/<phase-report>.md
+```
+
+O blueprint deve ser criado pelo ChatGPT Web Architect e aprovado pelo Human
+Reviewer antes da execucao. Handoff, validation e completion podem ser
+gerados ou atualizados pelo Codex CLI Executor a partir do blueprint, dos
+templates do harness e dos padroes do projeto. Eles sao revisaveis e podem ser
+versionados, mas nao sao fontes independentes de verdade.
+
+Se algum derivado divergir do blueprint, a execucao deve pausar para corrigir
+o derivado. Uma fase nao deve ser executada apenas a partir de handoff sem
+blueprint correspondente aprovado.
 
 ## Roles operacionais
 
 ### ChatGPT Web Architect
 
 Transforma a intencao do usuario em blueprint tecnico, define escopo e fora de
-escopo, gera prompt de handoff para o executor, revisa reports e sugere a
-proxima etapa.
+escopo, revisa reports, pode revisar artefatos derivados e sugere a proxima
+etapa. Nao executa mudancas diretamente no repositorio.
 
 ### Codex CLI Executor
 
-Executa no repositorio, aplica mudancas dentro do escopo, roda validacoes,
-gera report factual, registra riscos e limitacoes, e nao altera `master`, faz
-merge ou push sem instrucao explicita.
+Le o blueprint primario, deriva ou atualiza handoff, validation e completion
+quando solicitado, executa no repositorio dentro do escopo aprovado, roda
+validacoes, gera report factual, registra riscos e limitacoes, e nao altera
+`master`, faz merge ou push sem instrucao explicita.
 
 ### Human Reviewer
 
-Aprova ou rejeita a fase, decide push, merge e ajustes de escopo, e interrompe
-a execucao se branch, escopo ou validacoes estiverem errados. E uma role
-humana, nao um agente autonomo.
+Aprova o blueprint antes da execucao, decide se os derivados estao aceitaveis,
+aprova ou rejeita o report, decide push, merge e ajustes de escopo, e
+interrompe a execucao se branch, escopo ou validacoes estiverem errados. E uma
+role humana, nao um agente autonomo.
 
 ## Como executar uma fase
 
 1. Registrar ou revisar o blueprint em `harness/blueprints/`.
-2. Gerar o prompt de handoff com escopo, fora de escopo, branch strategy,
-   validacoes e report esperado.
-3. Verificar `git status` e `git branch --show-current` antes de alterar
+2. Obter aprovacao humana do blueprint antes de executar a fase.
+3. Derivar ou atualizar handoff, validation checklist e completion criteria a
+   partir do blueprint e dos templates do harness.
+4. Verificar `git status` e `git branch --show-current` antes de alterar
    arquivos.
-4. Executar a implementacao somente na branch de trabalho da fase.
-5. Rodar as validacoes registradas no blueprint ou checklist.
-6. Gerar report factual em `harness/reports/runs/`.
-7. Enviar o report para revisao humana ou para o Architect.
-8. Decidir a proxima etapa somente depois da revisao.
+5. Executar a implementacao somente na branch de trabalho da fase, usando o
+   blueprint como fonte primaria e os derivados como apoio operacional.
+6. Rodar as validacoes derivadas do blueprint.
+7. Gerar report factual em `harness/reports/runs/`.
+8. Enviar o report para revisao humana ou para o Architect.
+9. Decidir a proxima etapa somente depois da revisao.
 
 O workflow completo fica em
 `harness/workflows/phase-execution.workflow.md`.
@@ -119,12 +151,12 @@ Ele nao e equivalente a `.code-atlas/decisions/`, aos pacotes
 harness/
   workflows/      Workflows operacionais versionados.
   roles/          Roles e responsabilidades operacionais.
-  blueprints/     Planos tecnicos antes da execucao.
-  handoffs/       Transferencia de contexto entre roles.
+  blueprints/     Entradas primarias e fontes de verdade das fases.
+  handoffs/       Artefatos derivados para transferencia operacional.
   reports/        Politica, marcadores, templates e runs ignorados.
   state/          Templates de estado de execucao.
-  validations/    Checklists de validacao.
-  completion/     Criterios de conclusao.
+  validations/    Checklists derivados de validacao.
+  completion/     Criterios derivados de conclusao.
   prompts/        Convencoes para prompts reutilizaveis.
   decisions/      Decisoes operacionais do harness.
 ```

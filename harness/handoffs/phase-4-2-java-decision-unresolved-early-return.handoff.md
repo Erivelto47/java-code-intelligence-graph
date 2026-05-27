@@ -20,6 +20,23 @@ Codex CLI Executor
 
 Phase 4.2 — Java Decision Unresolved + Early Return
 
+## Primary blueprint path
+
+```text
+harness/blueprints/phase-4-2-java-decision-unresolved-early-return.blueprint.md
+```
+
+## Blueprint approval status
+
+Pending explicit Human Reviewer approval before Phase 4.2 execution.
+
+## Derived artifact status
+
+This handoff is a derived and reviewable operational artifact. It is derived
+from the primary blueprint, the harness template and project conventions. If it
+conflicts with the blueprint, pause execution and correct this handoff before
+continuing.
+
 ## Objective
 
 Execute Phase 4.2 by expanding Java Decision Trace with deterministic

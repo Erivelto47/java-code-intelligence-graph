@@ -9,38 +9,60 @@ decisao humana.
 ## Roles
 
 - ChatGPT Web Architect: transforma intencao em blueprint tecnico, define
-  escopo e fora de escopo, gera prompt de execucao e revisa o report.
-- Codex CLI Executor: executa no repositorio, aplica mudancas, roda validacoes,
-  gera report e registra riscos sem extrapolar o escopo.
-- Human Reviewer: role humana que aprova ou rejeita a fase, decide push, merge
-  e ajustes, e interrompe a execucao se branch ou escopo estiverem errados.
+  escopo e fora de escopo, revisa reports, pode revisar derivados e nao executa
+  alteracoes diretamente no repositorio.
+- Codex CLI Executor: le o blueprint primario, deriva ou atualiza handoff,
+  validation e completion quando solicitado, executa no repositorio, roda
+  validacoes, gera report e registra riscos sem extrapolar o escopo.
+- Human Reviewer: role humana que aprova o blueprint antes da execucao, decide
+  se derivados estao aceitaveis, aprova ou rejeita report, decide push, merge e
+  ajustes, e interrompe a execucao se branch ou escopo estiverem errados.
 
 ## Sequencia de roles
 
 1. Human Reviewer / requester inicia a intencao.
-2. ChatGPT Web Architect transforma a intencao em blueprint ou prompt.
-3. Codex CLI Executor executa no repositorio.
-4. Codex CLI Executor gera report factual.
-5. Human Reviewer revisa diff, report e validacoes.
-6. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
-7. Human Reviewer decide push, merge, ajustes ou proxima fase.
+2. ChatGPT Web Architect transforma a intencao em blueprint.
+3. Human Reviewer revisa e aprova o blueprint.
+4. Codex CLI Executor deriva ou atualiza handoff, validation e completion.
+5. Codex CLI Executor executa no repositorio usando blueprint como fonte
+   primaria e derivados como apoio operacional.
+6. Codex CLI Executor gera report factual.
+7. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
+8. Human Reviewer decide aprovar, iterar, fazer push, fazer merge, pausar ou
+   alterar escopo.
 
 ## Entradas
 
 - Intencao do usuario ou objetivo da fase.
+- Blueprint aprovado em `harness/blueprints/<phase>.blueprint.md`.
 - Estado atual da branch de trabalho.
-- Blueprint ou prompt de handoff.
-- Restricoes de escopo e fora de escopo.
-- Checklist de validacao esperado.
+- Artefatos derivados, quando ja existirem:
+  `harness/handoffs/<phase>.handoff.md`,
+  `harness/validations/<phase>.validation.md` e
+  `harness/completion/<phase>.completion.md`.
+- Restricoes de escopo e fora de escopo definidas pelo blueprint.
+- Checklist de validacao derivado do blueprint.
 - Politica de reports da fase.
 
 ## Saidas
 
 - Mudancas versionaveis no repositorio, quando houver.
+- Handoff, validation checklist e completion criteria derivados ou atualizados,
+  quando solicitado.
 - Validacoes executadas e seus resultados.
 - Report factual em `harness/reports/runs/`.
 - Handoff ou estado atualizado, quando necessario.
 - Recomendacao de proxima etapa para revisao humana.
+
+## Regras de precedencia
+
+- A execucao pode comecar apenas quando ha blueprint aprovado.
+- Handoff, validation e completion sao derivados do blueprint.
+- Se derivados e blueprint divergirem, pausar e corrigir os derivados antes de
+  executar.
+- Nao executar uma fase baseada apenas em handoff sem blueprint correspondente.
+- Durante o ciclo atual, nao criar branch a partir de `master` sem aprovacao
+  humana explicita.
 
 ## Ciclo minimo
 
@@ -49,17 +71,31 @@ decisao humana.
 Registrar a intencao do usuario, a fase pretendida, o objetivo principal e as
 restricoes explicitas.
 
-### 2. Blueprint
+### 2. Blueprint creation
 
 O Architect define escopo, fora de escopo, criterios de aceite, artefatos
-esperados, validacoes e riscos conhecidos.
+esperados, validacoes, riscos conhecidos e criterios de sucesso no blueprint
+primario.
 
-### 3. Prompt handoff
+### 3. Human blueprint approval
 
-O Architect ou Human Reviewer prepara um prompt para o Executor contendo
-contexto, branch strategy, arquivos esperados, validacoes e report requerido.
+O Human Reviewer revisa o blueprint e aprova, rejeita ou pede ajuste. A fase
+nao deve avancar para execucao sem essa aprovacao.
 
-### 4. Branch check
+### 4. Derived package generation
+
+O Codex CLI Executor, guiado pelo harness, gera ou atualiza:
+
+- `harness/handoffs/<phase>.handoff.md`
+- `harness/validations/<phase>.validation.md`
+- `harness/completion/<phase>.completion.md`
+
+Esses artefatos devem ser derivados do blueprint, dos templates do harness, dos
+padroes do projeto e de validacoes existentes. Eles traduzem o blueprint em
+instrucoes operacionais, mas nao podem ampliar escopo. Se houver conflito, o
+blueprint vence e os derivados devem ser corrigidos.
+
+### 5. Branch check
 
 Antes de alterar qualquer arquivo, o Executor deve rodar:
 
@@ -82,15 +118,17 @@ Regras:
 - nao fazer merge para `master` sem decisao humana;
 - nao fazer push automatico.
 
-### 5. Implementation
+### 6. Implementation
 
-O Executor aplica apenas as mudancas dentro do escopo. Qualquer alteracao fora
-do escopo deve ser evitada; se for inevitavel, deve ser registrada no report.
+O Executor aplica apenas as mudancas dentro do escopo do blueprint. Handoff,
+validation e completion servem como apoio operacional. Qualquer divergencia
+entre derivados e blueprint deve interromper a execucao ate que os derivados
+sejam corrigidos.
 
-### 6. Validation
+### 7. Validation
 
-O Executor roda os comandos definidos para a fase. Para fases Java, o checklist
-padrao inclui:
+O Executor roda os comandos derivados do blueprint e definidos para a fase. Para
+fases Java, o checklist padrao inclui:
 
 ```bash
 ./gradlew test
@@ -100,7 +138,7 @@ git diff --check
 
 Falhas ou checks nao executados devem ser registrados com detalhe.
 
-### 7. Report
+### 8. Report generation
 
 O Executor gera report factual em `harness/reports/runs/`. Reports
 temporarios reais sao ignorados pelo Git por padrao. Templates, READMEs e
@@ -115,15 +153,17 @@ harness/reports/runs/PHASE_4_2_JAVA_DECISION_UNRESOLVED_EARLY_RETURN_REPORT.md
 O report deve registrar arquivos alterados, validacoes, resultados, riscos,
 pendencias, fora de escopo e proxima etapa sugerida.
 
-### 8. Review
+### 9. Review
 
-O Architect e o Human Reviewer avaliam escopo, diff, validacoes e report. A
-fase so deve ser considerada completa depois dessa revisao.
+O Architect pode revisar o report. O Human Reviewer avalia blueprint, derivados,
+diff, validacoes e report. A fase so deve ser considerada completa depois dessa
+revisao.
 
-### 9. Next-step decision
+### 10. Next-step decision
 
-O Human Reviewer decide se aprova, pede ajustes, faz push, faz merge ou inicia
-a proxima fase. A decisao de merge para `master` nunca e automatica.
+O Human Reviewer decide se aprova, pede ajustes, faz push, faz merge, pausa,
+altera escopo ou inicia a proxima fase. A decisao de merge para `master` nunca
+e automatica.
 
 ## Politica de reports
 

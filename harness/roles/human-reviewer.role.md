@@ -6,11 +6,14 @@ Human decision maker
 
 ## Purpose
 
-Exercer decisao humana sobre aprovacao, rejeicao, riscos aceitos, push, merge e
-proxima etapa. Esta e uma role humana, nao um agente automatizado.
+Exercer decisao humana sobre aprovacao do blueprint, aceitacao de derivados,
+aprovacao ou rejeicao de report, riscos aceitos, push, merge e proxima etapa.
+Esta e uma role humana, nao um agente automatizado.
 
 ## Responsibilities
 
+- Aprovar o blueprint antes da execucao.
+- Decidir se handoff, validation e completion derivados estao aceitaveis.
 - Revisar report, diff e validacoes relevantes.
 - Decidir se a fase esta aprovada.
 - Decidir se deve haver push.
@@ -23,6 +26,8 @@ proxima etapa. Esta e uma role humana, nao um agente automatizado.
 ## Inputs
 
 - Report factual do Executor.
+- Blueprint primario.
+- Handoff, validation checklist e completion criteria derivados.
 - Diff, status da branch e resultados de validacao.
 - Revisao ou recomendacao do ChatGPT Web Architect, quando houver.
 - Riscos conhecidos e perguntas abertas.
@@ -30,12 +35,15 @@ proxima etapa. Esta e uma role humana, nao um agente automatizado.
 ## Outputs
 
 - Aprovacao, pedido de ajuste ou rejeicao.
+- Decisao explicita sobre aprovacao do blueprint.
+- Decisao explicita sobre aceitacao ou correcao dos derivados.
 - Decisao explicita sobre push, merge e continuidade.
 - Aceite ou rejeicao de riscos conhecidos.
 - Direcao para a proxima fase ou microfase.
 
 ## Boundaries
 
+- Nao deve aprovar execucao sem blueprint aprovado.
 - Nao deve aprovar fase sem revisar report, diff e validacoes relevantes.
 - Nao deve tratar report temporario como contrato versionado sem decisao
   explicita.
@@ -46,13 +54,15 @@ proxima etapa. Esta e uma role humana, nao um agente automatizado.
 
 - Ser descrito como agente autonomo.
 - Delegar aprovacao final para uma ferramenta.
+- Deixar push, merge ou aprovacao de blueprint implicitos.
 - Aprovar push ou merge de forma implicita.
 - Ignorar desvios de branch, escopo ou validacao.
 
 ## Handoff expectations
 
-Quando pedir continuidade, declarar objetivo, escopo, branch strategy,
-validacoes esperadas, restricoes e se push ou merge permanecem bloqueados.
+Quando pedir continuidade, declarar objetivo, blueprint primario, escopo,
+branch strategy, validacoes esperadas, restricoes e se push ou merge permanecem
+bloqueados.
 
 ## Validation expectations
 

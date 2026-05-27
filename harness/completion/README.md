@@ -1,13 +1,18 @@
 # Completion
 
 Completion criteria define what must be true before a phase can be considered
-done.
+ready for human review. No harness blueprint-driven, completion criteria are
+derived from the approved blueprint.
 
 Use `completion-criteria.template.md` to make acceptance explicit before or
 during execution. Completion requires reviewable evidence, not only a clean
-diff.
+diff. Completion must not expand scope beyond the blueprint.
+
+If completion criteria conflict with the blueprint, the blueprint wins and the
+completion artifact must be corrected. The Human Reviewer approves the real
+completion state after reviewing the report, diff and validation results.
 
 ## Versioned packages
 
-- `phase-4-2-java-decision-unresolved-early-return.completion.md`: completion
-  criteria for the future Phase 4.2 execution.
+- `phase-4-2-java-decision-unresolved-early-return.completion.md`: derived and
+  reviewable completion criteria for the future Phase 4.2 execution.

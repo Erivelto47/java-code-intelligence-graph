@@ -12,6 +12,20 @@
 
 ## Active role owner
 
+## Primary blueprint path
+
+## Derived handoff path
+
+## Derived validation path
+
+## Derived completion path
+
+## Blueprint approval status
+
+## Derived artifacts status
+
+## Execution report path
+
 ## In scope
 
 ## Out of scope

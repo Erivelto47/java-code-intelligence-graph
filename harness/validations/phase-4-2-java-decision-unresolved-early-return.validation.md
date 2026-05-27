@@ -1,5 +1,22 @@
 # Phase 4.2 Java Decision Unresolved + Early Return Validation Checklist
 
+## Primary blueprint path
+
+```text
+harness/blueprints/phase-4-2-java-decision-unresolved-early-return.blueprint.md
+```
+
+## Blueprint approval status
+
+Pending explicit Human Reviewer approval before Phase 4.2 execution.
+
+## Derived artifact status
+
+This validation checklist is a derived and reviewable operational artifact. It
+is derived from the primary blueprint, project validation patterns and harness
+template. It must not broaden Phase 4.2 scope. If it conflicts with the
+blueprint, pause execution and correct this checklist before continuing.
+
 ## Branch
 
 Run before implementation:

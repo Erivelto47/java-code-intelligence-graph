@@ -1,5 +1,9 @@
 # Phase 4.2 — Java Decision Unresolved + Early Return Blueprint
 
+Harness note: this blueprint is the primary input and source of truth for
+Phase 4.2. Handoff, validation and completion files are derived operational
+artifacts.
+
 ## Purpose
 
 Phase 4.2 expands the Decision Trace layer for Java source analysis while

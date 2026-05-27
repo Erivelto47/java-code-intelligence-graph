@@ -1,5 +1,22 @@
 # Completion Criteria Template
 
+## Primary blueprint path
+
+## Blueprint approval status
+
+## Derived artifact status
+
+Derived from:
+
+- primary blueprint;
+- harness completion criteria template;
+- project conventions.
+
+## Blueprint precedence
+
+If these criteria conflict with the primary blueprint, pause and correct this
+artifact. The Human Reviewer approves real completion after report review.
+
 ## Objective
 
 ## Required files changed

@@ -11,7 +11,15 @@ permanecem versionados em `harness/reports/`.
 
 ## Branch strategy used
 
+## Primary blueprint used
+
+## Derived artifacts used
+
 ## What changed
+
+## Blueprint primary input policy
+
+## Derived artifacts policy
 
 ## Validation executed
 

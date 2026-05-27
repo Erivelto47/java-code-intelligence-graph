@@ -1,5 +1,22 @@
 # Phase 4.2 Java Decision Unresolved + Early Return Completion Criteria
 
+## Primary blueprint path
+
+```text
+harness/blueprints/phase-4-2-java-decision-unresolved-early-return.blueprint.md
+```
+
+## Blueprint approval status
+
+Pending explicit Human Reviewer approval before Phase 4.2 execution.
+
+## Derived artifact status
+
+These completion criteria are a derived and reviewable operational artifact.
+They are derived from the primary blueprint, the harness template and project
+conventions. If they conflict with the blueprint, the blueprint wins and this
+artifact must be corrected before execution continues.
+
 ## Objective
 
 Phase 4.2 is complete when Java Decision Trace emits deterministic unresolved

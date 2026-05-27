@@ -1,5 +1,23 @@
 # Validation Checklist Template
 
+## Primary blueprint path
+
+## Blueprint approval status
+
+## Derived artifact status
+
+Derived from:
+
+- primary blueprint;
+- harness validation checklist template;
+- project conventions and existing validations.
+
+## Scope guard
+
+Confirm this checklist validates the blueprint scope and does not expand it.
+If this checklist conflicts with the primary blueprint, pause execution and
+correct the checklist before continuing.
+
 ## git status
 
 Command:
@@ -77,6 +95,11 @@ Path:
 ## no unintended files
 
 Confirmation:
+
+## out-of-scope confirmation
+
+Confirm the validation checked that out-of-scope items from the blueprint were
+not implemented.
 
 ## no master merge
 
