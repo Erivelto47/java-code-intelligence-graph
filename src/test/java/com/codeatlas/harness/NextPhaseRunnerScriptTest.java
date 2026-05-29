@@ -32,11 +32,11 @@ class NextPhaseRunnerScriptTest {
 
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("next phase id: phase-9-next"));
-        assertTrue(result.output().contains("prompt path: build/harness/prompts/phase-9-next.codex-prompt.txt"));
+        assertTrue(result.output().contains("prompt path: harness/bin/build/prompts/phase-9-next.codex-prompt.txt"));
         assertFalse(Files.exists(repo.resolve("harness/handoffs/phase-9-next.handoff.md")));
         assertEquals(beforeIndex, Files.readString(repo.resolve("harness/phases/phase-index.tsv")));
 
-        Path prompt = repo.resolve("build/harness/prompts/phase-9-next.codex-prompt.txt");
+        Path prompt = repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt");
         assertTrue(Files.isRegularFile(prompt));
         String promptText = Files.readString(prompt);
         assertTrue(promptText.contains("phase-9-next"));

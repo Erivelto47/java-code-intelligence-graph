@@ -26,7 +26,7 @@ and fails if there are zero or multiple `next` entries.
 
 The runner reads the phase marked `next`, validates that its blueprint exists,
 delegates derived artifact preparation to `harness/bin/run-phase.sh`, and
-generates a Codex prompt under `build/harness/prompts/`.
+generates a Codex prompt under `harness/bin/build/prompts/`.
 
 The runner does not update this index automatically. Moving a phase from
 `next` to `in_progress`, `implemented` or `approved` remains a conscious

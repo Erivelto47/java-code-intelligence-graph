@@ -33,9 +33,9 @@ harness/prompts/codex-execution-prompt.template.txt
 to:
 
 ```text
-build/harness/prompts/<phase-id>.codex-prompt.txt
+harness/bin/build/prompts/<phase-id>.codex-prompt.txt
 ```
 
-Generated prompts under `build/harness/prompts/` are temporary outputs and are
-not versioned. They are intended to be reviewed and pasted into Codex by a
+Generated prompts under `harness/bin/build/prompts/` are temporary outputs and
+are not versioned. They are intended to be reviewed and pasted into Codex by a
 human-initiated execution session.

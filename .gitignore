@@ -5,6 +5,7 @@ out/
 .idea/
 *.iml
 .DS_Store
+harness/bin/build/
 
 # Agentic harness temporary reports
 harness/reports/*.md

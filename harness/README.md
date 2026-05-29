@@ -111,7 +111,7 @@ o blueprint dessa fase existe, chama `run-phase.sh` para preparar handoff,
 validation e completion, e gera um prompt padrao para Codex em:
 
 ```text
-build/harness/prompts/<phase-id>.codex-prompt.txt
+harness/bin/build/prompts/<phase-id>.codex-prompt.txt
 ```
 
 Modo dry-run:

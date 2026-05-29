@@ -47,11 +47,11 @@ The runner:
 - validates that exactly one phase is marked `next`;
 - validates that the next phase blueprint exists;
 - calls `./harness/bin/run-phase.sh <blueprint>`;
-- generates `build/harness/prompts/<phase-id>.codex-prompt.txt`;
+- generates `harness/bin/build/prompts/<phase-id>.codex-prompt.txt`;
 - prints the branch, phase id, derived paths, report path and next step.
 
 Dry-run mode delegates to `run-phase.sh --dry-run` and still renders the
-temporary Codex prompt under `build/`:
+temporary Codex prompt under `harness/bin/build/`:
 
 ```bash
 ./harness/bin/run-next-phase.sh --dry-run

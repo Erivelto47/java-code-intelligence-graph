@@ -135,7 +135,7 @@ entrada `next`, valida o blueprint, chama `run-phase.sh` e gera um prompt
 padrao em:
 
 ```text
-build/harness/prompts/<phase-id>.codex-prompt.txt
+harness/bin/build/prompts/<phase-id>.codex-prompt.txt
 ```
 
 Fluxo recomendado:

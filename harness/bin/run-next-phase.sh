@@ -37,7 +37,7 @@ cd "${repo_root}"
 
 phase_index="harness/phases/phase-index.tsv"
 prompt_template="harness/prompts/codex-execution-prompt.template.txt"
-prompt_dir="build/harness/prompts"
+prompt_dir="harness/bin/build/prompts"
 
 [[ -f "${phase_index}" ]] || fail "Phase index not found: ${phase_index}"
 [[ -f "${prompt_template}" ]] || fail "Codex prompt template not found: ${prompt_template}"
