@@ -5,16 +5,15 @@ public class RegistrationGuard {
         if (request.email() == null) throw new IllegalArgumentException("Email is required");
 
         if (request.blocked()) {
-            audit(request.email());
+            if (request.email().isBlank()) {
+                throw new IllegalStateException("Blocked registration");
+            }
             throw new IllegalStateException("Blocked registration");
         }
 
         if (request.legacy()) {
             throw createLegacyException(request.email());
         }
-    }
-
-    private void audit(String email) {
     }
 
     private RuntimeException createLegacyException(String email) {

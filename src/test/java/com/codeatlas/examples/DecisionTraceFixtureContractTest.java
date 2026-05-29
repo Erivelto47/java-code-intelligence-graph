@@ -77,6 +77,15 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void ifThrowWithPreStatementsFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/04-if-throw-with-pre-statements"),
+                "com.example.decisiontrace.blockthrow.RegistrationGuard.validate",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,

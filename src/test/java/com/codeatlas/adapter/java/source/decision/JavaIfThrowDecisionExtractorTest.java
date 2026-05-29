@@ -59,6 +59,55 @@ class JavaIfThrowDecisionExtractorTest {
     }
 
     @Test
+    void extractsIfThrowDecisionWithAllowedPreStatements() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/RegistrationGuard.java"),
+                """
+                        package com.example;
+
+                        public class RegistrationGuard {
+                            public void validate(CreateUserRequest request) {
+                                if (request.name() == null || request.name().isBlank()) {
+                                    logInvalidName(request);
+                                    metrics.increment("registration.invalid_name");
+                                    throw new IllegalArgumentException("Name is required");
+                                }
+                            }
+
+                            private void logInvalidName(CreateUserRequest request) {
+                            }
+
+                            private final Metrics metrics = new Metrics();
+
+                            private static class Metrics {
+                                void increment(String name) {
+                                }
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.RegistrationGuard.validate");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("CONDITIONAL_THROW", decision.kind().name());
+        assertEquals("request.name() == null || request.name().isBlank()", decision.expression().text());
+        assertEquals("IllegalArgumentException", decision.outcomes().get(0).exceptionType());
+        assertEquals("Name is required", decision.outcomes().get(0).message());
+        assertEquals(
+                "if (request.name() == null || request.name().isBlank()) { "
+                        + "logInvalidName(request); "
+                        + "metrics.increment(\"registration.invalid_name\"); "
+                        + "throw new IllegalArgumentException(\"Name is required\"); }",
+                decision.evidence().snippet()
+        );
+    }
+
+    @Test
     void extractsSimpleEarlyReturnDecisionFromEntrypointMethod() throws Exception {
         writeJavaFile(
                 tempDir.resolve("src/main/java/com/example/ImportService.java"),
@@ -110,16 +159,15 @@ class JavaIfThrowDecisionExtractorTest {
                                 if (request.email() == null) throw new IllegalArgumentException("Email is required");
 
                                 if (request.blocked()) {
-                                    audit(request.email());
+                                    if (request.email().isBlank()) {
+                                        throw new IllegalStateException("Blocked registration");
+                                    }
                                     throw new IllegalStateException("Blocked registration");
                                 }
 
                                 if (request.legacy()) {
                                     throw createLegacyException(request.email());
                                 }
-                            }
-
-                            private void audit(String email) {
                             }
 
                             private RuntimeException createLegacyException(String email) {
@@ -144,8 +192,42 @@ class JavaIfThrowDecisionExtractorTest {
         assertEquals("if (request.email() == null) throw new IllegalArgumentException(\"Email is required\");",
                 inlineThrow.expression());
 
-        assertEquals("UNSUPPORTED_THROW_WITH_ADDITIONAL_STATEMENTS", trace.unresolved().get(1).kind());
+        assertEquals("UNSUPPORTED_NESTED_IF", trace.unresolved().get(1).kind());
         assertEquals("UNSUPPORTED_THROW_EXPRESSION", trace.unresolved().get(2).kind());
+    }
+
+    @Test
+    void recordsUnsafePreStatementsBeforeFinalThrowAsUnresolved() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/RegistrationGuard.java"),
+                """
+                        package com.example;
+
+                        public class RegistrationGuard {
+                            public void validate(RegisterRequest request) {
+                                if (request.blocked()) {
+                                    notify(() -> {
+                                        throw new IllegalStateException("lambda");
+                                    });
+                                    throw new IllegalStateException("Blocked registration");
+                                }
+                            }
+
+                            private void notify(Runnable runnable) {
+                            }
+
+                            public record RegisterRequest(boolean blocked) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.RegistrationGuard.validate");
+
+        assertEquals(0, trace.decisions().size());
+        assertEquals(1, trace.unresolved().size());
+        assertEquals("UNSUPPORTED_THROW_WITH_ADDITIONAL_STATEMENTS", trace.unresolved().get(0).kind());
     }
 
     @Test

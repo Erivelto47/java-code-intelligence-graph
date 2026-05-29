@@ -21,19 +21,19 @@
         "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
         "line": 5
       },
-      "message": "Inline conditional throw without a block is recognized but not extracted in Phase 4.2",
+      "message": "Inline conditional throw without a block is recognized but not extracted in Phase 4.2.1",
       "expression": "if (request.email() == null) throw new IllegalArgumentException(\"Email is required\");"
     },
     {
       "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:2",
-      "kind": "UNSUPPORTED_THROW_WITH_ADDITIONAL_STATEMENTS",
+      "kind": "UNSUPPORTED_NESTED_IF",
       "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
       "sourceLocation": {
         "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
         "line": 7
       },
-      "message": "Conditional throw with additional statements is recognized but not supported in Phase 4.2",
-      "expression": "if (request.blocked()) { audit(request.email()); throw new IllegalStateException(\"Blocked registration\"); }"
+      "message": "Nested if decision shapes are recognized but not supported in Phase 4.2.1",
+      "expression": "if (request.blocked()) { if (request.email().isBlank()) { throw new IllegalStateException(\"Blocked registration\"); } throw new IllegalStateException(\"Blocked registration\"); }"
     },
     {
       "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:3",
@@ -41,7 +41,7 @@
       "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
       "sourceLocation": {
         "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
-        "line": 12
+        "line": 14
       },
       "message": "Conditional throw expression is recognized but not a direct supported throw",
       "expression": "if (request.legacy()) { throw createLegacyException(request.email()); }"
@@ -49,7 +49,7 @@
   ],
   "metadata": {
     "analyzer": "java-source-text-decision-extractor",
-    "phase": "phase-4.2-java-decision-unresolved-early-return",
+    "phase": "phase-4.2.1-java-block-throw-with-pre-statements",
     "deterministic": true,
     "source": "source-text"
   }

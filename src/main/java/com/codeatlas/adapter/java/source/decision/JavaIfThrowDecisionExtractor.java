@@ -78,7 +78,7 @@ public final class JavaIfThrowDecisionExtractor {
                 extractionResult.unresolved(),
                 new DecisionTraceMetadata(
                         "java-source-text-decision-extractor",
-                        "phase-4.2-java-decision-unresolved-early-return",
+                        "phase-4.2.1-java-block-throw-with-pre-statements",
                         true,
                         "source-text"
                 )
@@ -154,11 +154,12 @@ public final class JavaIfThrowDecisionExtractor {
             return Optional.empty();
         }
 
-        Optional<JavaDecisionSourceSupport.ThrowStatement> throwStatement = JavaDecisionSourceSupport.parseDirectThrow(
-                sourceFile,
-                ifStatement.bodyStart(),
-                ifStatement.bodyEnd()
-        );
+        Optional<JavaDecisionSourceSupport.ThrowStatement> throwStatement =
+                JavaDecisionSourceSupport.parseFinalThrowWithAllowedPreStatements(
+                        sourceFile,
+                        ifStatement.bodyStart(),
+                        ifStatement.bodyEnd()
+                );
         if (throwStatement.isEmpty()) {
             return Optional.empty();
         }

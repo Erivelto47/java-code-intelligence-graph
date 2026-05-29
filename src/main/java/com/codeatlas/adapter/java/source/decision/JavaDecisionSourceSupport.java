@@ -206,6 +206,33 @@ final class JavaDecisionSourceSupport {
         return Optional.of(new ThrowStatement(exceptionType, message));
     }
 
+    static Optional<ThrowStatement> parseFinalThrowWithAllowedPreStatements(
+            SourceFile sourceFile,
+            int bodyStart,
+            int bodyEnd
+    ) {
+        String maskedSource = sourceFile.maskedSource();
+        int index = skipWhitespace(maskedSource, bodyStart, bodyEnd);
+        while (index < bodyEnd) {
+            if (startsWithWord(maskedSource, index, "throw")) {
+                return parseDirectThrow(sourceFile, index, bodyEnd);
+            }
+            if (startsWithDisallowedPreThrowStatement(maskedSource, index)) {
+                return Optional.empty();
+            }
+
+            int semicolon = findTopLevelSemicolon(maskedSource, index, bodyEnd);
+            if (semicolon < 0) {
+                return Optional.empty();
+            }
+            if (!isAllowedPreThrowExpressionStatement(sourceFile, index, semicolon)) {
+                return Optional.empty();
+            }
+            index = skipWhitespace(maskedSource, semicolon + 1, bodyEnd);
+        }
+        return Optional.empty();
+    }
+
     static Optional<ReturnStatement> parseDirectReturn(SourceFile sourceFile, int bodyStart, int bodyEnd) {
         String maskedSource = sourceFile.maskedSource();
         int index = skipWhitespace(maskedSource, bodyStart, bodyEnd);
@@ -515,6 +542,45 @@ final class JavaDecisionSourceSupport {
             index++;
         }
         return false;
+    }
+
+    private static boolean startsWithDisallowedPreThrowStatement(String maskedSource, int index) {
+        return startsWithWord(maskedSource, index, "if")
+                || startsWithWord(maskedSource, index, "switch")
+                || startsWithWord(maskedSource, index, "try")
+                || startsWithWord(maskedSource, index, "catch")
+                || startsWithWord(maskedSource, index, "for")
+                || startsWithWord(maskedSource, index, "while")
+                || startsWithWord(maskedSource, index, "do")
+                || startsWithWord(maskedSource, index, "return")
+                || startsWithWord(maskedSource, index, "throw");
+    }
+
+    private static boolean isAllowedPreThrowExpressionStatement(SourceFile sourceFile, int start, int semicolon) {
+        String statement = sourceFile.source().substring(start, semicolon).trim();
+        String maskedStatement = sourceFile.maskedSource().substring(start, semicolon);
+        if (statement.isBlank()
+                || statement.contains("->")
+                || statement.contains("::")
+                || statement.contains("{")
+                || statement.contains("}")) {
+            return false;
+        }
+        for (String disallowedWord : List.of(
+                "if",
+                "switch",
+                "try",
+                "catch",
+                "for",
+                "while",
+                "do",
+                "return",
+                "throw")) {
+            if (indexOfWord(maskedStatement, disallowedWord, 0, maskedStatement.length()) >= 0) {
+                return false;
+            }
+        }
+        return isSimpleMethodCall(statement);
     }
 
     private static String maskCommentsAndStrings(String source) {

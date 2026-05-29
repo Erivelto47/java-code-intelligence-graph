@@ -11,7 +11,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_IF_ELSE",
-                    "if/else decision shapes are recognized but not supported in Phase 4.2"
+                    "if/else decision shapes are recognized but not supported in Phase 4.2.1"
             ));
         }
 
@@ -19,7 +19,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_INLINE_THROW",
-                    "Inline conditional throw without a block is recognized but not extracted in Phase 4.2"
+                    "Inline conditional throw without a block is recognized but not extracted in Phase 4.2.1"
             ));
         }
 
@@ -27,7 +27,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_INLINE_RETURN",
-                    "Inline conditional return without a block is recognized but not extracted in Phase 4.2"
+                    "Inline conditional return without a block is recognized but not extracted in Phase 4.2.1"
             ));
         }
 
@@ -35,7 +35,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_NESTED_IF",
-                    "Nested if decision shapes are recognized but not supported in Phase 4.2"
+                    "Nested if decision shapes are recognized but not supported in Phase 4.2.1"
             ));
         }
 
@@ -43,7 +43,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_SWITCH",
-                    "Switch decision shapes are recognized but not supported in Phase 4.2"
+                    "Switch decision shapes are recognized but not supported in Phase 4.2.1"
             ));
         }
 
@@ -53,7 +53,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_TRY_CATCH",
-                    "try/catch decision shapes are recognized but not supported in Phase 4.2"
+                    "try/catch decision shapes are recognized but not supported in Phase 4.2.1"
             ));
         }
 
@@ -67,7 +67,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_COMPLEX_RETURN",
-                    "Conditional return expression is recognized but too complex for Phase 4.2 extraction"
+                    "Conditional return expression is recognized but too complex for Phase 4.2.1 extraction"
             ));
         }
 
@@ -92,7 +92,7 @@ final class JavaUnsupportedDecisionShapeDetector {
             return Optional.of(shape(
                     ifStatement,
                     "UNSUPPORTED_THROW_WITH_ADDITIONAL_STATEMENTS",
-                    "Conditional throw with additional statements is recognized but not supported in Phase 4.2"
+                    "Conditional throw with additional statements is recognized but not supported in Phase 4.2.1"
             ));
         }
 

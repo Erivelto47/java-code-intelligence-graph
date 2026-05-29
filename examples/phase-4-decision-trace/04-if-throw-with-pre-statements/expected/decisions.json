@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0",
   "generatedAt": "1970-01-01T00:00:00Z",
-  "project": "examples/phase-4-decision-trace/01-if-throw-validation",
+  "project": "examples/phase-4-decision-trace/04-if-throw-with-pre-statements",
   "scope": {
     "kind": "ENTRYPOINT",
-    "entrypoint": "com.example.UserService.create",
+    "entrypoint": "com.example.decisiontrace.blockthrow.RegistrationGuard.validate",
     "endpoint": null
   },
   "source": {
@@ -13,17 +13,17 @@
   },
   "decisions": [
     {
-      "id": "decision:com.example.UserService.create:if-throw:1",
+      "id": "decision:com.example.decisiontrace.blockthrow.RegistrationGuard.validate:if-throw:1",
       "kind": "CONDITIONAL_THROW",
       "category": "VALIDATION",
-      "method": "com.example.UserService.create",
+      "method": "com.example.decisiontrace.blockthrow.RegistrationGuard.validate",
       "source": {
-        "className": "com.example.UserService",
-        "methodName": "create",
-        "signature": "com.example.UserService.create"
+        "className": "com.example.decisiontrace.blockthrow.RegistrationGuard",
+        "methodName": "validate",
+        "signature": "com.example.decisiontrace.blockthrow.RegistrationGuard.validate"
       },
       "sourceLocation": {
-        "file": "src/main/java/com/example/UserService.java",
+        "file": "src/main/java/com/example/decisiontrace/blockthrow/RegistrationGuard.java",
         "line": 5
       },
       "expression": {
@@ -56,7 +56,7 @@
       ],
       "evidence": {
         "kind": "SOURCE_TEXT",
-        "snippet": "if (request.name() == null || request.name().isBlank()) { throw new IllegalArgumentException(\"Name is required\"); }"
+        "snippet": "if (request.name() == null || request.name().isBlank()) { logInvalidName(request); throw new IllegalArgumentException(\"Name is required\"); }"
       },
       "links": {
         "flowNodeIds": [],

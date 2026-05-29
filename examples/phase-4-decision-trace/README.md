@@ -40,8 +40,9 @@ decision shapes in the same example.
 | `01-simple-validation` | `com.example.decisiontrace.simplevalidation.UserRegistrationService.register` | Null or blank name validation with `THROW` and `CONTINUE` outcomes. |
 | `02-if-return-early-return` | `com.example.decisiontrace.ifreturn.ImportService.process` | Phase 4.2 simple direct `if (...) { return ...; }` extraction with `RETURN` outcome. |
 | `02-early-return` | `com.example.decisiontrace.earlyreturn.ImportService.process` | Early return when an input is already processed. |
-| `03-unresolved-decision-shapes` | `com.example.decisiontrace.unresolved.RegistrationGuard.validate` | Phase 4.2 recognized unsupported Java decision shapes emitted as unresolved records. |
+| `03-unresolved-decision-shapes` | `com.example.decisiontrace.unresolved.RegistrationGuard.validate` | Phase 4.2.1 recognized unsupported Java decision shapes emitted as unresolved records. |
 | `03-conditional-throw` | `com.example.decisiontrace.conditionalthrow.EmailRegistrationService.register` | Repository-backed e-mail uniqueness check that throws when true. |
+| `04-if-throw-with-pre-statements` | `com.example.decisiontrace.blockthrow.RegistrationGuard.validate` | Phase 4.2.1 block `if` extraction with simple pre-statements before the final direct throw. |
 
 ## Future Fixtures
 

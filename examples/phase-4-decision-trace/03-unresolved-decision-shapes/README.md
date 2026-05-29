@@ -3,7 +3,7 @@
 ## Scenario
 
 `RegistrationGuard.validate` contains recognized Java decision shapes that are
-not safe to extract as precise decisions in Phase 4.2.
+not safe to extract as precise decisions in Phase 4.2.1.
 
 ## Scope
 
@@ -14,7 +14,7 @@ com.example.decisiontrace.unresolved.RegistrationGuard.validate
 ## Expected Unresolved Items
 
 - Inline `if` + `throw` without braces.
-- Block `if` with another statement before `throw`.
+- Block `if` with a nested `if` before `throw`.
 - Block `if` with a factory-created exception.
 
 ## Acceptance Criteria
