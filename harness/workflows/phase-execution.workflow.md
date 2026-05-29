@@ -117,8 +117,8 @@ Modo dry-run:
 
 ### 4a. Next phase runner
 
-Quando a proxima fase ja estiver marcada no indice versionado, o Executor pode
-usar o runner de alto nivel:
+Quando houver blueprints enfileirados, o Executor pode usar o runner de alto
+nivel:
 
 ```bash
 ./harness/bin/run-next-phase.sh
@@ -130,9 +130,32 @@ O indice fica em:
 harness/phases/phase-index.tsv
 ```
 
-O runner le a fase marcada como `next`, valida que existe exatamente uma
-entrada `next`, valida o blueprint, chama `run-phase.sh` e gera um prompt
-padrao em:
+O indice usa formato minimo:
+
+```text
+order	id	status	commit
+```
+
+O runner le `harness/blueprints/*.blueprint.md`, sincroniza o indice, preserva
+statuses e commits existentes, adiciona blueprints ausentes como `planned` e
+deriva todos os paths a partir do id:
+
+```text
+harness/blueprints/<id>.blueprint.md
+harness/handoffs/<id>.handoff.md
+harness/validations/<id>.validation.md
+harness/completion/<id>.completion.md
+harness/reports/runs/<ID_UPPER_SNAKE>_REPORT.md
+```
+
+Para enfileirar muitas fases, basta salvar os blueprints em
+`harness/blueprints/` e rodar o runner. Se nao houver `next` nem `validation`,
+a primeira fase `planned` vira `next`.
+
+O runner valida que existe no maximo uma entrada `next`, bloqueia se qualquer
+fase estiver em `validation`, valida o blueprint, bloqueia quando o report
+derivado da fase `next` ja existe, chama `run-phase.sh` e gera um prompt padrao
+em:
 
 ```text
 harness/bin/build/prompts/<phase-id>.codex-prompt.txt
@@ -144,9 +167,12 @@ Fluxo recomendado:
 2. Colar o prompt no Codex.
 3. Executar a fase usando o blueprint como fonte primaria.
 4. Gerar report em `harness/reports/runs/`.
+5. Marcar a fase como `validation` manualmente enquanto o report estiver em
+   revisao humana.
+6. Marcar `implemented` ou `approved` apenas depois de decisao humana.
 
-O runner nao chama Codex automaticamente, nao implementa a fase, nao altera o
-status no indice, nao faz merge e nao faz push.
+O runner nao chama Codex automaticamente, nao implementa a fase, nao marca
+`implemented`, nao marca `approved`, nao faz merge e nao faz push.
 
 ### 5. Branch check
 

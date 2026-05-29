@@ -34,8 +34,8 @@ runtime report.
 
 ## run-next-phase.sh
 
-Use the next phase runner when `harness/phases/phase-index.tsv` marks exactly
-one phase as `next`:
+Use the next phase runner to synchronize the phase queue from blueprints,
+derive paths from phase ids and prepare the next executable phase:
 
 ```bash
 ./harness/bin/run-next-phase.sh
@@ -43,15 +43,26 @@ one phase as `next`:
 
 The runner:
 
-- reads `harness/phases/phase-index.tsv`;
-- validates that exactly one phase is marked `next`;
-- validates that the next phase blueprint exists;
+- reads `harness/blueprints/*.blueprint.md`;
+- synchronizes `harness/phases/phase-index.tsv`;
+- keeps existing statuses and commits;
+- adds blueprint ids missing from the index as `planned`;
+- derives blueprint, handoff, validation, completion, report and prompt paths
+  from the phase id;
+- validates allowed statuses;
+- fails if more than one phase is marked `next`;
+- blocks execution if any phase is marked `validation`;
+- promotes the first `planned` phase to `next` when there is no `next` and no
+  `validation`;
+- blocks if the derived report for the `next` phase already exists;
 - calls `./harness/bin/run-phase.sh <blueprint>`;
 - generates `harness/bin/build/prompts/<phase-id>.codex-prompt.txt`;
-- prints the branch, phase id, derived paths, report path and next step.
+- prints the branch, phase id, derived paths, report path, prompt path and next
+  step.
 
 Dry-run mode delegates to `run-phase.sh --dry-run` and still renders the
-temporary Codex prompt under `harness/bin/build/`:
+temporary Codex prompt under `harness/bin/build/`. It also synchronizes the
+phase index, because the queue itself is versioned harness state:
 
 ```bash
 ./harness/bin/run-next-phase.sh --dry-run
@@ -60,7 +71,7 @@ temporary Codex prompt under `harness/bin/build/`:
 Limitations:
 
 - no `--phase` override in the MVP;
-- no automatic status update in `phase-index.tsv`;
+- no automatic transition to `implemented`, `approved` or `validation`;
 - no Codex/model execution;
 - no product implementation;
 - no merge;

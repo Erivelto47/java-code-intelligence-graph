@@ -19,27 +19,28 @@ class NextPhaseRunnerScriptTest {
     private static final Path PROJECT_ROOT = Path.of("").toAbsolutePath().normalize();
 
     @Test
-    void dryRunFindsNextPhaseAndGeneratesPrompt(@TempDir Path tempDir) throws Exception {
+    void dryRunAcceptsMinimalIndexDerivesPathsAndGeneratesPrompt(@TempDir Path tempDir) throws Exception {
         Path repo = createHarnessRepo(tempDir);
         writeBlueprint(repo, "phase-9-next");
-        writePhaseIndex(repo,
-                "1\tphase-9-done\timplemented\tharness/blueprints/phase-9-done.blueprint.md\tharness/reports/runs/PHASE_9_DONE_REPORT.md\tabc123\n"
-                        + "2\tphase-9-next\tnext\tharness/blueprints/phase-9-next.blueprint.md\tharness/reports/runs/PHASE_9_NEXT_REPORT.md\t\n");
-
-        String beforeIndex = Files.readString(repo.resolve("harness/phases/phase-index.tsv"));
+        writePhaseIndex(repo, "1\tphase-9-next\tnext\tTBD\n");
 
         CommandResult result = runRunner(repo, "--dry-run");
 
         assertEquals(0, result.exitCode(), result.output());
         assertTrue(result.output().contains("next phase id: phase-9-next"));
+        assertTrue(result.output().contains("blueprint: harness/blueprints/phase-9-next.blueprint.md"));
+        assertTrue(result.output().contains("derived handoff: harness/handoffs/phase-9-next.handoff.md"));
+        assertTrue(result.output().contains("derived validation: harness/validations/phase-9-next.validation.md"));
+        assertTrue(result.output().contains("derived completion: harness/completion/phase-9-next.completion.md"));
+        assertTrue(result.output().contains("report path: harness/reports/runs/PHASE_9_NEXT_REPORT.md"));
         assertTrue(result.output().contains("prompt path: harness/bin/build/prompts/phase-9-next.codex-prompt.txt"));
         assertFalse(Files.exists(repo.resolve("harness/handoffs/phase-9-next.handoff.md")));
-        assertEquals(beforeIndex, Files.readString(repo.resolve("harness/phases/phase-index.tsv")));
 
         Path prompt = repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt");
         assertTrue(Files.isRegularFile(prompt));
         String promptText = Files.readString(prompt);
         assertTrue(promptText.contains("phase-9-next"));
+        assertTrue(promptText.contains("harness/phases/phase-index.tsv"));
         assertTrue(promptText.contains("harness/blueprints/phase-9-next.blueprint.md"));
         assertTrue(promptText.contains("harness/handoffs/phase-9-next.handoff.md"));
         assertTrue(promptText.contains("harness/validations/phase-9-next.validation.md"));
@@ -59,15 +60,15 @@ class NextPhaseRunnerScriptTest {
     }
 
     @Test
-    void failsWhenNoPhaseIsMarkedNext(@TempDir Path tempDir) throws Exception {
+    void failsWhenNextBlueprintIsMissing(@TempDir Path tempDir) throws Exception {
         Path repo = createHarnessRepo(tempDir);
-        writePhaseIndex(repo,
-                "1\tphase-9-planned\tplanned\tharness/blueprints/phase-9-planned.blueprint.md\tharness/reports/runs/PHASE_9_PLANNED_REPORT.md\t\n");
+        writePhaseIndex(repo, "1\tphase-9-missing\tnext\tTBD\n");
 
         CommandResult result = runRunner(repo, "--dry-run");
 
         assertEquals(1, result.exitCode(), result.output());
-        assertTrue(result.output().contains("No phase marked as next in harness/phases/phase-index.tsv"));
+        assertTrue(result.output().contains("Blueprint not found for next phase phase-9-missing"));
+        assertTrue(result.output().contains("harness/blueprints/phase-9-missing.blueprint.md"));
     }
 
     @Test
@@ -76,8 +77,8 @@ class NextPhaseRunnerScriptTest {
         writeBlueprint(repo, "phase-9-next-a");
         writeBlueprint(repo, "phase-9-next-b");
         writePhaseIndex(repo,
-                "1\tphase-9-next-a\tnext\tharness/blueprints/phase-9-next-a.blueprint.md\tharness/reports/runs/PHASE_9_NEXT_A_REPORT.md\t\n"
-                        + "2\tphase-9-next-b\tnext\tharness/blueprints/phase-9-next-b.blueprint.md\tharness/reports/runs/PHASE_9_NEXT_B_REPORT.md\t\n");
+                "1\tphase-9-next-a\tnext\tTBD\n"
+                        + "2\tphase-9-next-b\tnext\tTBD\n");
 
         CommandResult result = runRunner(repo, "--dry-run");
 
@@ -85,6 +86,102 @@ class NextPhaseRunnerScriptTest {
         assertTrue(result.output().contains("Multiple phases marked as next in harness/phases/phase-index.tsv"));
         assertTrue(result.output().contains("phase-9-next-a"));
         assertTrue(result.output().contains("phase-9-next-b"));
+    }
+
+    @Test
+    void validationStatusBlocksNextPhaseExecution(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-validation");
+        writeBlueprint(repo, "phase-9-next");
+        writePhaseIndex(repo,
+                "1\tphase-9-validation\tvalidation\tabc123\n"
+                        + "2\tphase-9-next\tnext\tTBD\n");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(1, result.exitCode(), result.output());
+        assertTrue(result.output().contains("Cannot run next phase."));
+        assertTrue(result.output().contains("Phase waiting for validation:"));
+        assertTrue(result.output().contains("phase-9-validation"));
+        assertTrue(result.output().contains("harness/reports/runs/PHASE_9_VALIDATION_REPORT.md"));
+        assertTrue(result.output().contains("prevents stacking phase executions"));
+        assertFalse(Files.exists(repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt")));
+    }
+
+    @Test
+    void newBlueprintIsAddedAsPlannedWithoutChangingExistingStatuses(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-implemented");
+        writeBlueprint(repo, "phase-9-approved");
+        writeBlueprint(repo, "phase-9-next");
+        writeBlueprint(repo, "phase-9-new");
+        writePhaseIndex(repo,
+                "1\tphase-9-implemented\timplemented\tabc123\n"
+                        + "2\tphase-9-approved\tapproved\tdef456\n"
+                        + "3\tphase-9-next\tnext\tTBD\n");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(0, result.exitCode(), result.output());
+        String phaseIndex = Files.readString(repo.resolve("harness/phases/phase-index.tsv"));
+        assertTrue(phaseIndex.contains("1\tphase-9-implemented\timplemented\tabc123\n"));
+        assertTrue(phaseIndex.contains("2\tphase-9-approved\tapproved\tdef456\n"));
+        assertTrue(phaseIndex.contains("3\tphase-9-next\tnext\tTBD\n"));
+        assertTrue(phaseIndex.contains("4\tphase-9-new\tplanned\tTBD\n"));
+    }
+
+    @Test
+    void firstPlannedPhaseIsPromotedWhenNoNextOrValidationExists(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-planned-a");
+        writeBlueprint(repo, "phase-9-planned-b");
+        writePhaseIndex(repo,
+                "1\tphase-9-planned-a\tplanned\tTBD\n"
+                        + "2\tphase-9-planned-b\tplanned\tTBD\n");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(0, result.exitCode(), result.output());
+        assertTrue(result.output().contains("Promoted first planned phase to next: phase-9-planned-a"));
+        assertTrue(result.output().contains("next phase id: phase-9-planned-a"));
+
+        String phaseIndex = Files.readString(repo.resolve("harness/phases/phase-index.tsv"));
+        assertTrue(phaseIndex.contains("1\tphase-9-planned-a\tnext\tTBD\n"));
+        assertTrue(phaseIndex.contains("2\tphase-9-planned-b\tplanned\tTBD\n"));
+    }
+
+    @Test
+    void reportAlreadyExistingForNextPhaseBlocksExecution(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-next");
+        writePhaseIndex(repo, "1\tphase-9-next\tnext\tTBD\n");
+        Path report = repo.resolve("harness/reports/runs/PHASE_9_NEXT_REPORT.md");
+        Files.createDirectories(report.getParent());
+        Files.writeString(report, "# Existing report\n", StandardCharsets.UTF_8);
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(1, result.exitCode(), result.output());
+        assertTrue(result.output().contains("Report already exists for next phase:"));
+        assertTrue(result.output().contains("harness/reports/runs/PHASE_9_NEXT_REPORT.md"));
+        assertTrue(result.output().contains("This phase may already be waiting for validation."));
+        assertFalse(Files.exists(repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt")));
+    }
+
+    @Test
+    void legacyIndexIsMigratedToMinimalIndex(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-next");
+        writeLegacyPhaseIndex(repo,
+                "1\tphase-9-next\tnext\tharness/blueprints/wrong.blueprint.md\tharness/reports/runs/WRONG_REPORT.md\tabc123\n");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(0, result.exitCode(), result.output());
+        assertEquals("order\tid\tstatus\tcommit\n"
+                        + "1\tphase-9-next\tnext\tabc123\n",
+                Files.readString(repo.resolve("harness/phases/phase-index.tsv")));
+        assertTrue(result.output().contains("harness/reports/runs/PHASE_9_NEXT_REPORT.md"));
     }
 
     private static Path createHarnessRepo(Path tempDir) throws Exception {
@@ -111,6 +208,12 @@ class NextPhaseRunnerScriptTest {
     }
 
     private static void writePhaseIndex(Path repo, String rows) throws IOException {
+        Path phaseIndex = repo.resolve("harness/phases/phase-index.tsv");
+        Files.createDirectories(phaseIndex.getParent());
+        Files.writeString(phaseIndex, "order\tid\tstatus\tcommit\n" + rows, StandardCharsets.UTF_8);
+    }
+
+    private static void writeLegacyPhaseIndex(Path repo, String rows) throws IOException {
         Path phaseIndex = repo.resolve("harness/phases/phase-index.tsv");
         Files.createDirectories(phaseIndex.getParent());
         Files.writeString(phaseIndex, "order\tid\tstatus\tblueprint\treport\tcommit\n" + rows, StandardCharsets.UTF_8);

@@ -94,7 +94,8 @@ o report runtime. Ele apenas prepara o pacote operacional derivado.
 ## Next phase runner
 
 Harness 0.4 adiciona um runner de alto nivel para descobrir a proxima fase a
-partir do indice versionado:
+partir do indice versionado. Harness 0.4.2 torna esse indice minimo e deriva
+os paths a partir do id da fase:
 
 ```bash
 ./harness/bin/run-next-phase.sh
@@ -106,9 +107,36 @@ O indice fica em:
 harness/phases/phase-index.tsv
 ```
 
-O runner valida que existe exatamente uma fase com status `next`, confirma que
-o blueprint dessa fase existe, chama `run-phase.sh` para preparar handoff,
-validation e completion, e gera um prompt padrao para Codex em:
+Formato do indice:
+
+```text
+order	id	status	commit
+```
+
+O runner sincroniza o indice lendo `harness/blueprints/*.blueprint.md`.
+Blueprints que ainda nao existem no indice sao adicionados ao final como
+`planned` com commit `TBD`. Linhas existentes preservam status e commit.
+
+Os paths sao derivados do id:
+
+```text
+harness/blueprints/<id>.blueprint.md
+harness/handoffs/<id>.handoff.md
+harness/validations/<id>.validation.md
+harness/completion/<id>.completion.md
+harness/bin/build/prompts/<id>.codex-prompt.txt
+harness/reports/runs/<ID_UPPER_SNAKE>_REPORT.md
+```
+
+Para enfileirar muitas fases, salve os blueprints em `harness/blueprints/` e
+rode o runner. Se nao houver `next` nem `validation`, a primeira fase
+`planned` sera promovida para `next`.
+
+O runner valida que existe no maximo uma fase com status `next`, bloqueia se
+qualquer fase estiver em `validation`, confirma que o blueprint da fase `next`
+existe, bloqueia se o report derivado ja existir, chama `run-phase.sh` para
+preparar handoff, validation e completion, e gera um prompt padrao para Codex
+em:
 
 ```text
 harness/bin/build/prompts/<phase-id>.codex-prompt.txt
@@ -123,7 +151,10 @@ Modo dry-run:
 `run-phase.sh` prepara uma fase especifica informada pelo usuario.
 `run-next-phase.sh` descobre a proxima fase pelo indice e reutiliza
 `run-phase.sh`. Nenhum dos dois executa Codex automaticamente, implementa
-produto, altera status no indice, faz merge ou faz push.
+produto, marca fases como `implemented` ou `approved`, faz merge ou faz push.
+Status `validation`, `implemented` e `approved` continuam sendo decisoes
+humanas/manuais. Um report existente para uma fase `next` bloqueia a execucao
+porque pode indicar que a fase ja aguarda revisao humana.
 
 ## Roles operacionais
 

@@ -1,5 +1,6 @@
-order	id	status	blueprint	report	commit
-1	phase-4-2-java-decision-unresolved-early-return	implemented	harness/blueprints/phase-4-2-java-decision-unresolved-early-return.blueprint.md	harness/reports/runs/PHASE_4_2_JAVA_DECISION_UNRESOLVED_EARLY_RETURN_REPORT.md	2b1b756
-2	phase-4-2-1-java-block-throw-with-pre-statements	implemented	harness/blueprints/phase-4-2-1-java-block-throw-with-pre-statements.blueprint.md	harness/reports/runs/PHASE_4_2_1_JAVA_BLOCK_THROW_WITH_PRE_STATEMENTS_REPORT.md	79635bd
-3	phase-4-2-2-java-single-line-if-throw	implemented	harness/blueprints/phase-4-2-2-java-single-line-if-throw.blueprint.md	harness/reports/runs/PHASE_4_2_2_JAVA_SINGLE_LINE_IF_THROW_REPORT.md	07f6398
-4	phase-4-3-java-if-else-decision-shape	next	harness/blueprints/phase-4-3-java-if-else-decision-shape.blueprint.md	harness/reports/runs/PHASE_4_3_JAVA_IF_ELSE_DECISION_SHAPE_REPORT.md	TBD
+order	id	status	commit
+1	phase-4-2-java-decision-unresolved-early-return	implemented	2b1b756
+2	phase-4-2-1-java-block-throw-with-pre-statements	implemented	79635bd
+3	phase-4-2-2-java-single-line-if-throw	implemented	07f6398
+4	phase-4-3-java-if-else-decision-shape	validation	cb487f1
+5	harness-0-4-1-runner-prompt-output-path	implemented	5c19a2e
