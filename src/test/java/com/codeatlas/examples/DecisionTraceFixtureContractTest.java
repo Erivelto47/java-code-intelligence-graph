@@ -104,6 +104,15 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void ifElseThrowReturnBranchesFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/07-if-else-throw-return-branches"),
+                "com.example.decisiontrace.ifelsemixed.AccessDecision.resolve",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,

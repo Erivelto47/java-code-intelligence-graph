@@ -45,12 +45,13 @@ decision shapes in the same example.
 | `04-if-throw-with-pre-statements` | `com.example.decisiontrace.blockthrow.RegistrationGuard.validate` | Phase 4.2.1 block `if` extraction with simple pre-statements before the final direct throw. |
 | `05-single-line-if-throw` | `com.example.decisiontrace.singleline.PaymentGuard.validate` | Phase 4.2.2 direct single-line `if (...) throw new SomeException("message");` extraction. |
 | `06-if-else-return-branches` | `com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve` | Phase 4.3 narrow direct `if/else` extraction with simple return outcomes in both branches. |
+| `07-if-else-throw-return-branches` | `com.example.decisiontrace.ifelsemixed.AccessDecision.resolve` | Phase 4.3.1 narrow direct `if/else` extraction with one literal throw branch and one simple return branch. |
 
 ## Future Fixtures
 
 Planned examples:
 
-- `07-unsupported-optional-chain`
+- `08-unsupported-optional-chain`
 
 Unsupported constructs should preserve source evidence and produce
 decision-specific unresolved items instead of guessed decisions.

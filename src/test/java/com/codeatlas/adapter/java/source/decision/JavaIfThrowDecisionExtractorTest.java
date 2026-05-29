@@ -234,6 +234,97 @@ class JavaIfThrowDecisionExtractorTest {
     }
 
     @Test
+    void extractsIfElseThrowReturnDecisionFromEntrypointMethod() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/AccessDecision.java"),
+                """
+                        package com.example;
+
+                        public class AccessDecision {
+                            public boolean resolve(AccessRequest request) {
+                                if (!request.allowed()) {
+                                    throw new IllegalStateException("Access denied");
+                                } else {
+                                    return true;
+                                }
+                            }
+
+                            public record AccessRequest(boolean allowed) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.AccessDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("IF_ELSE_CONDITION", decision.kind().name());
+        assertEquals("!request.allowed()", decision.expression().text());
+        assertEquals("request.allowed", decision.subjects().get(0).name());
+        assertEquals(
+                "if (!request.allowed()) { throw new IllegalStateException(\"Access denied\"); } else { return true; }",
+                decision.evidence().snippet()
+        );
+
+        DecisionOutcome throwOutcome = decision.outcomes().get(0);
+        assertEquals("true", throwOutcome.when());
+        assertEquals("THROW", throwOutcome.action().name());
+        assertEquals("IllegalStateException", throwOutcome.target());
+        assertEquals("IllegalStateException", throwOutcome.exceptionType());
+        assertEquals("Access denied", throwOutcome.message());
+
+        DecisionOutcome returnOutcome = decision.outcomes().get(1);
+        assertEquals("false", returnOutcome.when());
+        assertEquals("RETURN", returnOutcome.action().name());
+        assertEquals("true", returnOutcome.target());
+    }
+
+    @Test
+    void extractsIfElseReturnThrowDecisionFromEntrypointMethod() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/AccessDecision.java"),
+                """
+                        package com.example;
+
+                        public class AccessDecision {
+                            public boolean resolve(AccessRequest request) {
+                                if (request.allowed()) {
+                                    return true;
+                                } else {
+                                    throw new IllegalStateException("Access denied");
+                                }
+                            }
+
+                            public record AccessRequest(boolean allowed) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.AccessDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("IF_ELSE_CONDITION", decision.kind().name());
+
+        DecisionOutcome returnOutcome = decision.outcomes().get(0);
+        assertEquals("true", returnOutcome.when());
+        assertEquals("RETURN", returnOutcome.action().name());
+        assertEquals("true", returnOutcome.target());
+
+        DecisionOutcome throwOutcome = decision.outcomes().get(1);
+        assertEquals("false", throwOutcome.when());
+        assertEquals("THROW", throwOutcome.action().name());
+        assertEquals("IllegalStateException", throwOutcome.exceptionType());
+        assertEquals("Access denied", throwOutcome.message());
+    }
+
+    @Test
     void recordsUnsupportedIfElseWithoutTerminalReturnsAsUnresolved() throws Exception {
         writeJavaFile(
                 tempDir.resolve("src/main/java/com/example/FeatureToggleDecision.java"),
@@ -271,6 +362,61 @@ class JavaIfThrowDecisionExtractorTest {
                 "if (request.enabled()) { enable(); } else { disable(); }",
                 trace.unresolved().get(0).expression()
         );
+    }
+
+    @Test
+    void recordsUnsupportedMixedIfElseBranchesAsUnresolved() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/AccessDecision.java"),
+                """
+                        package com.example;
+
+                        public class AccessDecision {
+                            public boolean resolve(AccessRequest request) {
+                                if (!request.allowed()) {
+                                    throw createException();
+                                } else {
+                                    return true;
+                                }
+
+                                if (request.expired()) {
+                                    throw new IllegalStateException(buildMessage());
+                                } else {
+                                    return false;
+                                }
+
+                                if (request.auditRequired()) {
+                                    logAudit();
+                                    throw new IllegalStateException("Audit required");
+                                } else {
+                                    return true;
+                                }
+                            }
+
+                            private RuntimeException createException() {
+                                return new IllegalStateException("Access denied");
+                            }
+
+                            private String buildMessage() {
+                                return "Access denied";
+                            }
+
+                            private void logAudit() {
+                            }
+
+                            public record AccessRequest(boolean allowed, boolean expired, boolean auditRequired) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.AccessDecision.resolve");
+
+        assertEquals(0, trace.decisions().size());
+        assertEquals(3, trace.unresolved().size());
+        assertEquals("UNSUPPORTED_IF_ELSE", trace.unresolved().get(0).kind());
+        assertEquals("UNSUPPORTED_IF_ELSE", trace.unresolved().get(1).kind());
+        assertEquals("UNSUPPORTED_IF_ELSE", trace.unresolved().get(2).kind());
     }
 
     @Test

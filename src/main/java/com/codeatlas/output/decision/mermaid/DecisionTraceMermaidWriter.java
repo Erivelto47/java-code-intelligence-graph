@@ -113,6 +113,13 @@ public final class DecisionTraceMermaidWriter {
     }
 
     private static String returnOutcomeLabel(DecisionOutcome outcome) {
+        if (outcome.action() == DecisionOutcomeAction.THROW) {
+            String label = "throws " + outcome.exceptionType();
+            if (outcome.message() != null && !outcome.message().isBlank()) {
+                label += ": " + outcome.message();
+            }
+            return label;
+        }
         if (outcome.action() != DecisionOutcomeAction.RETURN) {
             return outcome.action().name();
         }

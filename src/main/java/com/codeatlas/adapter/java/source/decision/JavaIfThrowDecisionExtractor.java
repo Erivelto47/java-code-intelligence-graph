@@ -88,7 +88,7 @@ public final class JavaIfThrowDecisionExtractor {
                 extractionResult.unresolved(),
                 new DecisionTraceMetadata(
                         "java-source-text-decision-extractor",
-                        "phase-4.3-java-if-else-decision-shape",
+                        "phase-4.3.1-java-mixed-throw-return-if-else",
                         true,
                         "source-text"
                 )
@@ -309,26 +309,27 @@ public final class JavaIfThrowDecisionExtractor {
                 new DecisionCondition(parsedDecision.condition(), normalizedCondition),
                 subjects(parsedDecision.condition()),
                 List.of(
-                        new DecisionOutcome(
-                                "true",
-                                DecisionOutcomeAction.RETURN,
-                                parsedDecision.trueReturnTarget(),
-                                null,
-                                null,
-                                returnMeaning(parsedDecision.trueReturnExpression())
-                        ),
-                        new DecisionOutcome(
-                                "false",
-                                DecisionOutcomeAction.RETURN,
-                                parsedDecision.falseReturnTarget(),
-                                null,
-                                null,
-                                returnMeaning(parsedDecision.falseReturnExpression())
-                        )
+                        toBranchOutcome("true", parsedDecision.trueOutcome()),
+                        toBranchOutcome("false", parsedDecision.falseOutcome())
                 ),
                 new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
                 new DecisionLinks(List.of(), List.of(), List.of()),
                 "HIGH"
+        );
+    }
+
+    private static DecisionOutcome toBranchOutcome(
+            String when,
+            JavaIfElseDecisionExtractor.BranchOutcome branchOutcome
+    ) {
+        DecisionOutcomeAction action = DecisionOutcomeAction.valueOf(branchOutcome.action().name());
+        return new DecisionOutcome(
+                when,
+                action,
+                branchOutcome.target(),
+                branchOutcome.exceptionType(),
+                branchOutcome.message(),
+                branchMeaning(branchOutcome)
         );
     }
 
@@ -353,6 +354,17 @@ public final class JavaIfThrowDecisionExtractor {
         return returnExpression.isBlank()
                 ? "Returns from this branch"
                 : "Returns " + returnExpression + " from this branch";
+    }
+
+    private static String branchMeaning(JavaIfElseDecisionExtractor.BranchOutcome branchOutcome) {
+        if (branchOutcome.action().name().equals(DecisionOutcomeAction.RETURN.name())) {
+            return returnMeaning(branchOutcome.returnExpression());
+        }
+        String meaning = "Throws " + branchOutcome.exceptionType() + " from this branch";
+        if (branchOutcome.message() != null && !branchOutcome.message().isBlank()) {
+            meaning += ": " + branchOutcome.message();
+        }
+        return meaning;
     }
 
     private static List<DecisionSubject> subjects(String condition) {

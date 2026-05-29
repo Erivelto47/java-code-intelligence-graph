@@ -82,7 +82,7 @@
   ],
   "metadata": {
     "analyzer": "java-source-text-decision-extractor",
-    "phase": "phase-4.3-java-if-else-decision-shape",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
     "deterministic": true,
     "source": "source-text"
   }

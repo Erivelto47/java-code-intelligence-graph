@@ -106,15 +106,22 @@ public final class DecisionTraceMarkdownWriter {
         String falseOutcome = null;
         for (DecisionOutcome outcome : decision.outcomes()) {
             if ("true".equals(outcome.when())) {
-                trueOutcome = outcome.action() + " " + nullToEmpty(outcome.target());
+                trueOutcome = outcomeText(outcome);
             } else if ("false".equals(outcome.when())) {
-                falseOutcome = outcome.action() + " " + nullToEmpty(outcome.target());
+                falseOutcome = outcomeText(outcome);
             }
         }
         if (trueOutcome != null && falseOutcome != null) {
             return "true -> " + trueOutcome + "\nfalse -> " + falseOutcome;
         }
         return "UNKNOWN";
+    }
+
+    private static String outcomeText(DecisionOutcome outcome) {
+        if (outcome.exceptionType() != null) {
+            return "throws " + outcome.exceptionType() + "(\"" + escapeText(outcome.message()) + "\")";
+        }
+        return outcome.action() + " " + nullToEmpty(outcome.target());
     }
 
     private static String escapeTable(String value) {

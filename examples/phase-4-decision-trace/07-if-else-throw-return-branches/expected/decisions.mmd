@@ -1,0 +1,8 @@
+flowchart TD
+  entry["com.example.decisiontrace.ifelsemixed.AccessDecision.resolve"]
+  d1{"!request.allowed()"}
+  entry --> d1
+  o1t["throws IllegalStateException: Access denied"]
+  d1 -- true --> o1t
+  o1f["returns true"]
+  d1 -- false --> o1f
