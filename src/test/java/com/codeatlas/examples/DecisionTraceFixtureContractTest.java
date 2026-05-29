@@ -52,14 +52,43 @@ class DecisionTraceFixtureContractTest {
 
     @Test
     void ifThrowValidationFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
-        Path fixture = Path.of("examples/phase-4-decision-trace/01-if-throw-validation");
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/01-if-throw-validation"),
+                "com.example.UserService.create",
+                tempDir
+        );
+    }
+
+    @Test
+    void earlyReturnFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/02-if-return-early-return"),
+                "com.example.decisiontrace.ifreturn.ImportService.process",
+                tempDir
+        );
+    }
+
+    @Test
+    void unresolvedDecisionShapesFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/03-unresolved-decision-shapes"),
+                "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+                tempDir
+        );
+    }
+
+    private static void assertAnalyzeDecisionsFixtureMatches(
+            Path fixture,
+            String entrypoint,
+            Path tempDir
+    ) throws Exception {
         Path expected = fixture.resolve("expected");
-        Path generated = tempDir.resolve("generated-decisions");
+        Path generated = tempDir.resolve(fixture.getFileName().toString());
 
         int exitCode = new AnalyzeFlowCommand().run(new String[]{
                 "analyze-decisions",
                 "--project", fixture.toString(),
-                "--entrypoint", "com.example.UserService.create",
+                "--entrypoint", entrypoint,
                 "--output", generated.toString()
         });
 
@@ -97,12 +126,18 @@ class DecisionTraceFixtureContractTest {
             assertTrue(root.path("source").has("flowRef"), decisionJsonFile + " must contain source.flowRef");
             assertTrue(root.path("source").has("projectIndexRef"), decisionJsonFile + " must contain source.projectIndexRef");
             assertTrue(root.path("decisions").isArray(), decisionJsonFile + " must contain decisions array");
-            assertFalse(root.path("decisions").isEmpty(), decisionJsonFile + " must contain at least one decision");
             assertTrue(root.path("unresolved").isArray(), decisionJsonFile + " must contain unresolved array");
+            assertTrue(
+                    !root.path("decisions").isEmpty() || !root.path("unresolved").isEmpty(),
+                    decisionJsonFile + " must contain at least one decision or unresolved item"
+            );
             assertTrue(root.path("metadata").isObject(), decisionJsonFile + " must contain metadata object");
 
             for (JsonNode decision : root.path("decisions")) {
                 assertDecisionContract(decisionJsonFile, decision);
+            }
+            for (JsonNode unresolved : root.path("unresolved")) {
+                assertUnresolvedContract(decisionJsonFile, unresolved);
             }
         }
     }
@@ -141,6 +176,17 @@ class DecisionTraceFixtureContractTest {
     private static void assertNonBlank(Path file, JsonNode node, String fieldName) {
         assertTrue(node.has(fieldName), file + " missing field " + fieldName);
         assertFalse(node.path(fieldName).asText().isBlank(), file + " field " + fieldName + " must not be blank");
+    }
+
+    private static void assertUnresolvedContract(Path decisionJsonFile, JsonNode unresolved) {
+        assertTrue(unresolved.path("id").asText().startsWith("unresolved:"), decisionJsonFile + " unresolved id must be stable");
+        assertNonBlank(decisionJsonFile, unresolved, "kind");
+        assertNonBlank(decisionJsonFile, unresolved, "method");
+        assertTrue(unresolved.path("sourceLocation").isObject(), decisionJsonFile + " unresolved must contain sourceLocation");
+        assertNonBlank(decisionJsonFile, unresolved.path("sourceLocation"), "file");
+        assertTrue(unresolved.path("sourceLocation").path("line").asInt() > 0, decisionJsonFile + " line must be positive");
+        assertNonBlank(decisionJsonFile, unresolved, "message");
+        assertNonBlank(decisionJsonFile, unresolved, "expression");
     }
 
     private static void assertArtifactMatches(Path expectedDirectory, Path generatedDirectory, String fileName) throws Exception {

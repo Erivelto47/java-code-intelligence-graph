@@ -31,7 +31,7 @@ public final class DecisionTraceMarkdownWriter {
 
         markdown.append("## Decisions\n\n");
         if (trace.decisions().isEmpty()) {
-            markdown.append("No decisions detected.\n");
+            markdown.append("No decisions detected.\n\n");
         } else {
             for (DecisionNode decision : trace.decisions()) {
                 markdown.append("### ").append(escapeInline(decision.id())).append("\n\n");
@@ -60,8 +60,8 @@ public final class DecisionTraceMarkdownWriter {
         if (trace.unresolved().isEmpty()) {
             markdown.append("No unresolved decision items.\n");
         } else {
-            markdown.append("| ID | Kind | Method | Location | Message |\n");
-            markdown.append("| --- | --- | --- | --- | --- |\n");
+            markdown.append("| ID | Kind | Method | Location | Message | Expression |\n");
+            markdown.append("| --- | --- | --- | --- | --- | --- |\n");
             for (UnresolvedDecision unresolved : trace.unresolved()) {
                 String location = unresolved.sourceLocation() == null
                         ? ""
@@ -76,6 +76,8 @@ public final class DecisionTraceMarkdownWriter {
                         .append(escapeTable(location))
                         .append(" | ")
                         .append(escapeTable(unresolved.message()))
+                        .append(" | ")
+                        .append(escapeTable(unresolved.expression()))
                         .append(" |\n");
             }
         }

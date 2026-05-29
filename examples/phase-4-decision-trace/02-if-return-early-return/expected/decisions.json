@@ -1,10 +1,10 @@
 {
   "schemaVersion": "1.0",
   "generatedAt": "1970-01-01T00:00:00Z",
-  "project": "examples/phase-4-decision-trace/01-if-throw-validation",
+  "project": "examples/phase-4-decision-trace/02-if-return-early-return",
   "scope": {
     "kind": "ENTRYPOINT",
-    "entrypoint": "com.example.UserService.create",
+    "entrypoint": "com.example.decisiontrace.ifreturn.ImportService.process",
     "endpoint": null
   },
   "source": {
@@ -13,37 +13,37 @@
   },
   "decisions": [
     {
-      "id": "decision:com.example.UserService.create:if-throw:1",
-      "kind": "CONDITIONAL_THROW",
-      "category": "VALIDATION",
-      "method": "com.example.UserService.create",
+      "id": "decision:com.example.decisiontrace.ifreturn.ImportService.process:if-return:1",
+      "kind": "EARLY_RETURN",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.ifreturn.ImportService.process",
       "source": {
-        "className": "com.example.UserService",
-        "methodName": "create",
-        "signature": "com.example.UserService.create"
+        "className": "com.example.decisiontrace.ifreturn.ImportService",
+        "methodName": "process",
+        "signature": "com.example.decisiontrace.ifreturn.ImportService.process"
       },
       "sourceLocation": {
-        "file": "src/main/java/com/example/UserService.java",
+        "file": "src/main/java/com/example/decisiontrace/ifreturn/ImportService.java",
         "line": 5
       },
       "expression": {
-        "text": "request.name() == null || request.name().isBlank()",
-        "normalized": "isNullOrBlank(request.name)"
+        "text": "request.processed()",
+        "normalized": "request.processed"
       },
       "subjects": [
         {
-          "name": "request.name",
+          "name": "request.processed",
           "kind": "INPUT_FIELD"
         }
       ],
       "outcomes": [
         {
           "when": "true",
-          "action": "THROW",
-          "target": "IllegalArgumentException",
-          "exceptionType": "IllegalArgumentException",
-          "message": "Name is required",
-          "meaning": "Input is rejected by this check"
+          "action": "RETURN",
+          "target": "false",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns false from this check"
         },
         {
           "when": "false",
@@ -56,7 +56,7 @@
       ],
       "evidence": {
         "kind": "SOURCE_TEXT",
-        "snippet": "if (request.name() == null || request.name().isBlank()) { throw new IllegalArgumentException(\"Name is required\"); }"
+        "snippet": "if (request.processed()) { return false; }"
       },
       "links": {
         "flowNodeIds": [],

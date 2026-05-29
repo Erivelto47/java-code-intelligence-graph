@@ -6,9 +6,10 @@
 harness/blueprints/phase-4-2-java-decision-unresolved-early-return.blueprint.md
 ```
 
-## Blueprint approval status
+## Blueprint execution status
 
-Pending explicit Human Reviewer approval before Phase 4.2 execution.
+Execution requested by the user on 2026-05-27. Human Reviewer approval remains
+required before merge or push.
 
 ## Derived artifact status
 

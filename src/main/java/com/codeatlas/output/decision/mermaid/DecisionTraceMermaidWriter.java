@@ -4,6 +4,7 @@ import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;
 import com.codeatlas.core.decision.DecisionTrace;
 import com.codeatlas.core.decision.DecisionOutcomeAction;
+import com.codeatlas.core.decision.UnresolvedDecision;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -45,6 +46,17 @@ public final class DecisionTraceMermaidWriter {
             mermaid.append("  ").append(decisionAlias).append(" --> ").append(outcomeAlias).append("\n");
         }
 
+        for (int i = 0; i < trace.unresolved().size(); i++) {
+            UnresolvedDecision unresolved = trace.unresolved().get(i);
+            String unresolvedAlias = "u" + (i + 1);
+            mermaid.append("  ")
+                    .append(unresolvedAlias)
+                    .append("[\"")
+                    .append(escapeLabel("unresolved: " + unresolved.kind()))
+                    .append("\"]\n");
+            mermaid.append("  entry -.-> ").append(unresolvedAlias).append("\n");
+        }
+
         return mermaid.toString();
     }
 
@@ -56,6 +68,12 @@ public final class DecisionTraceMermaidWriter {
                     label += ": " + outcome.message();
                 }
                 return label;
+            }
+            if ("true".equals(outcome.when()) && outcome.action() == DecisionOutcomeAction.RETURN) {
+                if (outcome.target() == null || outcome.target().isBlank()) {
+                    return "returns";
+                }
+                return "returns " + outcome.target();
             }
         }
         return "UNKNOWN";
