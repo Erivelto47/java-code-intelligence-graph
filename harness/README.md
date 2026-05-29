@@ -91,6 +91,40 @@ Limitacao atual: o runner nao executa fases autonomamente, nao implementa
 escopo de produto, nao chama modelos, nao faz push, nao faz merge e nao escreve
 o report runtime. Ele apenas prepara o pacote operacional derivado.
 
+## Next phase runner
+
+Harness 0.4 adiciona um runner de alto nivel para descobrir a proxima fase a
+partir do indice versionado:
+
+```bash
+./harness/bin/run-next-phase.sh
+```
+
+O indice fica em:
+
+```text
+harness/phases/phase-index.tsv
+```
+
+O runner valida que existe exatamente uma fase com status `next`, confirma que
+o blueprint dessa fase existe, chama `run-phase.sh` para preparar handoff,
+validation e completion, e gera um prompt padrao para Codex em:
+
+```text
+build/harness/prompts/<phase-id>.codex-prompt.txt
+```
+
+Modo dry-run:
+
+```bash
+./harness/bin/run-next-phase.sh --dry-run
+```
+
+`run-phase.sh` prepara uma fase especifica informada pelo usuario.
+`run-next-phase.sh` descobre a proxima fase pelo indice e reutiliza
+`run-phase.sh`. Nenhum dos dois executa Codex automaticamente, implementa
+produto, altera status no indice, faz merge ou faz push.
+
 ## Roles operacionais
 
 ### ChatGPT Web Architect
@@ -193,6 +227,7 @@ harness/
   roles/          Roles e responsabilidades operacionais.
   blueprints/     Entradas primarias e fontes de verdade das fases.
   handoffs/       Artefatos derivados para transferencia operacional.
+  phases/         Indice versionado de fases e status operacionais.
   reports/        Politica, marcadores, templates e runs ignorados.
   state/          Templates de estado de execucao.
   validations/    Checklists derivados de validacao.

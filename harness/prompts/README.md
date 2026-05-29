@@ -19,3 +19,23 @@ Um prompt de execucao deve conter:
 
 Evite prompts sem branch strategy. Prompts com codigo devem ser mantidos como
 texto simples, sem depender de formatacao proprietaria do chat.
+
+## Versioned templates and generated prompts
+
+Reusable prompt templates live in `harness/prompts/` and are versioned.
+
+The next phase runner renders:
+
+```text
+harness/prompts/codex-execution-prompt.template.txt
+```
+
+to:
+
+```text
+build/harness/prompts/<phase-id>.codex-prompt.txt
+```
+
+Generated prompts under `build/harness/prompts/` are temporary outputs and are
+not versioned. They are intended to be reviewed and pasted into Codex by a
+human-initiated execution session.

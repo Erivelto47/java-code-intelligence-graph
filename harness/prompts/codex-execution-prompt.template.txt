@@ -1,0 +1,35 @@
+You are acting as Codex CLI Executor for Code Atlas.
+
+Phase id:
+{{PHASE_ID}}
+
+Current branch:
+{{CURRENT_BRANCH}}
+
+Primary blueprint:
+{{PRIMARY_BLUEPRINT_PATH}}
+
+Derived support artifacts:
+- Handoff: {{HANDOFF_PATH}}
+- Validation checklist: {{VALIDATION_PATH}}
+- Completion criteria: {{COMPLETION_PATH}}
+
+Runtime report path:
+{{REPORT_PATH}}
+
+Instructions:
+
+1. Run `git status` and `git branch --show-current` before changing files.
+2. Do not switch to `master`.
+3. Do not merge.
+4. Do not push.
+5. Read the full primary blueprint first and treat it as the source of truth.
+6. Use the derived handoff, validation checklist and completion criteria only as support artifacts.
+7. If any derived artifact conflicts with the blueprint, correct the derived artifact before implementing.
+8. Implement strictly within the blueprint scope and respect all out-of-scope constraints.
+9. Run the validations required by the blueprint and validation checklist.
+10. Generate the runtime report at `{{REPORT_PATH}}`.
+11. Do not version the report when it is under `harness/reports/runs/` unless explicitly instructed.
+12. Commit versionable changes only after validation, using a commit message derived from `{{PHASE_ID}}` or the blueprint when applicable.
+
+Do not call Codex, another model, or any autonomous product execution from the harness. This prompt is for a human-initiated Codex execution session.

@@ -115,6 +115,39 @@ Modo dry-run:
 ./harness/bin/run-phase.sh --dry-run harness/blueprints/<phase>.blueprint.md
 ```
 
+### 4a. Next phase runner
+
+Quando a proxima fase ja estiver marcada no indice versionado, o Executor pode
+usar o runner de alto nivel:
+
+```bash
+./harness/bin/run-next-phase.sh
+```
+
+O indice fica em:
+
+```text
+harness/phases/phase-index.tsv
+```
+
+O runner le a fase marcada como `next`, valida que existe exatamente uma
+entrada `next`, valida o blueprint, chama `run-phase.sh` e gera um prompt
+padrao em:
+
+```text
+build/harness/prompts/<phase-id>.codex-prompt.txt
+```
+
+Fluxo recomendado:
+
+1. Revisar o prompt gerado.
+2. Colar o prompt no Codex.
+3. Executar a fase usando o blueprint como fonte primaria.
+4. Gerar report em `harness/reports/runs/`.
+
+O runner nao chama Codex automaticamente, nao implementa a fase, nao altera o
+status no indice, nao faz merge e nao faz push.
+
 ### 5. Branch check
 
 Antes de alterar qualquer arquivo, o Executor deve rodar:
