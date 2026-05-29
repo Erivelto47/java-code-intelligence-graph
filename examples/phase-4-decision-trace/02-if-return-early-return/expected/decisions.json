@@ -69,7 +69,7 @@
   "unresolved": [],
   "metadata": {
     "analyzer": "java-source-text-decision-extractor",
-    "phase": "phase-4.2.1-java-block-throw-with-pre-statements",
+    "phase": "phase-4.2.2-java-single-line-if-throw",
     "deterministic": true,
     "source": "source-text"
   }

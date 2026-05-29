@@ -195,6 +195,7 @@ final class JavaDecisionSourceSupport {
 
         String constructorArguments = sourceFile.source().substring(index + 1, constructorClose);
         String message = firstStringLiteral(constructorArguments);
+        boolean hasDirectLiteralMessage = isSingleStringLiteralArgument(constructorArguments);
         index = skipWhitespace(maskedSource, constructorClose + 1, bodyEnd);
         if (index >= bodyEnd || maskedSource.charAt(index) != ';') {
             return Optional.empty();
@@ -203,7 +204,7 @@ final class JavaDecisionSourceSupport {
         if (index != bodyEnd) {
             return Optional.empty();
         }
-        return Optional.of(new ThrowStatement(exceptionType, message));
+        return Optional.of(new ThrowStatement(exceptionType, message, hasDirectLiteralMessage));
     }
 
     static Optional<ThrowStatement> parseFinalThrowWithAllowedPreStatements(
@@ -679,6 +680,26 @@ final class JavaDecisionSourceSupport {
         return null;
     }
 
+    private static boolean isSingleStringLiteralArgument(String value) {
+        String trimmed = value.trim();
+        if (trimmed.length() < 2 || trimmed.charAt(0) != '"') {
+            return false;
+        }
+        int index = 1;
+        while (index < trimmed.length()) {
+            char current = trimmed.charAt(index);
+            if (current == '\\') {
+                index += 2;
+                continue;
+            }
+            if (current == '"') {
+                return index == trimmed.length() - 1;
+            }
+            index++;
+        }
+        return false;
+    }
+
     private static boolean isQuotedLiteral(String value) {
         return (value.length() >= 2 && value.startsWith("\"") && value.endsWith("\""))
                 || (value.length() >= 3 && value.startsWith("'") && value.endsWith("'"));
@@ -832,7 +853,7 @@ final class JavaDecisionSourceSupport {
     ) {
     }
 
-    record ThrowStatement(String exceptionType, String message) {
+    record ThrowStatement(String exceptionType, String message, boolean hasDirectLiteralMessage) {
     }
 
     record ReturnStatement(String expression) {

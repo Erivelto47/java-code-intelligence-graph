@@ -86,6 +86,15 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void singleLineIfThrowFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/05-single-line-if-throw"),
+                "com.example.decisiontrace.singleline.PaymentGuard.validate",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,

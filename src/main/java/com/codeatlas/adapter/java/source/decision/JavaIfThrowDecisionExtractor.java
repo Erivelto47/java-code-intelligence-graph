@@ -78,7 +78,7 @@ public final class JavaIfThrowDecisionExtractor {
                 extractionResult.unresolved(),
                 new DecisionTraceMetadata(
                         "java-source-text-decision-extractor",
-                        "phase-4.2.1-java-block-throw-with-pre-statements",
+                        "phase-4.2.2-java-single-line-if-throw",
                         true,
                         "source-text"
                 )
@@ -150,16 +150,21 @@ public final class JavaIfThrowDecisionExtractor {
             JavaDecisionSourceSupport.SourceFile sourceFile,
             JavaDecisionSourceSupport.IfStatement ifStatement
     ) {
-        if (!ifStatement.hasBlock() || ifStatement.hasElse()) {
+        if (ifStatement.hasElse()) {
             return Optional.empty();
         }
 
-        Optional<JavaDecisionSourceSupport.ThrowStatement> throwStatement =
-                JavaDecisionSourceSupport.parseFinalThrowWithAllowedPreStatements(
+        Optional<JavaDecisionSourceSupport.ThrowStatement> throwStatement = ifStatement.hasBlock()
+                ? JavaDecisionSourceSupport.parseFinalThrowWithAllowedPreStatements(
                         sourceFile,
                         ifStatement.bodyStart(),
                         ifStatement.bodyEnd()
-                );
+                )
+                : JavaDecisionSourceSupport.parseDirectThrow(
+                        sourceFile,
+                        ifStatement.bodyStart(),
+                        ifStatement.bodyEnd()
+                ).filter(JavaDecisionSourceSupport.ThrowStatement::hasDirectLiteralMessage);
         if (throwStatement.isEmpty()) {
             return Optional.empty();
         }

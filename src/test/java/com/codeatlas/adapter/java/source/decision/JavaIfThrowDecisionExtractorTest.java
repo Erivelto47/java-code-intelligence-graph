@@ -59,6 +59,42 @@ class JavaIfThrowDecisionExtractorTest {
     }
 
     @Test
+    void extractsDirectSingleLineIfThrowDecisionFromEntrypointMethod() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/PaymentGuard.java"),
+                """
+                        package com.example;
+
+                        public class PaymentGuard {
+                            public void validate(PaymentRequest request) {
+                                if (request.amount() == null) throw new IllegalArgumentException("Amount is required");
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.PaymentGuard.validate");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("CONDITIONAL_THROW", decision.kind().name());
+        assertEquals("VALIDATION", decision.category().name());
+        assertEquals("request.amount() == null", decision.expression().text());
+        assertEquals("request.amount", decision.subjects().get(0).name());
+        assertEquals(
+                "if (request.amount() == null) throw new IllegalArgumentException(\"Amount is required\");",
+                decision.evidence().snippet()
+        );
+
+        DecisionOutcome throwOutcome = decision.outcomes().get(0);
+        assertEquals("THROW", throwOutcome.action().name());
+        assertEquals("IllegalArgumentException", throwOutcome.exceptionType());
+        assertEquals("Amount is required", throwOutcome.message());
+    }
+
+    @Test
     void extractsIfThrowDecisionWithAllowedPreStatements() throws Exception {
         writeJavaFile(
                 tempDir.resolve("src/main/java/com/example/RegistrationGuard.java"),
@@ -156,7 +192,7 @@ class JavaIfThrowDecisionExtractorTest {
 
                         public class RegistrationGuard {
                             public void validate(RegisterRequest request) {
-                                if (request.email() == null) throw new IllegalArgumentException("Email is required");
+                                if (request.email() == null) throw createInlineException(request.email());
 
                                 if (request.blocked()) {
                                     if (request.email().isBlank()) {
@@ -168,13 +204,36 @@ class JavaIfThrowDecisionExtractorTest {
                                 if (request.legacy()) {
                                     throw createLegacyException(request.email());
                                 }
+
+                                if (request.name() == null) throw new IllegalArgumentException(buildMessage());
+
+                                if (request.missingCode()) throw new IllegalStateException();
+
+                                if (request.disabled()) throw new IllegalStateException("Disabled registration"); else allowDisabled();
+                            }
+
+                            private RuntimeException createInlineException(String email) {
+                                return new IllegalArgumentException(email);
                             }
 
                             private RuntimeException createLegacyException(String email) {
                                 return new IllegalStateException(email);
                             }
 
-                            public record RegisterRequest(String email, boolean blocked, boolean legacy) {
+                            private String buildMessage() {
+                                return "Name is required";
+                            }
+
+                            private void allowDisabled() {
+                            }
+
+                            public record RegisterRequest(
+                                    String email,
+                                    String name,
+                                    boolean blocked,
+                                    boolean legacy,
+                                    boolean missingCode,
+                                    boolean disabled) {
                             }
                         }
                         """
@@ -183,17 +242,28 @@ class JavaIfThrowDecisionExtractorTest {
         DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.RegistrationGuard.validate");
 
         assertEquals(0, trace.decisions().size());
-        assertEquals(3, trace.unresolved().size());
+        assertEquals(6, trace.unresolved().size());
 
         UnresolvedDecision inlineThrow = trace.unresolved().get(0);
         assertEquals("UNSUPPORTED_INLINE_THROW", inlineThrow.kind());
         assertEquals("com.example.RegistrationGuard.validate", inlineThrow.method());
         assertEquals(5, inlineThrow.sourceLocation().line());
-        assertEquals("if (request.email() == null) throw new IllegalArgumentException(\"Email is required\");",
+        assertEquals("if (request.email() == null) throw createInlineException(request.email());",
                 inlineThrow.expression());
 
         assertEquals("UNSUPPORTED_NESTED_IF", trace.unresolved().get(1).kind());
         assertEquals("UNSUPPORTED_THROW_EXPRESSION", trace.unresolved().get(2).kind());
+        assertEquals("UNSUPPORTED_INLINE_THROW", trace.unresolved().get(3).kind());
+        assertEquals(
+                "if (request.name() == null) throw new IllegalArgumentException(buildMessage());",
+                trace.unresolved().get(3).expression()
+        );
+        assertEquals("UNSUPPORTED_INLINE_THROW", trace.unresolved().get(4).kind());
+        assertEquals(
+                "if (request.missingCode()) throw new IllegalStateException();",
+                trace.unresolved().get(4).expression()
+        );
+        assertEquals("UNSUPPORTED_IF_ELSE", trace.unresolved().get(5).kind());
     }
 
     @Test
