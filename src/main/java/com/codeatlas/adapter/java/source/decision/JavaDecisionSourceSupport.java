@@ -130,16 +130,22 @@ final class JavaDecisionSourceSupport {
         boolean hasElse = startsWithWord(maskedSource, afterThen, "else");
         int elseStart = -1;
         int elseEnd = -1;
+        boolean elseHasBlock = false;
+        int elseBodyStart = -1;
+        int elseBodyEnd = -1;
         if (hasElse) {
             elseStart = afterThen;
-            int elseBodyStart = skipWhitespace(maskedSource, afterThen + "else".length(), methodRange.bodyEnd());
-            Optional<StatementRange> elseRange = parseStatement(maskedSource, elseBodyStart, methodRange.bodyEnd());
+            int elseStatementStart = skipWhitespace(maskedSource, afterThen + "else".length(), methodRange.bodyEnd());
+            Optional<StatementRange> elseRange = parseStatement(maskedSource, elseStatementStart, methodRange.bodyEnd());
             if (elseRange.isPresent()) {
+                elseHasBlock = elseRange.get().hasBlock();
+                elseBodyStart = elseRange.get().bodyStart();
+                elseBodyEnd = elseRange.get().bodyEnd();
                 elseEnd = elseRange.get().statementEnd();
                 statementEnd = elseEnd;
             } else {
-                elseEnd = elseBodyStart;
-                statementEnd = elseBodyStart;
+                elseEnd = elseStatementStart;
+                statementEnd = elseStatementStart;
             }
         }
 
@@ -155,7 +161,10 @@ final class JavaDecisionSourceSupport {
                 thenRange.get().bodyEnd(),
                 hasElse,
                 elseStart,
-                elseEnd
+                elseEnd,
+                elseHasBlock,
+                elseBodyStart,
+                elseBodyEnd
         ));
     }
 
@@ -319,12 +328,6 @@ final class JavaDecisionSourceSupport {
 
     static boolean containsNestedIf(SourceFile sourceFile, IfStatement ifStatement) {
         return containsWord(sourceFile.maskedSource(), "if", ifStatement.bodyStart(), ifStatement.bodyEnd());
-    }
-
-    static boolean containsDecisionAction(SourceFile sourceFile, IfStatement ifStatement) {
-        String maskedSource = sourceFile.maskedSource();
-        return containsWord(maskedSource, "return", ifStatement.ifStart(), ifStatement.statementEnd())
-                || containsWord(maskedSource, "throw", ifStatement.ifStart(), ifStatement.statementEnd());
     }
 
     static boolean containsTopLevelWord(SourceFile sourceFile, IfStatement ifStatement, String word) {
@@ -849,7 +852,10 @@ final class JavaDecisionSourceSupport {
             int bodyEnd,
             boolean hasElse,
             int elseStart,
-            int elseEnd
+            int elseEnd,
+            boolean elseHasBlock,
+            int elseBodyStart,
+            int elseBodyEnd
     ) {
     }
 

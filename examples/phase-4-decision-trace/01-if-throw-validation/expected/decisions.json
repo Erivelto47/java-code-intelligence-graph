@@ -69,7 +69,7 @@
   "unresolved": [],
   "metadata": {
     "analyzer": "java-source-text-decision-extractor",
-    "phase": "phase-4.2.2-java-single-line-if-throw",
+    "phase": "phase-4.3-java-if-else-decision-shape",
     "deterministic": true,
     "source": "source-text"
   }

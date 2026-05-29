@@ -1,6 +1,7 @@
 package com.codeatlas.output.decision.markdown;
 
 import com.codeatlas.core.decision.DecisionNode;
+import com.codeatlas.core.decision.DecisionKind;
 import com.codeatlas.core.decision.DecisionOutcome;
 import com.codeatlas.core.decision.DecisionTrace;
 import com.codeatlas.core.decision.UnresolvedDecision;
@@ -86,6 +87,9 @@ public final class DecisionTraceMarkdownWriter {
     }
 
     private static String primaryOutcome(DecisionNode decision) {
+        if (decision.kind() == DecisionKind.IF_ELSE_CONDITION) {
+            return ifElseOutcome(decision);
+        }
         for (DecisionOutcome outcome : decision.outcomes()) {
             if ("true".equals(outcome.when()) && outcome.action() != null) {
                 if (outcome.exceptionType() != null) {
@@ -93,6 +97,22 @@ public final class DecisionTraceMarkdownWriter {
                 }
                 return outcome.action() + " " + nullToEmpty(outcome.target());
             }
+        }
+        return "UNKNOWN";
+    }
+
+    private static String ifElseOutcome(DecisionNode decision) {
+        String trueOutcome = null;
+        String falseOutcome = null;
+        for (DecisionOutcome outcome : decision.outcomes()) {
+            if ("true".equals(outcome.when())) {
+                trueOutcome = outcome.action() + " " + nullToEmpty(outcome.target());
+            } else if ("false".equals(outcome.when())) {
+                falseOutcome = outcome.action() + " " + nullToEmpty(outcome.target());
+            }
+        }
+        if (trueOutcome != null && falseOutcome != null) {
+            return "true -> " + trueOutcome + "\nfalse -> " + falseOutcome;
         }
         return "UNKNOWN";
     }

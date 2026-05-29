@@ -44,13 +44,13 @@ decision shapes in the same example.
 | `03-conditional-throw` | `com.example.decisiontrace.conditionalthrow.EmailRegistrationService.register` | Repository-backed e-mail uniqueness check that throws when true. |
 | `04-if-throw-with-pre-statements` | `com.example.decisiontrace.blockthrow.RegistrationGuard.validate` | Phase 4.2.1 block `if` extraction with simple pre-statements before the final direct throw. |
 | `05-single-line-if-throw` | `com.example.decisiontrace.singleline.PaymentGuard.validate` | Phase 4.2.2 direct single-line `if (...) throw new SomeException("message");` extraction. |
+| `06-if-else-return-branches` | `com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve` | Phase 4.3 narrow direct `if/else` extraction with simple return outcomes in both branches. |
 
 ## Future Fixtures
 
 Planned examples:
 
-- `04-if-else-business-rule`
-- `05-unsupported-optional-chain`
+- `07-unsupported-optional-chain`
 
 Unsupported constructs should preserve source evidence and produce
 decision-specific unresolved items instead of guessed decisions.

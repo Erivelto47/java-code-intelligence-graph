@@ -184,6 +184,96 @@ class JavaIfThrowDecisionExtractorTest {
     }
 
     @Test
+    void extractsSimpleIfElseReturnDecisionFromEntrypointMethod() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/FeatureToggleDecision.java"),
+                """
+                        package com.example;
+
+                        public class FeatureToggleDecision {
+                            public boolean resolve(FeatureRequest request) {
+                                if (request.enabled()) {
+                                    return true;
+                                } else {
+                                    return false;
+                                }
+                            }
+
+                            public record FeatureRequest(boolean enabled) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.FeatureToggleDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("IF_ELSE_CONDITION", decision.kind().name());
+        assertEquals("UNKNOWN", decision.category().name());
+        assertEquals("request.enabled()", decision.expression().text());
+        assertEquals("request.enabled", decision.expression().normalized());
+        assertEquals("request.enabled", decision.subjects().get(0).name());
+        assertEquals(
+                "if (request.enabled()) { return true; } else { return false; }",
+                decision.evidence().snippet()
+        );
+
+        DecisionOutcome trueOutcome = decision.outcomes().get(0);
+        assertEquals("true", trueOutcome.when());
+        assertEquals("RETURN", trueOutcome.action().name());
+        assertEquals("true", trueOutcome.target());
+
+        DecisionOutcome falseOutcome = decision.outcomes().get(1);
+        assertEquals("false", falseOutcome.when());
+        assertEquals("RETURN", falseOutcome.action().name());
+        assertEquals("false", falseOutcome.target());
+    }
+
+    @Test
+    void recordsUnsupportedIfElseWithoutTerminalReturnsAsUnresolved() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/FeatureToggleDecision.java"),
+                """
+                        package com.example;
+
+                        public class FeatureToggleDecision {
+                            public void resolve(FeatureRequest request) {
+                                if (request.enabled()) {
+                                    enable();
+                                } else {
+                                    disable();
+                                }
+                            }
+
+                            private void enable() {
+                            }
+
+                            private void disable() {
+                            }
+
+                            public record FeatureRequest(boolean enabled) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.FeatureToggleDecision.resolve");
+
+        assertEquals(0, trace.decisions().size());
+        assertEquals(1, trace.unresolved().size());
+        assertEquals("UNSUPPORTED_IF_ELSE", trace.unresolved().get(0).kind());
+        assertEquals(
+                "if (request.enabled()) { enable(); } else { disable(); }",
+                trace.unresolved().get(0).expression()
+        );
+    }
+
+    @Test
     void recordsRecognizedUnsupportedDecisionShapesAsUnresolved() throws Exception {
         writeJavaFile(
                 tempDir.resolve("src/main/java/com/example/RegistrationGuard.java"),

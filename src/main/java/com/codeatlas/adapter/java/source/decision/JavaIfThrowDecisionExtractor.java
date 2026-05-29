@@ -28,17 +28,27 @@ public final class JavaIfThrowDecisionExtractor {
     private static final String SCHEMA_VERSION = "1.0";
     private static final Instant DETERMINISTIC_GENERATED_AT = Instant.EPOCH;
 
+    private final JavaIfElseDecisionExtractor ifElseDecisionExtractor;
     private final JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor;
     private final JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector;
 
     public JavaIfThrowDecisionExtractor() {
-        this(new JavaEarlyReturnDecisionExtractor(), new JavaUnsupportedDecisionShapeDetector());
+        this(
+                new JavaIfElseDecisionExtractor(),
+                new JavaEarlyReturnDecisionExtractor(),
+                new JavaUnsupportedDecisionShapeDetector()
+        );
     }
 
     JavaIfThrowDecisionExtractor(
+            JavaIfElseDecisionExtractor ifElseDecisionExtractor,
             JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor,
             JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector
     ) {
+        this.ifElseDecisionExtractor = Objects.requireNonNull(
+                ifElseDecisionExtractor,
+                "ifElseDecisionExtractor must not be null"
+        );
         this.earlyReturnDecisionExtractor = Objects.requireNonNull(
                 earlyReturnDecisionExtractor,
                 "earlyReturnDecisionExtractor must not be null"
@@ -78,7 +88,7 @@ public final class JavaIfThrowDecisionExtractor {
                 extractionResult.unresolved(),
                 new DecisionTraceMetadata(
                         "java-source-text-decision-extractor",
-                        "phase-4.2.2-java-single-line-if-throw",
+                        "phase-4.3-java-if-else-decision-shape",
                         true,
                         "source-text"
                 )
@@ -116,6 +126,15 @@ public final class JavaIfThrowDecisionExtractor {
             Optional<IfThrowDecision> ifThrowDecision = parseIfThrow(sourceFile, ifStatement);
             if (ifThrowDecision.isPresent()) {
                 decisions.add(toThrowDecisionNode(entrypoint, sourceFile, ifThrowDecision.get(), decisionOrdinal));
+                decisionOrdinal++;
+                index = ifStatement.statementEnd();
+                continue;
+            }
+
+            Optional<JavaIfElseDecisionExtractor.IfElseDecision> ifElseDecision =
+                    ifElseDecisionExtractor.parse(sourceFile, ifStatement);
+            if (ifElseDecision.isPresent()) {
+                decisions.add(toIfElseDecisionNode(entrypoint, sourceFile, ifElseDecision.get(), decisionOrdinal));
                 decisionOrdinal++;
                 index = ifStatement.statementEnd();
                 continue;
@@ -271,6 +290,48 @@ public final class JavaIfThrowDecisionExtractor {
         );
     }
 
+    private static DecisionNode toIfElseDecisionNode(
+            JavaDecisionSourceSupport.Entrypoint entrypoint,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaIfElseDecisionExtractor.IfElseDecision parsedDecision,
+            int ordinal
+    ) {
+        String method = entrypoint.normalized();
+        String normalizedCondition = JavaDecisionSourceSupport.normalizedCondition(parsedDecision.condition());
+
+        return new DecisionNode(
+                "decision:" + method + ":if-else:" + ordinal,
+                DecisionKind.IF_ELSE_CONDITION,
+                DecisionCategory.UNKNOWN,
+                method,
+                new DecisionSource(entrypoint.classQualifiedName(), entrypoint.methodName(), method),
+                new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
+                new DecisionCondition(parsedDecision.condition(), normalizedCondition),
+                subjects(parsedDecision.condition()),
+                List.of(
+                        new DecisionOutcome(
+                                "true",
+                                DecisionOutcomeAction.RETURN,
+                                parsedDecision.trueReturnTarget(),
+                                null,
+                                null,
+                                returnMeaning(parsedDecision.trueReturnExpression())
+                        ),
+                        new DecisionOutcome(
+                                "false",
+                                DecisionOutcomeAction.RETURN,
+                                parsedDecision.falseReturnTarget(),
+                                null,
+                                null,
+                                returnMeaning(parsedDecision.falseReturnExpression())
+                        )
+                ),
+                new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
+                new DecisionLinks(List.of(), List.of(), List.of()),
+                "HIGH"
+        );
+    }
+
     private static UnresolvedDecision toUnresolvedDecision(
             JavaDecisionSourceSupport.Entrypoint entrypoint,
             JavaDecisionSourceSupport.SourceFile sourceFile,
@@ -286,6 +347,12 @@ public final class JavaIfThrowDecisionExtractor {
                 unsupportedShape.message(),
                 unsupportedShape.snippet()
         );
+    }
+
+    private static String returnMeaning(String returnExpression) {
+        return returnExpression.isBlank()
+                ? "Returns from this branch"
+                : "Returns " + returnExpression + " from this branch";
     }
 
     private static List<DecisionSubject> subjects(String condition) {
