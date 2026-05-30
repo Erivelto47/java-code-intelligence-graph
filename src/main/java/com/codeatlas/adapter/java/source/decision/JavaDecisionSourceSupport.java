@@ -59,14 +59,19 @@ final class JavaDecisionSourceSupport {
     }
 
     static Optional<MethodRange> findMethod(SourceFile sourceFile, Entrypoint entrypoint) {
+        return findMethodsByName(sourceFile, entrypoint.methodName()).stream().findFirst();
+    }
+
+    static List<MethodRange> findMethodsByName(SourceFile sourceFile, String methodName) {
         String maskedSource = sourceFile.maskedSource();
+        List<MethodRange> methods = new ArrayList<>();
         int index = 0;
         while (index < maskedSource.length()) {
-            int methodNameStart = maskedSource.indexOf(entrypoint.methodName(), index);
+            int methodNameStart = maskedSource.indexOf(methodName, index);
             if (methodNameStart < 0) {
-                return Optional.empty();
+                return List.copyOf(methods);
             }
-            int methodNameEnd = methodNameStart + entrypoint.methodName().length();
+            int methodNameEnd = methodNameStart + methodName.length();
             if (!hasIdentifierBoundary(maskedSource, methodNameStart, methodNameEnd)) {
                 index = methodNameEnd;
                 continue;
@@ -103,9 +108,10 @@ final class JavaDecisionSourceSupport {
                 index = methodNameEnd;
                 continue;
             }
-            return Optional.of(new MethodRange(methodNameStart, afterParameters + 1, closeBrace));
+            methods.add(new MethodRange(methodNameStart, afterParameters + 1, closeBrace));
+            index = closeBrace + 1;
         }
-        return Optional.empty();
+        return List.copyOf(methods);
     }
 
     static Optional<IfStatement> parseIfStatement(SourceFile sourceFile, MethodRange methodRange, int ifStart) {
@@ -471,7 +477,7 @@ final class JavaDecisionSourceSupport {
         return Optional.of(new StatementEnd(statementEnd));
     }
 
-    private static int findTopLevelSemicolon(String maskedSource, int start, int limit) {
+    static int findTopLevelSemicolon(String maskedSource, int start, int limit) {
         int parenDepth = 0;
         int bracketDepth = 0;
         int braceDepth = 0;

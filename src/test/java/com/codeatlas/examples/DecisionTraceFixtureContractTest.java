@@ -113,6 +113,15 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void methodLocalDecisionCallFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/08-method-local-decision-call"),
+                "com.example.decisiontrace.localcall.UserRegistration.create",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,

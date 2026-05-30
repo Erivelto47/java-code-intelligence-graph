@@ -9,6 +9,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -322,6 +323,135 @@ class JavaIfThrowDecisionExtractorTest {
         assertEquals("THROW", throwOutcome.action().name());
         assertEquals("IllegalStateException", throwOutcome.exceptionType());
         assertEquals("Access denied", throwOutcome.message());
+    }
+
+    @Test
+    void linksSupportedDecisionFromSimpleSameClassHelperCall() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/UserRegistration.java"),
+                """
+                        package com.example;
+
+                        public class UserRegistration {
+                            public void create(CreateUserRequest request) {
+                                validateName(request);
+                            }
+
+                            private void validateName(CreateUserRequest request) {
+                                if (request.name() == null || request.name().isBlank()) {
+                                    throw new IllegalArgumentException("Name is required");
+                                }
+                            }
+
+                            public record CreateUserRequest(String name) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.UserRegistration.create");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("CONDITIONAL_THROW", decision.kind().name());
+        assertEquals("com.example.UserRegistration.validateName", decision.method());
+        assertEquals("com.example.UserRegistration", decision.source().className());
+        assertEquals("validateName", decision.source().methodName());
+        assertEquals("com.example.UserRegistration.validateName", decision.source().signature());
+        assertEquals(9, decision.sourceLocation().line());
+        assertEquals("request.name() == null || request.name().isBlank()", decision.expression().text());
+        assertEquals(
+                "if (request.name() == null || request.name().isBlank()) { "
+                        + "throw new IllegalArgumentException(\"Name is required\"); }",
+                decision.evidence().snippet()
+        );
+        assertEquals(List.of("com.example.UserRegistration.validateName"), decision.links().calledMethods());
+    }
+
+    @Test
+    void recordsAmbiguousLocalHelperOverloadsAsUnresolved() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/UserRegistration.java"),
+                """
+                        package com.example;
+
+                        public class UserRegistration {
+                            public void create(CreateUserRequest request) {
+                                validateName(request);
+                            }
+
+                            private void validateName(CreateUserRequest request) {
+                                if (request.name() == null) {
+                                    throw new IllegalArgumentException("Name is required");
+                                }
+                            }
+
+                            private void validateName(String name) {
+                                if (name == null) {
+                                    throw new IllegalArgumentException("Name is required");
+                                }
+                            }
+
+                            public record CreateUserRequest(String name) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.UserRegistration.create");
+
+        assertEquals(0, trace.decisions().size());
+        assertEquals(1, trace.unresolved().size());
+        assertEquals("UNRESOLVED_LOCAL_HELPER_OVERLOAD", trace.unresolved().get(0).kind());
+        assertEquals("validateName(request);", trace.unresolved().get(0).expression());
+    }
+
+    @Test
+    void recordsUnsafeLocalHelperCallVariantsAsUnresolved() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/UserRegistration.java"),
+                """
+                        package com.example;
+
+                        public class UserRegistration {
+                            private final Validator validator = new Validator();
+
+                            public void create(CreateUserRequest request) {
+                                validateName(transform(request));
+                                validator.validateName(request);
+                            }
+
+                            private void validateName(CreateUserRequest request) {
+                                if (request.name() == null) {
+                                    throw new IllegalArgumentException("Name is required");
+                                }
+                            }
+
+                            private CreateUserRequest transform(CreateUserRequest request) {
+                                return request;
+                            }
+
+                            private static class Validator {
+                                void validateName(CreateUserRequest request) {
+                                }
+                            }
+
+                            public record CreateUserRequest(String name) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.UserRegistration.create");
+
+        assertEquals(0, trace.decisions().size());
+        assertEquals(2, trace.unresolved().size());
+        assertEquals("UNRESOLVED_LOCAL_HELPER_ARGUMENTS", trace.unresolved().get(0).kind());
+        assertEquals("validateName(transform(request));", trace.unresolved().get(0).expression());
+        assertEquals("UNRESOLVED_LOCAL_HELPER_CROSS_OBJECT", trace.unresolved().get(1).kind());
+        assertEquals("validator.validateName(request);", trace.unresolved().get(1).expression());
     }
 
     @Test
