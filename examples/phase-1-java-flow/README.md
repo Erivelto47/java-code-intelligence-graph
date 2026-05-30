@@ -82,7 +82,7 @@ nao substituto dos fixtures. O benchmark real confirma que as regras pequenas
 dos exemplos continuam funcionando em um fluxo mais proximo do uso real:
 
 ```bash
-./gradlew run --args="--project /Users/eriveltomuller/Documents/GitHub/aws-fintech-transfer-lab/onboarding --entrypoint com.study.onboarding.modules.auth.api.AuthController.register"
+./gradlew run --args="--project ${WORKSPACE_ROOT}/aws-fintech-transfer-lab/onboarding --entrypoint com.study.onboarding.modules.auth.api.AuthController.register"
 ```
 
 Resultado aceito para a Fase 1:

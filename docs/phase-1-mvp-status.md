@@ -138,7 +138,7 @@ All examples live under `examples/phase-1-java-flow/`. Each example contains
 Project:
 
 ```text
-/Users/eriveltomuller/Documents/GitHub/aws-fintech-transfer-lab/onboarding
+${WORKSPACE_ROOT}/aws-fintech-transfer-lab/onboarding
 ```
 
 Entrypoint:
@@ -150,7 +150,7 @@ com.study.onboarding.modules.auth.api.AuthController.register
 Command:
 
 ```bash
-./gradlew run --args="--project /Users/eriveltomuller/Documents/GitHub/aws-fintech-transfer-lab/onboarding --entrypoint com.study.onboarding.modules.auth.api.AuthController.register"
+./gradlew run --args="--project ${WORKSPACE_ROOT}/aws-fintech-transfer-lab/onboarding --entrypoint com.study.onboarding.modules.auth.api.AuthController.register"
 ```
 
 Expected result:

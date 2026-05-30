@@ -2,7 +2,7 @@
 
 ## Repository
 
-Erivelto47/java-code-intelligence-graph
+local/java-code-intelligence-graph
 
 ## Project Path
 
