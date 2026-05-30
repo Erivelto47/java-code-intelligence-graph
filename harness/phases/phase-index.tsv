@@ -5,4 +5,4 @@ order	id	status	commit
 4	phase-4-3-java-if-else-decision-shape	implemented	cb487f1
 5	harness-0-4-1-runner-prompt-output-path	implemented	5c19a2e
 6	phase-4-3-1-java-mixed-throw-return-if-else	implemented	ef4bb6f
-7	phase-4-4-java-method-local-decision-calls	planned	TBD
+7	phase-4-4-java-method-local-decision-calls	implemented	01d5ee1
