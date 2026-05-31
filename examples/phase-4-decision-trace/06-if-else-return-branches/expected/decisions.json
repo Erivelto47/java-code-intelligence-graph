@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/06-if-else-return-branches",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve:if-else:1",
+      "kind": "IF_ELSE_CONDITION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.ifelse.FeatureToggleDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/ifelse/FeatureToggleDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.enabled()",
+        "normalized": "request.enabled"
+      },
+      "subjects": [
+        {
+          "name": "request.enabled",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "true",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns true from this branch"
+        },
+        {
+          "when": "false",
+          "action": "RETURN",
+          "target": "false",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns false from this branch"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.enabled()) { return true; } else { return false; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

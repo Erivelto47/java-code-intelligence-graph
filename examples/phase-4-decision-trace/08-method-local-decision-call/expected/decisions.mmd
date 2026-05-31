@@ -1,0 +1,6 @@
+flowchart TD
+  entry["com.example.decisiontrace.localcall.UserRegistration.create"]
+  d1{"request.name() == null || request.name().isBlank()"}
+  o1["throws IllegalArgumentException: Name is required"]
+  entry --> d1
+  d1 --> o1

@@ -1,0 +1,69 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/02-early-return",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.earlyreturn.ImportService.process",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:02-early-return:process:already-processed",
+      "kind": "EARLY_RETURN",
+      "category": "BUSINESS_RULE",
+      "method": "com.example.decisiontrace.earlyreturn.ImportService.process",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/earlyreturn/ImportService.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.processed()",
+        "normalized": "request.processed"
+      },
+      "subjects": [
+        {
+          "name": "request.processed",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "ProcessingResult.alreadyProcessed",
+          "meaning": "Already processed input returns without continuing normal processing"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "meaning": "Input continues to normal processing"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.processed()) { return ProcessingResult.alreadyProcessed(request.id()); }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [
+          "com.example.decisiontrace.earlyreturn.ImportService.ProcessingResult.alreadyProcessed"
+        ],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "fixture": true,
+    "phase": "phase-4.0-decision-trace-contract",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

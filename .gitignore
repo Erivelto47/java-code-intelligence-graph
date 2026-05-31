@@ -5,3 +5,12 @@ out/
 .idea/
 *.iml
 .DS_Store
+harness/bin/build/
+
+# Agentic harness temporary reports
+harness/reports/*.md
+!harness/reports/README.md
+!harness/reports/.gitkeep
+!harness/reports/templates/
+!harness/reports/templates/*.md
+harness/reports/runs/

@@ -1,8 +1,13 @@
 package com.codeatlas.cli;
 
+import com.codeatlas.adapter.java.source.decision.JavaSourceDecisionAdapter;
 import com.codeatlas.adapter.source.SourceTextFlowAnalyzer;
 import com.codeatlas.adapter.source.SourceTextProjectIndexer;
 import com.codeatlas.adapter.source.SourceTextSpringEntrypointDiscoverer;
+import com.codeatlas.application.decision.DecisionAnalysisRequest;
+import com.codeatlas.application.decision.DecisionAnalysisResult;
+import com.codeatlas.application.decision.DecisionAnalyzer;
+import com.codeatlas.application.decision.DecisionOutputPathResolver;
 import com.codeatlas.core.analyzer.FlowAnalyzer;
 import com.codeatlas.core.analyzer.StubFlowAnalyzer;
 import com.codeatlas.core.entrypoint.EntrypointAnnotations;
@@ -17,6 +22,9 @@ import com.codeatlas.core.project.ProjectIndexHints;
 import com.codeatlas.core.project.ProjectIndexUsage;
 import com.codeatlas.core.project.ProjectIndexer;
 import com.codeatlas.output.context.ContextPackWriter;
+import com.codeatlas.output.decision.json.DecisionTraceJsonWriter;
+import com.codeatlas.output.decision.markdown.DecisionTraceMarkdownWriter;
+import com.codeatlas.output.decision.mermaid.DecisionTraceMermaidWriter;
 import com.codeatlas.output.handoff.AgentHandoffWriter;
 import com.codeatlas.output.index.FlowsIndexMarkdownWriter;
 import com.codeatlas.output.index.ProjectIndexWriter;
@@ -60,6 +68,8 @@ public final class AnalyzeFlowCommand {
     private final ProjectIndexJsonReader projectIndexJsonReader;
     private final FlowsIndexMarkdownWriter flowsIndexMarkdownWriter;
     private final AgentHandoffWriter agentHandoffWriter;
+    private final DecisionAnalyzer decisionAnalyzer;
+    private final DecisionOutputPathResolver decisionOutputPathResolver;
 
     public AnalyzeFlowCommand() {
         this(
@@ -74,7 +84,14 @@ public final class AnalyzeFlowCommand {
                 new ProjectIndexWriter(),
                 new ProjectIndexJsonReader(),
                 new FlowsIndexMarkdownWriter(),
-                new AgentHandoffWriter()
+                new AgentHandoffWriter(),
+                new DecisionAnalyzer(
+                        List.of(new JavaSourceDecisionAdapter()),
+                        new DecisionTraceJsonWriter(),
+                        new DecisionTraceMarkdownWriter(),
+                        new DecisionTraceMermaidWriter()
+                ),
+                new DecisionOutputPathResolver()
         );
     }
 
@@ -90,7 +107,9 @@ public final class AnalyzeFlowCommand {
             ProjectIndexWriter projectIndexWriter,
             ProjectIndexJsonReader projectIndexJsonReader,
             FlowsIndexMarkdownWriter flowsIndexMarkdownWriter,
-            AgentHandoffWriter agentHandoffWriter
+            AgentHandoffWriter agentHandoffWriter,
+            DecisionAnalyzer decisionAnalyzer,
+            DecisionOutputPathResolver decisionOutputPathResolver
     ) {
         this.flowAnalyzer = flowAnalyzer;
         this.entrypointDiscoverer = entrypointDiscoverer;
@@ -104,6 +123,8 @@ public final class AnalyzeFlowCommand {
         this.projectIndexJsonReader = projectIndexJsonReader;
         this.flowsIndexMarkdownWriter = flowsIndexMarkdownWriter;
         this.agentHandoffWriter = agentHandoffWriter;
+        this.decisionAnalyzer = decisionAnalyzer;
+        this.decisionOutputPathResolver = decisionOutputPathResolver;
     }
 
     public static void main(String[] args) {
@@ -133,7 +154,46 @@ public final class AnalyzeFlowCommand {
             System.arraycopy(args, 1, remainingArgs, 0, remainingArgs.length);
             return runAnalyzeFlowCommand(remainingArgs, errorStream);
         }
+        if (args.length > 0 && args[0].equals("analyze-decisions")) {
+            return runAnalyzeDecisionsCommand(args, outputStream, errorStream);
+        }
         return runAnalyzeFlowCommand(args, errorStream);
+    }
+
+    private int runAnalyzeDecisionsCommand(String[] args, PrintStream outputStream, PrintStream errorStream) {
+        DecisionArguments arguments = DecisionArguments.parse(args, errorStream);
+        if (arguments == null) {
+            printUsage(errorStream);
+            return 2;
+        }
+
+        if (!Files.isDirectory(arguments.projectPath())) {
+            errorStream.println("Project path must be an existing directory: " + arguments.projectPath());
+            return 2;
+        }
+
+        try {
+            Path outputDirectory = decisionOutputPathResolver.resolve(
+                    arguments.projectPath(),
+                    arguments.entrypoint(),
+                    arguments.outputDirectory()
+            );
+            DecisionAnalysisResult result = decisionAnalyzer.analyze(new DecisionAnalysisRequest(
+                    arguments.projectPath(),
+                    arguments.entrypoint(),
+                    "java",
+                    outputDirectory
+            ));
+            outputStream.println("Analyzed decisions: " + result.trace().decisions().size());
+            outputStream.println("Decision artifacts: " + result.outputDirectory());
+            return 0;
+        } catch (IllegalArgumentException exception) {
+            errorStream.println(exception.getMessage());
+            return 2;
+        } catch (IOException exception) {
+            errorStream.println("Failed to write decision outputs: " + exception.getMessage());
+            return 1;
+        }
     }
 
     private int runAnalyzeFlowCommand(String[] args, PrintStream errorStream) {
@@ -466,11 +526,66 @@ public final class AnalyzeFlowCommand {
     private static void printUsage(PrintStream errorStream) {
         errorStream.println("Usage:");
         errorStream.println("  index-project --project <path>");
+        errorStream.println("  analyze-decisions --project <path> --entrypoint <qualified.class.method> [--output <path>]");
         errorStream.println("  analyze-flow --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
         errorStream.println("  analyze-flow --project <path> --endpoint '<HTTP_METHOD> <path>' [--output <path>] [--stub]");
         errorStream.println("  --project <path> --entrypoint <qualified.class.method> [--output <path>] [--stub]");
         errorStream.println("  list-endpoints --project <path>");
         errorStream.println("  list-entrypoints --project <path> [--output <path>]");
+    }
+
+    private record DecisionArguments(
+            Path projectPath,
+            String entrypoint,
+            Path outputDirectory
+    ) {
+        private static DecisionArguments parse(String[] args, PrintStream errorStream) {
+            Path projectPath = null;
+            String entrypoint = null;
+            Path outputDirectory = null;
+
+            for (int i = 1; i < args.length; i++) {
+                String arg = args[i];
+                switch (arg) {
+                    case "--project" -> {
+                        String value = Arguments.readValue(args, ++i, arg, errorStream);
+                        if (value == null) {
+                            return null;
+                        }
+                        projectPath = Path.of(value);
+                    }
+                    case "--entrypoint" -> {
+                        String value = Arguments.readValue(args, ++i, arg, errorStream);
+                        if (value == null) {
+                            return null;
+                        }
+                        entrypoint = value.trim();
+                    }
+                    case "--output" -> {
+                        String value = Arguments.readValue(args, ++i, arg, errorStream);
+                        if (value == null) {
+                            return null;
+                        }
+                        outputDirectory = Path.of(value);
+                    }
+                    default -> {
+                        errorStream.println("Unknown argument: " + arg);
+                        return null;
+                    }
+                }
+            }
+
+            if (projectPath == null) {
+                errorStream.println("Missing required argument: --project");
+                return null;
+            }
+            if (entrypoint == null || !Arguments.isValidEntrypoint(entrypoint)) {
+                errorStream.println("Missing or invalid required argument: --entrypoint");
+                return null;
+            }
+
+            return new DecisionArguments(projectPath, entrypoint, outputDirectory);
+        }
     }
 
     private record Arguments(

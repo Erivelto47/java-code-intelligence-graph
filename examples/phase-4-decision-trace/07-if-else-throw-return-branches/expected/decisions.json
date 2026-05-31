@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/07-if-else-throw-return-branches",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.ifelsemixed.AccessDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.ifelsemixed.AccessDecision.resolve:if-else:1",
+      "kind": "IF_ELSE_CONDITION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.ifelsemixed.AccessDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.ifelsemixed.AccessDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.ifelsemixed.AccessDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/ifelsemixed/AccessDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "!request.allowed()",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "request.allowed",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "THROW",
+          "target": "IllegalStateException",
+          "exceptionType": "IllegalStateException",
+          "message": "Access denied",
+          "meaning": "Throws IllegalStateException from this branch: Access denied"
+        },
+        {
+          "when": "false",
+          "action": "RETURN",
+          "target": "true",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns true from this branch"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (!request.allowed()) { throw new IllegalStateException(\"Access denied\"); } else { return true; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/01-if-throw-validation",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.UserService.create",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.UserService.create:if-throw:1",
+      "kind": "CONDITIONAL_THROW",
+      "category": "VALIDATION",
+      "method": "com.example.UserService.create",
+      "source": {
+        "className": "com.example.UserService",
+        "methodName": "create",
+        "signature": "com.example.UserService.create"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/UserService.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.name() == null || request.name().isBlank()",
+        "normalized": "isNullOrBlank(request.name)"
+      },
+      "subjects": [
+        {
+          "name": "request.name",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "THROW",
+          "target": "IllegalArgumentException",
+          "exceptionType": "IllegalArgumentException",
+          "message": "Name is required",
+          "meaning": "Input is rejected by this check"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Execution continues after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.name() == null || request.name().isBlank()) { throw new IllegalArgumentException(\"Name is required\"); }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

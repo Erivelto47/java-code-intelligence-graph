@@ -1,0 +1,76 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/02-if-return-early-return",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.ifreturn.ImportService.process",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.ifreturn.ImportService.process:if-return:1",
+      "kind": "EARLY_RETURN",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.ifreturn.ImportService.process",
+      "source": {
+        "className": "com.example.decisiontrace.ifreturn.ImportService",
+        "methodName": "process",
+        "signature": "com.example.decisiontrace.ifreturn.ImportService.process"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/ifreturn/ImportService.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.processed()",
+        "normalized": "request.processed"
+      },
+      "subjects": [
+        {
+          "name": "request.processed",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "false",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns false from this check"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Execution continues after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.processed()) { return false; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

@@ -1,0 +1,89 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/03-unresolved-decision-shapes",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [],
+  "unresolved": [
+    {
+      "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:1",
+      "kind": "UNSUPPORTED_INLINE_THROW",
+      "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
+        "line": 5
+      },
+      "message": "Inline conditional throw is recognized but not a supported direct literal throw in Phase 4.3",
+      "expression": "if (request.email() == null) throw createInlineException(request.email());"
+    },
+    {
+      "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:2",
+      "kind": "UNSUPPORTED_NESTED_IF",
+      "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
+        "line": 7
+      },
+      "message": "Nested if decision shapes are recognized but not supported in Phase 4.3",
+      "expression": "if (request.blocked()) { if (request.email().isBlank()) { throw new IllegalStateException(\"Blocked registration\"); } throw new IllegalStateException(\"Blocked registration\"); }"
+    },
+    {
+      "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:3",
+      "kind": "UNSUPPORTED_THROW_EXPRESSION",
+      "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
+        "line": 14
+      },
+      "message": "Conditional throw expression is recognized but not a direct supported throw",
+      "expression": "if (request.legacy()) { throw createLegacyException(request.email()); }"
+    },
+    {
+      "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:4",
+      "kind": "UNSUPPORTED_INLINE_THROW",
+      "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
+        "line": 18
+      },
+      "message": "Inline conditional throw is recognized but not a supported direct literal throw in Phase 4.3",
+      "expression": "if (request.name() == null) throw new IllegalArgumentException(buildMessage());"
+    },
+    {
+      "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:5",
+      "kind": "UNSUPPORTED_INLINE_THROW",
+      "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
+        "line": 20
+      },
+      "message": "Inline conditional throw is recognized but not a supported direct literal throw in Phase 4.3",
+      "expression": "if (request.missingCode()) throw new IllegalStateException();"
+    },
+    {
+      "id": "unresolved:com.example.decisiontrace.unresolved.RegistrationGuard.validate:if:6",
+      "kind": "UNSUPPORTED_IF_ELSE",
+      "method": "com.example.decisiontrace.unresolved.RegistrationGuard.validate",
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/unresolved/RegistrationGuard.java",
+        "line": 22
+      },
+      "message": "if/else decision shape is recognized but outside the narrow Phase 4.3 return/return support",
+      "expression": "if (request.disabled()) throw new IllegalStateException(\"Disabled registration\"); else allowDisabled();"
+    }
+  ],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

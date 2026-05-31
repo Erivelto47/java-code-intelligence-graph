@@ -1,0 +1,6 @@
+flowchart TD
+  entry["com.example.decisiontrace.singleline.PaymentGuard.validate"]
+  d1{"request.amount() == null"}
+  o1["throws IllegalArgumentException: Amount is required"]
+  entry --> d1
+  d1 --> o1

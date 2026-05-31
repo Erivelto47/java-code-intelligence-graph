@@ -161,6 +161,74 @@ class AnalyzeFlowCommandTest {
     }
 
     @Test
+    void analyzeDecisionsGeneratesSeparateDecisionArtifacts() throws Exception {
+        Path projectDirectory = tempDir.resolve("project");
+        writeJavaFile(
+                projectDirectory.resolve("src/main/java/com/example/UserService.java"),
+                """
+                        package com.example;
+
+                        public class UserService {
+                            public void create(CreateUserRequest request) {
+                                if (request.name() == null || request.name().isBlank()) {
+                                    throw new IllegalArgumentException("Name is required");
+                                }
+                            }
+                        }
+                        """
+        );
+        ByteArrayOutputStream outputBytes = new ByteArrayOutputStream();
+        ByteArrayOutputStream errorBytes = new ByteArrayOutputStream();
+        PrintStream outputStream = new PrintStream(outputBytes, true, StandardCharsets.UTF_8);
+        PrintStream errorStream = new PrintStream(errorBytes, true, StandardCharsets.UTF_8);
+        Path expectedOutputDirectory = projectDirectory.resolve(
+                ".code-atlas/decisions/com/example/UserService/create"
+        );
+
+        int exitCode = new AnalyzeFlowCommand().run(
+                new String[]{
+                        "analyze-decisions",
+                        "--project", projectDirectory.toString(),
+                        "--entrypoint", "com.example.UserService.create"
+                },
+                outputStream,
+                errorStream
+        );
+
+        assertEquals(0, exitCode);
+        assertEquals("", errorBytes.toString(StandardCharsets.UTF_8));
+        assertTrue(outputBytes.toString(StandardCharsets.UTF_8).contains("Analyzed decisions: 1"));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("decisions.json")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("decisions.md")));
+        assertTrue(Files.isRegularFile(expectedOutputDirectory.resolve("decisions.mmd")));
+        assertFalse(Files.exists(projectDirectory.resolve(".code-atlas/flows")));
+
+        JsonNode decisions = OBJECT_MAPPER.readTree(expectedOutputDirectory.resolve("decisions.json").toFile());
+        JsonNode decision = decisions.get("decisions").get(0);
+        assertEquals("1.0", decisions.get("schemaVersion").asText());
+        assertEquals("com.example.UserService.create", decisions.get("scope").get("entrypoint").asText());
+        assertEquals("CONDITIONAL_THROW", decision.get("kind").asText());
+        assertEquals("VALIDATION", decision.get("category").asText());
+        assertEquals("com.example.UserService", decision.get("source").get("className").asText());
+        assertEquals("create", decision.get("source").get("methodName").asText());
+        assertEquals("src/main/java/com/example/UserService.java", decision.get("sourceLocation").get("file").asText());
+        assertEquals(5, decision.get("sourceLocation").get("line").asInt());
+        assertEquals("request.name() == null || request.name().isBlank()", decision.get("expression").get("text").asText());
+        assertEquals("IllegalArgumentException", decision.get("outcomes").get(0).get("exceptionType").asText());
+        assertEquals("Name is required", decision.get("outcomes").get(0).get("message").asText());
+
+        String markdown = Files.readString(expectedOutputDirectory.resolve("decisions.md"));
+        assertTrue(markdown.contains("# Decision Trace"));
+        assertTrue(markdown.contains("throws IllegalArgumentException(\"Name is required\")"));
+        assertTrue(markdown.contains("src/main/java/com/example/UserService.java:5"));
+
+        String mermaid = Files.readString(expectedOutputDirectory.resolve("decisions.mmd"));
+        assertTrue(mermaid.contains("flowchart TD"));
+        assertTrue(mermaid.contains("request.name() == null || request.name().isBlank()"));
+        assertTrue(mermaid.contains("throws IllegalArgumentException: Name is required"));
+    }
+
+    @Test
     void listEntrypointsGeneratesEntrypointsJson() throws Exception {
         Path projectDirectory = tempDir.resolve("project");
         writeSpringController(projectDirectory.resolve("src/main/java/com/company/AuthController.java"));

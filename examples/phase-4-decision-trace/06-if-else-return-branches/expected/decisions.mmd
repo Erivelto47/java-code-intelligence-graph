@@ -1,0 +1,8 @@
+flowchart TD
+  entry["com.example.decisiontrace.ifelse.FeatureToggleDecision.resolve"]
+  d1{"request.enabled()"}
+  entry --> d1
+  o1t["returns true"]
+  d1 -- true --> o1t
+  o1f["returns false"]
+  d1 -- false --> o1f

@@ -23,7 +23,7 @@ The index captures facts that can be extracted deterministically:
 Example:
 
 ```bash
-./gradlew run --args="index-project --project /Users/eriveltomuller/Documents/GitHub/aws-fintech-transfer-lab/onboarding"
+./gradlew run --args="index-project --project ${WORKSPACE_ROOT}/aws-fintech-transfer-lab/onboarding"
 ```
 
 ## Generated Files

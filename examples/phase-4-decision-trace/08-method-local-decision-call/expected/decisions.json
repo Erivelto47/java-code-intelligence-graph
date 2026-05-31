@@ -1,0 +1,78 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/08-method-local-decision-call",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.localcall.UserRegistration.create",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.localcall.UserRegistration.create:local-helper:validateName:if-throw:1",
+      "kind": "CONDITIONAL_THROW",
+      "category": "VALIDATION",
+      "method": "com.example.decisiontrace.localcall.UserRegistration.validateName",
+      "source": {
+        "className": "com.example.decisiontrace.localcall.UserRegistration",
+        "methodName": "validateName",
+        "signature": "com.example.decisiontrace.localcall.UserRegistration.validateName"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/localcall/UserRegistration.java",
+        "line": 9
+      },
+      "expression": {
+        "text": "request.name() == null || request.name().isBlank()",
+        "normalized": "isNullOrBlank(request.name)"
+      },
+      "subjects": [
+        {
+          "name": "request.name",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "THROW",
+          "target": "IllegalArgumentException",
+          "exceptionType": "IllegalArgumentException",
+          "message": "Name is required",
+          "meaning": "Input is rejected by this check"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Execution continues after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.name() == null || request.name().isBlank()) { throw new IllegalArgumentException(\"Name is required\"); }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [
+          "com.example.decisiontrace.localcall.UserRegistration.validateName"
+        ],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

@@ -49,6 +49,39 @@ O contrato da Fase 2 fica documentado em
 `docs/phase-2-entrypoints-contract.md`, e a visao geral da fase fica em
 `docs/phase-2-spring-entrypoints.md`.
 
+**Fase 3: Project Index** esta fechada para o inventario estrutural
+deterministico do projeto:
+
+```bash
+./gradlew run --args="index-project --project ./repo"
+```
+
+O contrato da Fase 3 fica documentado em
+`docs/phase-3-project-index-contract.md`.
+
+**Fase 4: Decision Trace** inicia com contrato e fixtures em
+`docs/phase-4-decision-trace-contract.md` e
+`examples/phase-4-decision-trace/`. A Fase 4 deve gerar artefatos
+deterministicos separados para decisoes, validacoes, throws condicionais,
+returns antecipados e outcomes.
+
+Comando MVP da Fase 4.1:
+
+```bash
+./gradlew run --args="analyze-decisions --project ./repo --entrypoint com.company.FooService.method"
+```
+
+**Fase 5: AI Interpretation Layer** fica reservada para consumir Project Index,
+Flow Graph e Decision Trace sem misturar interpretacao de IA nos artefatos
+deterministicos.
+
+## Agentic Harness
+
+O protocolo operacional para execucao guiada por blueprint fica em
+`harness/README.md`. Ele documenta roles operacionais, handoffs, reports,
+estado, validacoes e criterios de completion para reduzir perda de contexto
+entre arquitetura assistida por IA, execucao por CLI e revisao humana.
+
 ## Princípios do projeto
 
 1. O core não depende de IntelliJ PSI.
@@ -64,19 +97,27 @@ O contrato da Fase 2 fica documentado em
 
 ```text
 src/main/java/com/codeatlas/
-  cli/                 CLI analyze-flow
+  cli/                 CLI analyze-flow, analyze-decisions e comandos auxiliares
+  application/decision/ Orquestração de Decision Trace por adapter de linguagem
   core/                Modelo e contratos independentes de PSI
+  core/decision/       Contrato comum e linguagem-agnóstico de Decision Trace
+  adapter/java/source/decision/
+                       Adapter source-text Java para Decision Trace
   adapter/source/      Analyzer textual determinístico para arquivos .java
   adapter/psi/         Adapter futuro para IntelliJ PSI
   output/              Geradores derivados: JSON, Markdown, Mermaid, context pack
+  output/decision/     Writers de Decision Trace por formato
 docs/
   phase-1.md
   graph-contract.md
   phase-2-spring-entrypoints.md
   phase-2-entrypoints-contract.md
+  phase-3-project-index-contract.md
+  phase-4-decision-trace-contract.md
 examples/
   sample-flow.json
   phase-2-spring-entrypoints/
+  phase-4-decision-trace/
 ```
 
 ## Desenvolvimento
@@ -118,7 +159,7 @@ Também são escritos dois índices no projeto analisado:
 <projectPath>/.code-atlas/flows-index.md
 ```
 
-Esses índices ajudam agentes que conseguem ler arquivos por caminho exato, mas não conseguem navegar livremente pela árvore do repositório. O `project-index.json` é o índice estruturado com o flow atual, arquivos fonte e caminhos dos artefatos. O `flows-index.md` é a versão humana para localizar rapidamente o flow, o context pack e o JSON primário.
+Esses índices ajudam ferramentas que conseguem ler arquivos por caminho exato, mas não conseguem navegar livremente pela árvore do repositório. O `project-index.json` é o índice estruturado com o flow atual, arquivos fonte e caminhos dos artefatos. O `flows-index.md` é a versão humana para localizar rapidamente o flow, o context pack e o JSON primário.
 
 Use `--output` para sobrescrever explicitamente esse destino:
 
@@ -142,7 +183,7 @@ examples/java-simple/.code-atlas/
     agent-handoff.md
 ```
 
-O `agent-handoff.md` resume o repositório, o projeto, o entrypoint, os arquivos fonte, os artefatos gerados, a contagem de nós e arestas, e os nós/arestas detectados. Ele pode conter orientação operacional para outros agentes, mas não adiciona interpretação de IA.
+O `agent-handoff.md` resume o repositório, o projeto, o entrypoint, os arquivos fonte, os artefatos gerados, a contagem de nós e arestas, e os nós/arestas detectados. Ele pode conter orientação operacional para outros consumidores automatizados, mas não adiciona interpretação de IA.
 
 ## SourceTextFlowAnalyzer
 
@@ -174,4 +215,4 @@ Limitações explícitas desta fase:
 
 ## Status
 
-A Fase 1 resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os artefatos derivados de flow. A Fase 2.1 + 2.2 adiciona descoberta e listagem source-text de endpoints Spring MVC e resolução de `analyze-flow --endpoint` para `javaEntrypoint`. A análise PSI ainda não foi implementada.
+A Fase 1 resolve um entrypoint classe/método em código fonte Java, cria um grafo determinístico com chamadas diretas simples e gera os artefatos derivados de flow. A Fase 2.1 + 2.2 adiciona descoberta e listagem source-text de endpoints Spring MVC e resolução de `analyze-flow --endpoint` para `javaEntrypoint`. A Fase 3 adiciona Project Index, `entrypoints.json`, `flows-index.md`, hints e diagnosticos de uso do indice no flow. A Fase 4 esta definida como Decision Trace deterministico. A Fase 5 fica reservada para interpretacao de IA. A análise PSI ainda não foi implementada.
