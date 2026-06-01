@@ -3,6 +3,7 @@ package com.codeatlas.core.decision;
 public enum DecisionKind {
     IF_CONDITION,
     IF_ELSE_CONDITION,
+    IF_ELSE_IF_CHAIN,
     EARLY_RETURN,
     CONDITIONAL_THROW,
     SWITCH_CASE,

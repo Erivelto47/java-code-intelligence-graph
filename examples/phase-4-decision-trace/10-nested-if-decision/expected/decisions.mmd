@@ -1,0 +1,16 @@
+flowchart TD
+  entry["com.example.decisiontrace.nestedif.RoutingDecision.resolve"]
+  d1{"request.internal()"}
+  entry --> d1
+  o1b1["IF: request.internal()<br/>CONTINUE"]
+  d1 -- 1 --> o1b1
+  o1b1 --> d2
+  o1b2["ELSE<br/>CONTINUE"]
+  d1 -- 2 --> o1b2
+  o1b2 --> d3
+  d2{"request.priority()"}
+  o2["returns \"priority\""]
+  d2 --> o2
+  d3{"request.blocked()"}
+  o3["throws IllegalStateException: Route blocked"]
+  d3 --> o3

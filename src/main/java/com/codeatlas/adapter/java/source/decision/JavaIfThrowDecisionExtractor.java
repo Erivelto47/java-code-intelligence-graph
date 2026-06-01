@@ -1,7 +1,9 @@
 package com.codeatlas.adapter.java.source.decision;
 
 import com.codeatlas.core.decision.DecisionArtifactSource;
+import com.codeatlas.core.decision.DecisionBranch;
 import com.codeatlas.core.decision.DecisionCategory;
+import com.codeatlas.core.decision.DecisionChildDecision;
 import com.codeatlas.core.decision.DecisionCondition;
 import com.codeatlas.core.decision.DecisionEvidence;
 import com.codeatlas.core.decision.DecisionKind;
@@ -9,6 +11,7 @@ import com.codeatlas.core.decision.DecisionLinks;
 import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;
 import com.codeatlas.core.decision.DecisionOutcomeAction;
+import com.codeatlas.core.decision.DecisionParent;
 import com.codeatlas.core.decision.DecisionScope;
 import com.codeatlas.core.decision.DecisionSource;
 import com.codeatlas.core.decision.DecisionSourceLocation;
@@ -31,12 +34,14 @@ public final class JavaIfThrowDecisionExtractor {
     private static final Pattern SIMPLE_NAME = Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]*");
     private static final Pattern SIMPLE_ARGUMENT = Pattern.compile("[A-Za-z_$][A-Za-z0-9_$]*(?:\\.[A-Za-z_$][A-Za-z0-9_$]*)*");
 
+    private final JavaElseIfDecisionExtractor elseIfDecisionExtractor;
     private final JavaIfElseDecisionExtractor ifElseDecisionExtractor;
     private final JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor;
     private final JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector;
 
     public JavaIfThrowDecisionExtractor() {
         this(
+                new JavaElseIfDecisionExtractor(),
                 new JavaIfElseDecisionExtractor(),
                 new JavaEarlyReturnDecisionExtractor(),
                 new JavaUnsupportedDecisionShapeDetector()
@@ -44,10 +49,15 @@ public final class JavaIfThrowDecisionExtractor {
     }
 
     JavaIfThrowDecisionExtractor(
+            JavaElseIfDecisionExtractor elseIfDecisionExtractor,
             JavaIfElseDecisionExtractor ifElseDecisionExtractor,
             JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor,
             JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector
     ) {
+        this.elseIfDecisionExtractor = Objects.requireNonNull(
+                elseIfDecisionExtractor,
+                "elseIfDecisionExtractor must not be null"
+        );
         this.ifElseDecisionExtractor = Objects.requireNonNull(
                 ifElseDecisionExtractor,
                 "ifElseDecisionExtractor must not be null"
@@ -128,10 +138,9 @@ public final class JavaIfThrowDecisionExtractor {
     ) {
         List<DecisionNode> decisions = new ArrayList<>();
         List<UnresolvedDecision> unresolved = new ArrayList<>();
+        ExtractionCounters counters = new ExtractionCounters(startingDecisionOrdinal, startingUnresolvedOrdinal);
         String maskedSource = sourceFile.maskedSource();
         int index = methodRange.bodyStart();
-        int decisionOrdinal = startingDecisionOrdinal;
-        int unresolvedOrdinal = startingUnresolvedOrdinal;
         while (index < methodRange.bodyEnd()) {
             int ifStart = JavaDecisionSourceSupport.indexOfWord(maskedSource, "if", index, methodRange.bodyEnd());
             if (ifStart < 0) {
@@ -149,46 +158,92 @@ public final class JavaIfThrowDecisionExtractor {
             }
 
             JavaDecisionSourceSupport.IfStatement ifStatement = parsedIf.get();
-            Optional<IfThrowDecision> ifThrowDecision = parseIfThrow(sourceFile, ifStatement);
-            if (ifThrowDecision.isPresent()) {
-                decisions.add(toThrowDecisionNode(context, sourceFile, ifThrowDecision.get(), decisionOrdinal));
-                decisionOrdinal++;
-                index = ifStatement.statementEnd();
-                continue;
-            }
-
-            Optional<JavaIfElseDecisionExtractor.IfElseDecision> ifElseDecision =
-                    ifElseDecisionExtractor.parse(sourceFile, ifStatement);
-            if (ifElseDecision.isPresent()) {
-                decisions.add(toIfElseDecisionNode(context, sourceFile, ifElseDecision.get(), decisionOrdinal));
-                decisionOrdinal++;
-                index = ifStatement.statementEnd();
-                continue;
-            }
-
-            Optional<JavaEarlyReturnDecisionExtractor.EarlyReturnDecision> earlyReturnDecision =
-                    earlyReturnDecisionExtractor.parse(sourceFile, ifStatement);
-            if (earlyReturnDecision.isPresent()) {
-                decisions.add(toEarlyReturnDecisionNode(
-                        context,
-                        sourceFile,
-                        earlyReturnDecision.get(),
-                        decisionOrdinal
-                ));
-                decisionOrdinal++;
-                index = ifStatement.statementEnd();
-                continue;
-            }
-
-            Optional<JavaUnsupportedDecisionShapeDetector.UnsupportedDecisionShape> unsupportedShape =
-                    unsupportedDecisionShapeDetector.detect(sourceFile, ifStatement);
-            if (unsupportedShape.isPresent()) {
-                unresolved.add(toUnresolvedDecision(context, sourceFile, unsupportedShape.get(), unresolvedOrdinal));
-                unresolvedOrdinal++;
-            }
+            extractDecision(context, sourceFile, methodRange, ifStatement, null, decisions, unresolved, counters);
             index = ifStatement.statementEnd();
         }
         return new ExtractionResult(List.copyOf(decisions), List.copyOf(unresolved));
+    }
+
+    private void extractDecision(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange enclosingRange,
+            JavaDecisionSourceSupport.IfStatement ifStatement,
+            NestedParent nestedParent,
+            List<DecisionNode> decisions,
+            List<UnresolvedDecision> unresolved,
+            ExtractionCounters counters
+    ) {
+        Optional<IfThrowDecision> ifThrowDecision = parseIfThrow(sourceFile, ifStatement);
+        if (ifThrowDecision.isPresent()) {
+            decisions.add(withParent(
+                    toThrowDecisionNode(context, sourceFile, ifThrowDecision.get(), counters.nextDecisionOrdinal()),
+                    nestedParent
+            ));
+            return;
+        }
+
+        Optional<JavaElseIfDecisionExtractor.ElseIfDecision> elseIfDecision =
+                elseIfDecisionExtractor.parse(sourceFile, ifStatement);
+        if (elseIfDecision.isPresent()) {
+            decisions.addAll(toElseIfDecisionNodes(
+                    context,
+                    sourceFile,
+                    enclosingRange,
+                    elseIfDecision.get(),
+                    nestedParent,
+                    unresolved,
+                    counters
+            ));
+            return;
+        }
+
+        Optional<JavaIfElseDecisionExtractor.IfElseDecision> ifElseDecision =
+                ifElseDecisionExtractor.parse(sourceFile, ifStatement);
+        if (ifElseDecision.isPresent()) {
+            decisions.add(withParent(
+                    toIfElseDecisionNode(context, sourceFile, ifElseDecision.get(), counters.nextDecisionOrdinal()),
+                    nestedParent
+            ));
+            return;
+        }
+
+        Optional<JavaEarlyReturnDecisionExtractor.EarlyReturnDecision> earlyReturnDecision =
+                earlyReturnDecisionExtractor.parse(sourceFile, ifStatement);
+        if (earlyReturnDecision.isPresent()) {
+            decisions.add(withParent(toEarlyReturnDecisionNode(
+                    context,
+                    sourceFile,
+                    earlyReturnDecision.get(),
+                    counters.nextDecisionOrdinal()
+            ), nestedParent));
+            return;
+        }
+
+        Optional<NestedDecisionShape> nestedDecisionShape = parseNestedDecisionShape(sourceFile, ifStatement);
+        if (nestedDecisionShape.isPresent()) {
+            decisions.addAll(toNestedDecisionNodes(
+                    context,
+                    sourceFile,
+                    enclosingRange,
+                    nestedDecisionShape.get(),
+                    nestedParent,
+                    unresolved,
+                    counters
+            ));
+            return;
+        }
+
+        Optional<JavaUnsupportedDecisionShapeDetector.UnsupportedDecisionShape> unsupportedShape =
+                unsupportedDecisionShapeDetector.detect(sourceFile, ifStatement);
+        if (unsupportedShape.isPresent()) {
+            unresolved.add(toUnresolvedDecision(
+                    context,
+                    sourceFile,
+                    unsupportedShape.get(),
+                    counters.nextUnresolvedOrdinal()
+            ));
+        }
     }
 
     private ExtractionResult extractMethodLocalDecisionCalls(
@@ -532,6 +587,358 @@ public final class JavaIfThrowDecisionExtractor {
         );
     }
 
+    private List<DecisionNode> toElseIfDecisionNodes(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange enclosingRange,
+            JavaElseIfDecisionExtractor.ElseIfDecision parsedDecision,
+            NestedParent nestedParent,
+            List<UnresolvedDecision> unresolved,
+            ExtractionCounters counters
+    ) {
+        int parentOrdinal = counters.nextDecisionOrdinal();
+        String parentId = "decision:" + context.idBase() + ":else-if-chain:" + parentOrdinal;
+        List<NestedBranch> nestedBranches = parsedDecision.branches().stream()
+                .map(branch -> new NestedBranch(
+                        branch.kind(),
+                        branch.condition(),
+                        branch.order(),
+                        branch.bodyStart(),
+                        branch.bodyEnd()
+                ))
+                .toList();
+        List<DecisionNode> childDecisions = extractNestedChildren(
+                context,
+                sourceFile,
+                enclosingRange,
+                nestedBranches,
+                parentId,
+                unresolved,
+                counters
+        );
+        List<DecisionChildDecision> children = childSummaries(childDecisions);
+        List<DecisionBranch> branches = parsedDecision.branches().stream()
+                .map(branch -> new DecisionBranch(
+                        branch.kind(),
+                        branch.condition(),
+                        branch.order(),
+                        branchOutcomes(branch.kind(), branch.order(), sourceFile, branch.bodyStart(), branch.bodyEnd())
+                ))
+                .toList();
+
+        List<DecisionOutcome> outcomes = branches.stream()
+                .flatMap(branch -> branch.outcomes().stream())
+                .toList();
+        DecisionNode parent = withParent(new DecisionNode(
+                parentId,
+                DecisionKind.IF_ELSE_IF_CHAIN,
+                DecisionCategory.UNKNOWN,
+                context.methodSignature(),
+                new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
+                new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
+                new DecisionCondition(
+                        parsedDecision.condition(),
+                        JavaDecisionSourceSupport.normalizedCondition(parsedDecision.condition())
+                ),
+                subjects(parsedDecision.condition()),
+                outcomes,
+                new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
+                new DecisionLinks(List.of(), context.calledMethods(), List.of()),
+                branches,
+                children,
+                null,
+                "HIGH"
+        ), nestedParent);
+
+        List<DecisionNode> decisions = new ArrayList<>();
+        decisions.add(parent);
+        decisions.addAll(childDecisions);
+        return List.copyOf(decisions);
+    }
+
+    private List<DecisionNode> toNestedDecisionNodes(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange enclosingRange,
+            NestedDecisionShape parsedDecision,
+            NestedParent nestedParent,
+            List<UnresolvedDecision> unresolved,
+            ExtractionCounters counters
+    ) {
+        int parentOrdinal = counters.nextDecisionOrdinal();
+        String idSuffix = parsedDecision.kind() == DecisionKind.IF_ELSE_CONDITION ? "nested-if-else" : "nested-if";
+        String parentId = "decision:" + context.idBase() + ":" + idSuffix + ":" + parentOrdinal;
+        List<DecisionNode> childDecisions = extractNestedChildren(
+                context,
+                sourceFile,
+                enclosingRange,
+                parsedDecision.branches(),
+                parentId,
+                unresolved,
+                counters
+        );
+        List<DecisionChildDecision> children = childSummaries(childDecisions);
+        List<DecisionBranch> branches = parsedDecision.branches().stream()
+                .map(branch -> new DecisionBranch(
+                        branch.kind(),
+                        branch.condition(),
+                        branch.order(),
+                        branchOutcomes(branch.kind(), branch.order(), sourceFile, branch.bodyStart(), branch.bodyEnd())
+                ))
+                .toList();
+        List<DecisionOutcome> outcomes = branches.stream()
+                .flatMap(branch -> branch.outcomes().stream())
+                .toList();
+
+        DecisionNode parent = withParent(new DecisionNode(
+                parentId,
+                parsedDecision.kind(),
+                DecisionCategory.UNKNOWN,
+                context.methodSignature(),
+                new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
+                new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
+                new DecisionCondition(
+                        parsedDecision.condition(),
+                        JavaDecisionSourceSupport.normalizedCondition(parsedDecision.condition())
+                ),
+                subjects(parsedDecision.condition()),
+                outcomes,
+                new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
+                new DecisionLinks(List.of(), context.calledMethods(), List.of()),
+                branches,
+                children,
+                null,
+                "HIGH"
+        ), nestedParent);
+
+        List<DecisionNode> decisions = new ArrayList<>();
+        decisions.add(parent);
+        decisions.addAll(childDecisions);
+        return List.copyOf(decisions);
+    }
+
+    private List<DecisionNode> extractNestedChildren(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange enclosingRange,
+            List<NestedBranch> branches,
+            String parentId,
+            List<UnresolvedDecision> unresolved,
+            ExtractionCounters counters
+    ) {
+        List<DecisionNode> childDecisions = new ArrayList<>();
+        for (NestedBranch branch : branches) {
+            NestedParent childParent = new NestedParent(parentId, branch.order(), branch.kind());
+            JavaDecisionSourceSupport.MethodRange branchRange = new JavaDecisionSourceSupport.MethodRange(
+                    enclosingRange.methodNameStart(),
+                    branch.bodyStart(),
+                    branch.bodyEnd()
+            );
+            for (JavaDecisionSourceSupport.IfStatement nestedIf : findTopLevelIfStatements(sourceFile, branchRange)) {
+                extractDecision(
+                        context,
+                        sourceFile,
+                        branchRange,
+                        nestedIf,
+                        childParent,
+                        childDecisions,
+                        unresolved,
+                        counters
+                );
+            }
+        }
+        return List.copyOf(childDecisions);
+    }
+
+    private static List<JavaDecisionSourceSupport.IfStatement> findTopLevelIfStatements(
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange methodRange
+    ) {
+        List<JavaDecisionSourceSupport.IfStatement> statements = new ArrayList<>();
+        String maskedSource = sourceFile.maskedSource();
+        int index = JavaDecisionSourceSupport.skipWhitespace(maskedSource, methodRange.bodyStart(), methodRange.bodyEnd());
+        while (index < methodRange.bodyEnd()) {
+            if (JavaDecisionSourceSupport.startsWithWord(maskedSource, index, "if")) {
+                Optional<JavaDecisionSourceSupport.IfStatement> ifStatement = JavaDecisionSourceSupport.parseIfStatement(
+                        sourceFile,
+                        methodRange,
+                        index
+                );
+                if (ifStatement.isPresent()) {
+                    statements.add(ifStatement.get());
+                    index = JavaDecisionSourceSupport.skipWhitespace(
+                            maskedSource,
+                            ifStatement.get().statementEnd(),
+                            methodRange.bodyEnd()
+                    );
+                    continue;
+                }
+            }
+
+            if (maskedSource.charAt(index) == '{') {
+                int closeBrace = JavaDecisionSourceSupport.findMatching(maskedSource, index, '{', '}');
+                if (closeBrace < 0 || closeBrace >= methodRange.bodyEnd()) {
+                    break;
+                }
+                index = JavaDecisionSourceSupport.skipWhitespace(maskedSource, closeBrace + 1, methodRange.bodyEnd());
+                continue;
+            }
+
+            int semicolon = JavaDecisionSourceSupport.findTopLevelSemicolon(maskedSource, index, methodRange.bodyEnd());
+            if (semicolon < 0) {
+                break;
+            }
+            index = JavaDecisionSourceSupport.skipWhitespace(maskedSource, semicolon + 1, methodRange.bodyEnd());
+        }
+        return List.copyOf(statements);
+    }
+
+    private static Optional<NestedDecisionShape> parseNestedDecisionShape(
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.IfStatement ifStatement
+    ) {
+        if (!ifStatement.hasElse()
+                && (JavaDecisionSourceSupport.containsTopLevelWord(sourceFile, ifStatement, "return")
+                || JavaDecisionSourceSupport.containsTopLevelWord(sourceFile, ifStatement, "throw"))) {
+            return Optional.empty();
+        }
+
+        List<NestedBranch> branches = new ArrayList<>();
+        branches.add(new NestedBranch(
+                "IF",
+                ifStatement.condition(),
+                1,
+                ifStatement.bodyStart(),
+                ifStatement.bodyEnd()
+        ));
+        if (ifStatement.hasElse()) {
+            branches.add(new NestedBranch(
+                    "ELSE",
+                    null,
+                    2,
+                    ifStatement.elseBodyStart(),
+                    ifStatement.elseBodyEnd()
+            ));
+        }
+
+        boolean hasNestedIf = branches.stream().anyMatch(branch -> !findTopLevelIfStatements(
+                sourceFile,
+                new JavaDecisionSourceSupport.MethodRange(ifStatement.ifStart(), branch.bodyStart(), branch.bodyEnd())
+        ).isEmpty());
+        if (!hasNestedIf) {
+            return Optional.empty();
+        }
+
+        DecisionKind kind = ifStatement.hasElse() ? DecisionKind.IF_ELSE_CONDITION : DecisionKind.IF_CONDITION;
+        return Optional.of(new NestedDecisionShape(
+                ifStatement.ifStart(),
+                ifStatement.statementEnd(),
+                ifStatement.condition(),
+                ifStatement.snippet(),
+                kind,
+                List.copyOf(branches)
+        ));
+    }
+
+    private static List<DecisionChildDecision> childSummaries(List<DecisionNode> childDecisions) {
+        return childDecisions.stream()
+                .map(child -> new DecisionChildDecision(
+                        child.id(),
+                        child.kind(),
+                        child.expression().text(),
+                        child.parent().branchOrder(),
+                        child.parent().branchKind()
+                ))
+                .toList();
+    }
+
+    private static DecisionNode withParent(DecisionNode decision, NestedParent nestedParent) {
+        if (nestedParent == null) {
+            return decision;
+        }
+        return new DecisionNode(
+                decision.id(),
+                decision.kind(),
+                decision.category(),
+                decision.method(),
+                decision.source(),
+                decision.sourceLocation(),
+                decision.expression(),
+                decision.subjects(),
+                decision.outcomes(),
+                decision.evidence(),
+                decision.links(),
+                decision.branches(),
+                decision.children(),
+                new DecisionParent(nestedParent.decisionId(), nestedParent.branchOrder(), nestedParent.branchKind()),
+                decision.confidence()
+        );
+    }
+
+    private static List<DecisionOutcome> branchOutcomes(
+            String branchKind,
+            int branchOrder,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            int bodyStart,
+            int bodyEnd
+    ) {
+        String when = "branch:" + branchOrder + ":" + branchKind;
+        Optional<JavaIfElseDecisionExtractor.BranchOutcome> branchOutcome = parseDirectBranchOutcome(
+                sourceFile,
+                bodyStart,
+                bodyEnd
+        );
+        if (branchOutcome.isPresent()) {
+            return List.of(toBranchOutcome(when, branchOutcome.get()));
+        }
+        return List.of(new DecisionOutcome(
+                when,
+                DecisionOutcomeAction.CONTINUE,
+                null,
+                null,
+                null,
+                "Enters " + branchKind + " branch"
+        ));
+    }
+
+    private static Optional<JavaIfElseDecisionExtractor.BranchOutcome> parseDirectBranchOutcome(
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            int bodyStart,
+            int bodyEnd
+    ) {
+        Optional<JavaDecisionSourceSupport.ReturnStatement> returnStatement = JavaDecisionSourceSupport.parseDirectReturn(
+                sourceFile,
+                bodyStart,
+                bodyEnd
+        );
+        if (returnStatement.isPresent()) {
+            String expression = returnStatement.get().expression();
+            if (!JavaDecisionSourceSupport.isSimpleReturnExpression(expression)) {
+                return Optional.empty();
+            }
+            return Optional.of(new JavaIfElseDecisionExtractor.BranchOutcome(
+                    JavaIfElseDecisionExtractor.BranchAction.RETURN,
+                    expression,
+                    JavaDecisionSourceSupport.returnTarget(expression),
+                    null,
+                    null
+            ));
+        }
+
+        Optional<JavaDecisionSourceSupport.ThrowStatement> throwStatement = JavaDecisionSourceSupport.parseDirectThrow(
+                sourceFile,
+                bodyStart,
+                bodyEnd
+        ).filter(JavaDecisionSourceSupport.ThrowStatement::hasDirectLiteralMessage);
+        return throwStatement.map(statement -> new JavaIfElseDecisionExtractor.BranchOutcome(
+                JavaIfElseDecisionExtractor.BranchAction.THROW,
+                null,
+                statement.exceptionType(),
+                statement.exceptionType(),
+                statement.message()
+        ));
+    }
+
     private static DecisionOutcome toBranchOutcome(
             String when,
             JavaIfElseDecisionExtractor.BranchOutcome branchOutcome
@@ -676,5 +1083,53 @@ public final class JavaIfThrowDecisionExtractor {
             String exceptionType,
             String message
     ) {
+    }
+
+    private record NestedDecisionShape(
+            int ifStart,
+            int statementEnd,
+            String condition,
+            String snippet,
+            DecisionKind kind,
+            List<NestedBranch> branches
+    ) {
+    }
+
+    private record NestedBranch(
+            String kind,
+            String condition,
+            int order,
+            int bodyStart,
+            int bodyEnd
+    ) {
+    }
+
+    private record NestedParent(
+            String decisionId,
+            int branchOrder,
+            String branchKind
+    ) {
+    }
+
+    private static final class ExtractionCounters {
+        private int nextDecisionOrdinal;
+        private int nextUnresolvedOrdinal;
+
+        private ExtractionCounters(int nextDecisionOrdinal, int nextUnresolvedOrdinal) {
+            this.nextDecisionOrdinal = nextDecisionOrdinal;
+            this.nextUnresolvedOrdinal = nextUnresolvedOrdinal;
+        }
+
+        private int nextDecisionOrdinal() {
+            int ordinal = nextDecisionOrdinal;
+            nextDecisionOrdinal++;
+            return ordinal;
+        }
+
+        private int nextUnresolvedOrdinal() {
+            int ordinal = nextUnresolvedOrdinal;
+            nextUnresolvedOrdinal++;
+            return ordinal;
+        }
     }
 }

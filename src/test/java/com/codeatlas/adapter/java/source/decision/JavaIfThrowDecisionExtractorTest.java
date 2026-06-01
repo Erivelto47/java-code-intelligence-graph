@@ -326,6 +326,113 @@ class JavaIfThrowDecisionExtractorTest {
     }
 
     @Test
+    void extractsElseIfChainWithOrderedBranchesAndOutcomes() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/AccessDecision.java"),
+                """
+                        package com.example;
+
+                        public class AccessDecision {
+                            public String resolve(AccessRequest request) {
+                                if (request == null) {
+                                    throw new IllegalArgumentException("Request is required");
+                                } else if (request.blocked()) {
+                                    return "blocked";
+                                } else if (request.admin()) {
+                                    return "admin";
+                                } else {
+                                    return "standard";
+                                }
+                            }
+
+                            public record AccessRequest(boolean blocked, boolean admin) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.AccessDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("IF_ELSE_IF_CHAIN", decision.kind().name());
+        assertEquals("request == null", decision.expression().text());
+        assertEquals(4, decision.branches().size());
+        assertEquals("IF", decision.branches().get(0).kind());
+        assertEquals("request == null", decision.branches().get(0).condition());
+        assertEquals(1, decision.branches().get(0).order());
+        assertEquals("THROW", decision.branches().get(0).outcomes().get(0).action().name());
+        assertEquals("ELSE_IF", decision.branches().get(1).kind());
+        assertEquals("request.blocked()", decision.branches().get(1).condition());
+        assertEquals(2, decision.branches().get(1).order());
+        assertEquals("\"blocked\"", decision.branches().get(1).outcomes().get(0).target());
+        assertEquals("ELSE_IF", decision.branches().get(2).kind());
+        assertEquals("request.admin()", decision.branches().get(2).condition());
+        assertEquals(3, decision.branches().get(2).order());
+        assertEquals("ELSE", decision.branches().get(3).kind());
+        assertEquals(4, decision.branches().get(3).order());
+        assertEquals("\"standard\"", decision.branches().get(3).outcomes().get(0).target());
+    }
+
+    @Test
+    void extractsNestedIfDecisionsWithParentBranchContext() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/RoutingDecision.java"),
+                """
+                        package com.example;
+
+                        public class RoutingDecision {
+                            public String resolve(RouteRequest request) {
+                                if (request.internal()) {
+                                    if (request.priority()) {
+                                        return "priority";
+                                    }
+                                    return "internal";
+                                } else {
+                                    if (request.blocked()) {
+                                        throw new IllegalStateException("Route blocked");
+                                    }
+                                    return "external";
+                                }
+                            }
+
+                            public record RouteRequest(boolean internal, boolean priority, boolean blocked) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.RoutingDecision.resolve");
+
+        assertEquals(3, trace.decisions().size());
+        assertEquals(0, trace.unresolved().size());
+
+        DecisionNode outer = trace.decisions().get(0);
+        assertEquals("IF_ELSE_CONDITION", outer.kind().name());
+        assertEquals("request.internal()", outer.expression().text());
+        assertEquals(2, outer.branches().size());
+        assertEquals(2, outer.children().size());
+        assertEquals(1, outer.children().get(0).parentBranchOrder());
+        assertEquals(2, outer.children().get(1).parentBranchOrder());
+
+        DecisionNode nestedThen = trace.decisions().get(1);
+        assertEquals("EARLY_RETURN", nestedThen.kind().name());
+        assertEquals("request.priority()", nestedThen.expression().text());
+        assertEquals(outer.id(), nestedThen.parent().decisionId());
+        assertEquals(1, nestedThen.parent().branchOrder());
+        assertEquals("\"priority\"", nestedThen.outcomes().get(0).target());
+
+        DecisionNode nestedElse = trace.decisions().get(2);
+        assertEquals("CONDITIONAL_THROW", nestedElse.kind().name());
+        assertEquals("request.blocked()", nestedElse.expression().text());
+        assertEquals(outer.id(), nestedElse.parent().decisionId());
+        assertEquals(2, nestedElse.parent().branchOrder());
+        assertEquals("IllegalStateException", nestedElse.outcomes().get(0).exceptionType());
+    }
+
+    @Test
     void linksSupportedDecisionFromSimpleSameClassHelperCall() throws Exception {
         writeJavaFile(
                 tempDir.resolve("src/main/java/com/example/UserRegistration.java"),

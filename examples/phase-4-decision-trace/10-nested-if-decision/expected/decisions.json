@@ -1,0 +1,239 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/10-nested-if-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.nestedif.RoutingDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:nested-if-else:1",
+      "kind": "IF_ELSE_CONDITION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.nestedif.RoutingDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.nestedif.RoutingDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.nestedif.RoutingDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/nestedif/RoutingDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.internal()",
+        "normalized": "request.internal"
+      },
+      "subjects": [
+        {
+          "name": "request.internal",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "branch:1:IF",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Enters IF branch"
+        },
+        {
+          "when": "branch:2:ELSE",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Enters ELSE branch"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.internal()) { if (request.priority()) { return \"priority\"; } return \"internal\"; } else { if (request.blocked()) { throw new IllegalStateException(\"Route blocked\"); } return \"external\"; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "IF",
+          "condition": "request.internal()",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "branch:1:IF",
+              "action": "CONTINUE",
+              "target": null,
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Enters IF branch"
+            }
+          ]
+        },
+        {
+          "kind": "ELSE",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "branch:2:ELSE",
+              "action": "CONTINUE",
+              "target": null,
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Enters ELSE branch"
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "decisionId": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:if-return:2",
+          "kind": "EARLY_RETURN",
+          "condition": "request.priority()",
+          "parentBranchOrder": 1,
+          "parentBranchKind": "IF"
+        },
+        {
+          "decisionId": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:if-throw:3",
+          "kind": "CONDITIONAL_THROW",
+          "condition": "request.blocked()",
+          "parentBranchOrder": 2,
+          "parentBranchKind": "ELSE"
+        }
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "id": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:if-return:2",
+      "kind": "EARLY_RETURN",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.nestedif.RoutingDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.nestedif.RoutingDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.nestedif.RoutingDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/nestedif/RoutingDecision.java",
+        "line": 6
+      },
+      "expression": {
+        "text": "request.priority()",
+        "normalized": "request.priority"
+      },
+      "subjects": [
+        {
+          "name": "request.priority",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "\"priority\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns \"priority\" from this check"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Execution continues after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.priority()) { return \"priority\"; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "parent": {
+        "decisionId": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:nested-if-else:1",
+        "branchOrder": 1,
+        "branchKind": "IF"
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:if-throw:3",
+      "kind": "CONDITIONAL_THROW",
+      "category": "VALIDATION",
+      "method": "com.example.decisiontrace.nestedif.RoutingDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.nestedif.RoutingDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.nestedif.RoutingDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/nestedif/RoutingDecision.java",
+        "line": 11
+      },
+      "expression": {
+        "text": "request.blocked()",
+        "normalized": "request.blocked"
+      },
+      "subjects": [
+        {
+          "name": "request.blocked",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "THROW",
+          "target": "IllegalStateException",
+          "exceptionType": "IllegalStateException",
+          "message": "Route blocked",
+          "meaning": "Input is rejected by this check"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Execution continues after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (request.blocked()) { throw new IllegalStateException(\"Route blocked\"); }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "parent": {
+        "decisionId": "decision:com.example.decisiontrace.nestedif.RoutingDecision.resolve:nested-if-else:1",
+        "branchOrder": 2,
+        "branchKind": "ELSE"
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

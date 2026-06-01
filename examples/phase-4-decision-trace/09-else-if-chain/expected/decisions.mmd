@@ -1,0 +1,12 @@
+flowchart TD
+  entry["com.example.decisiontrace.elseif.AccessDecision.resolve"]
+  d1{"request == null"}
+  entry --> d1
+  o1b1["IF: request == null<br/>throws IllegalArgumentException: Request is required"]
+  d1 -- 1 --> o1b1
+  o1b2["ELSE_IF: request.blocked()<br/>returns \"blocked\""]
+  d1 -- 2 --> o1b2
+  o1b3["ELSE_IF: request.admin()<br/>returns \"admin\""]
+  d1 -- 3 --> o1b3
+  o1b4["ELSE<br/>returns \"standard\""]
+  d1 -- 4 --> o1b4

@@ -11,6 +11,8 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 public final class DecisionTraceMermaidWriter {
@@ -29,9 +31,14 @@ public final class DecisionTraceMermaidWriter {
         mermaid.append("flowchart TD\n");
         mermaid.append("  entry[\"").append(escapeLabel(trace.scope().entrypoint())).append("\"]\n");
 
+        Map<String, String> aliasesByDecisionId = new HashMap<>();
+        for (int i = 0; i < trace.decisions().size(); i++) {
+            aliasesByDecisionId.put(trace.decisions().get(i).id(), "d" + (i + 1));
+        }
+
         for (int i = 0; i < trace.decisions().size(); i++) {
             DecisionNode decision = trace.decisions().get(i);
-            String decisionAlias = "d" + (i + 1);
+            String decisionAlias = aliasesByDecisionId.get(decision.id());
             String outcomeAlias = "o" + (i + 1);
             boolean ifElseDecision = decision.kind() == DecisionKind.IF_ELSE_CONDITION;
             mermaid.append("  ")
@@ -39,8 +46,11 @@ public final class DecisionTraceMermaidWriter {
                     .append("{\"")
                     .append(escapeLabel(decision.expression().text()))
                     .append("\"}\n");
-            if (ifElseDecision) {
-                mermaid.append("  entry --> ").append(decisionAlias).append("\n");
+            if (!decision.branches().isEmpty()) {
+                appendEntryEdge(mermaid, decision, decisionAlias);
+                appendBranchOutcomes(mermaid, decision, decisionAlias, outcomeAlias, aliasesByDecisionId);
+            } else if (ifElseDecision) {
+                appendEntryEdge(mermaid, decision, decisionAlias);
                 appendIfElseOutcomes(mermaid, decision, decisionAlias, outcomeAlias);
             } else {
                 mermaid.append("  ")
@@ -48,7 +58,7 @@ public final class DecisionTraceMermaidWriter {
                         .append("[\"")
                         .append(escapeLabel(primaryOutcomeLabel(decision)))
                         .append("\"]\n");
-                mermaid.append("  entry --> ").append(decisionAlias).append("\n");
+                appendEntryEdge(mermaid, decision, decisionAlias);
                 mermaid.append("  ").append(decisionAlias).append(" --> ").append(outcomeAlias).append("\n");
             }
         }
@@ -65,6 +75,52 @@ public final class DecisionTraceMermaidWriter {
         }
 
         return mermaid.toString();
+    }
+
+    private static void appendEntryEdge(StringBuilder mermaid, DecisionNode decision, String decisionAlias) {
+        if (decision.parent() == null) {
+            mermaid.append("  entry --> ").append(decisionAlias).append("\n");
+        }
+    }
+
+    private static void appendBranchOutcomes(
+            StringBuilder mermaid,
+            DecisionNode decision,
+            String decisionAlias,
+            String outcomeAlias,
+            Map<String, String> aliasesByDecisionId
+    ) {
+        decision.branches().forEach(branch -> {
+            String branchAlias = outcomeAlias + "b" + branch.order();
+            String label = branch.kind();
+            if (branch.condition() != null && !branch.condition().isBlank()) {
+                label += ": " + branch.condition();
+            }
+            if (!branch.outcomes().isEmpty()) {
+                label += "<br/>" + returnOutcomeLabel(branch.outcomes().get(0));
+            }
+            mermaid.append("  ")
+                    .append(branchAlias)
+                    .append("[\"")
+                    .append(escapeLabel(label))
+                    .append("\"]\n");
+            mermaid.append("  ")
+                    .append(decisionAlias)
+                    .append(" -- ")
+                    .append(branch.order())
+                    .append(" --> ")
+                    .append(branchAlias)
+                    .append("\n");
+            decision.children().stream()
+                    .filter(child -> child.parentBranchOrder() == branch.order())
+                    .map(child -> aliasesByDecisionId.get(child.decisionId()))
+                    .filter(Objects::nonNull)
+                    .forEach(childAlias -> mermaid.append("  ")
+                            .append(branchAlias)
+                            .append(" --> ")
+                            .append(childAlias)
+                            .append("\n"));
+        });
     }
 
     private static void appendIfElseOutcomes(

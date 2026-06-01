@@ -21,6 +21,7 @@ class DecisionTraceFixtureContractTest {
     private static final Set<String> DECISION_KINDS = Set.of(
             "IF_CONDITION",
             "IF_ELSE_CONDITION",
+            "IF_ELSE_IF_CHAIN",
             "EARLY_RETURN",
             "CONDITIONAL_THROW",
             "SWITCH_CASE",
@@ -118,6 +119,24 @@ class DecisionTraceFixtureContractTest {
         assertAnalyzeDecisionsFixtureMatches(
                 Path.of("examples/phase-4-decision-trace/08-method-local-decision-call"),
                 "com.example.decisiontrace.localcall.UserRegistration.create",
+                tempDir
+        );
+    }
+
+    @Test
+    void elseIfChainFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/09-else-if-chain"),
+                "com.example.decisiontrace.elseif.AccessDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void nestedIfDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/10-nested-if-decision"),
+                "com.example.decisiontrace.nestedif.RoutingDecision.resolve",
                 tempDir
         );
     }
