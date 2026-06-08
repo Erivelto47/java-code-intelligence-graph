@@ -292,14 +292,20 @@ sync_phase_index "${tmp_index}"
 
 next_count=0
 validation_count=0
+in_progress_count=0
 planned_index=-1
 phase_id=""
 next_ids=()
 validation_ids=()
+in_progress_ids=()
 idx=0
 
 for ((idx = 0; idx < ${#ids[@]}; idx++)); do
   case "${statuses[$idx]}" in
+    in_progress)
+      in_progress_count=$((in_progress_count + 1))
+      in_progress_ids+=("${ids[$idx]}")
+      ;;
     next)
       next_count=$((next_count + 1))
       next_ids+=("${ids[$idx]}")
@@ -320,6 +326,16 @@ done
 if [[ "${next_count}" -gt 1 ]]; then
   printf 'Error: Multiple phases marked as next in %s:\n' "${phase_index}" >&2
   printf '  %s\n' "${next_ids[@]}" >&2
+  exit 1
+fi
+
+if [[ "${in_progress_count}" -gt 0 ]]; then
+  echo "Cannot run next phase." >&2
+  echo >&2
+  echo "Phase already in progress:" >&2
+  printf '  %s\n' "${in_progress_ids[@]}" >&2
+  echo >&2
+  echo "Finish the phase report and move it to validation before starting another phase." >&2
   exit 1
 fi
 

@@ -6,7 +6,7 @@ order	id	status	commit
 5	harness-0-4-1-runner-prompt-output-path	implemented	5c19a2e
 6	phase-4-3-1-java-mixed-throw-return-if-else	implemented	ef4bb6f
 7	phase-4-4-java-method-local-decision-calls	implemented	01d5ee1
-8	phase-4-5-java-else-if-nested-decision-shape	next	TBD
+8	phase-4-5-java-else-if-nested-decision-shape	validation	TBD
 9	phase-4-6-java-boolean-condition-expression-trace	planned	TBD
 10	phase-4-7-java-ternary-decision-trace	planned	TBD
 11	phase-4-8-java-switch-statement-expression-decision-trace	planned	TBD

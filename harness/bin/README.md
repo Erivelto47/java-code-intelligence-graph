@@ -51,9 +51,10 @@ The runner:
   from the phase id;
 - validates allowed statuses;
 - fails if more than one phase is marked `next`;
+- blocks execution if any phase is marked `in_progress`;
 - blocks execution if any phase is marked `validation`;
-- promotes the first `planned` phase to `next` when there is no `next` and no
-  `validation`;
+- promotes the first `planned` phase to `next` when there is no `next`,
+  `in_progress` or `validation`;
 - blocks if the derived report for the `next` phase already exists;
 - calls `./harness/bin/run-phase.sh <blueprint>`;
 - generates `harness/bin/build/prompts/<phase-id>.codex-prompt.txt`;
@@ -71,11 +72,30 @@ phase index, because the queue itself is versioned harness state:
 Limitations:
 
 - no `--phase` override in the MVP;
-- no automatic transition to `implemented`, `approved` or `validation`;
+- no automatic transition to `implemented` or `approved`;
 - no Codex/model execution;
 - no product implementation;
 - no merge;
 - no push.
+
+## update-phase-index-status.sh
+
+Use the phase index status helper inside a Codex execution session to apply
+the only automatic lifecycle transitions allowed before human closeout:
+
+```bash
+./harness/bin/update-phase-index-status.sh start <phase-id>
+./harness/bin/update-phase-index-status.sh validation <phase-id>
+```
+
+The helper preserves the TSV format and row order. It only supports:
+
+- `start`: `next` -> `in_progress`, with commit forced to `TBD`;
+- `validation`: `in_progress` -> `validation`, with commit forced to `TBD`.
+
+The `validation` transition requires the derived report to already exist under
+`harness/reports/runs/`. The helper never marks a phase as `implemented`, never
+writes a commit hash and never promotes another phase to `next`.
 
 
 # Default prompt to codex
@@ -100,7 +120,7 @@ Regras principais:
 1. Leia harness/phases/phase-index.tsv.
 2. Encontre a fase com status next.
 3. Confirme que existe exatamente uma fase com status next.
-4. Se existir qualquer fase com status validation, pare a execução e informe que há fase aguardando revisão humana.
+4. Se existir qualquer fase com status validation ou in_progress, pare a execução e informe que há fase aguardando revisão humana ou ainda em andamento.
 5. Use o id da fase next para localizar o prompt gerado pelo harness em:
 
 harness/bin/build/prompts/<phase-id>.codex-prompt.txt
@@ -134,25 +154,32 @@ Fluxo obrigatório:
 
 1. Ler harness/phases/phase-index.tsv.
 2. Identificar a fase next.
-3. Ler o prompt gerado em harness/bin/build/prompts/<phase-id>.codex-prompt.txt.
-4. Ler o blueprint indicado no prompt.
-5. Ler os derivados indicados no prompt:
+3. Confirmar que nao existe fase validation ou in_progress.
+4. Atualizar a fase executada de next para in_progress, mantendo commit TBD:
+
+./harness/bin/update-phase-index-status.sh start <phase-id>
+
+5. Ler o prompt gerado em harness/bin/build/prompts/<phase-id>.codex-prompt.txt.
+6. Ler o blueprint indicado no prompt.
+7. Ler os derivados indicados no prompt:
    - handoff;
    - validation;
    - completion.
-6. Implementar estritamente o escopo do blueprint.
-7. Rodar todas as validações exigidas no prompt/blueprint.
-8. Gerar o runtime report no path indicado pelo prompt.
-9. Confirmar que o report está em harness/reports/runs/.
-10. Confirmar que o report não está staged.
-11. Confirmar que prompts temporários em harness/bin/build/ não estão staged.
-12. Confirmar que não houve alterações fora do escopo.
-13. Fazer commit apenas dos arquivos versionáveis da fase.
-14. Após o commit da implementação, atualizar harness/phases/phase-index.tsv:
-    - mudar o status da fase executada de next para implemented;
-    - preencher a coluna commit com o hash curto do commit criado.
-15. Fazer um segundo commit pequeno apenas para a atualização do phase index.
-16. Não fazer push.
+8. Implementar estritamente o escopo do blueprint.
+9. Rodar todas as validações exigidas no prompt/blueprint.
+10. Gerar o runtime report no path indicado pelo prompt.
+11. Confirmar que o report está em harness/reports/runs/.
+12. Atualizar a fase executada de in_progress para validation, mantendo commit TBD:
+
+./harness/bin/update-phase-index-status.sh validation <phase-id>
+
+13. Confirmar que o report não está staged.
+14. Confirmar que prompts temporários em harness/bin/build/ não estão staged.
+15. Confirmar que não houve alterações fora do escopo.
+16. Não marcar implemented.
+17. Não preencher hash de commit no phase-index.tsv.
+18. Não promover outra fase para next.
+19. Não fazer push.
 
 Validações mínimas obrigatórias, salvo se o prompt da fase exigir mais:
 
@@ -164,48 +191,25 @@ git diff --check
 
 Também execute todos os comandos adicionais exigidos pelo blueprint/prompt da fase, especialmente regressões CLI e comparações de fixtures.
 
-Commit da implementação:
+Commit e fechamento:
 
-Após validações passarem, faça commit com uma mensagem coerente com a fase.
-
-Exemplo:
-
-git commit -m "Add <phase summary>"
-
-Atualização do phase index:
-
-Depois do commit da implementação:
-
-1. Obtenha o hash curto:
-
-git rev-parse --short HEAD
-
-2. Atualize harness/phases/phase-index.tsv para a fase executada:
-
-- status: implemented
-- commit: <hash curto>
-
-3. Faça commit separado:
-
-git add harness/phases/phase-index.tsv
-git commit -m "Mark <phase-id> as implemented"
-
-Não fazer push automaticamente.
+Nao faca commit a menos que o usuario solicite explicitamente nesta execucao.
+O estado `implemented` so pode ser aplicado depois de revisao/aprovacao humana
+e depois de existir commit real. Ate la, a fase concluida pelo Codex deve ficar
+como `validation` com commit `TBD`.
 
 Ao final:
 
-1. Informe o commit da implementação.
-2. Informe o commit de atualização do phase index.
-3. Informe o path do report gerado.
-4. Informe os principais arquivos alterados.
-5. Informe os testes executados e resultados.
-6. Informe explicitamente o que ficou fora de escopo.
-7. Informe que a fase está marcada como implemented e ainda depende de revisão humana/web antes de merge/push.
+1. Informe o path do report gerado.
+2. Informe os principais arquivos alterados.
+3. Informe os testes executados e resultados.
+4. Informe explicitamente o que ficou fora de escopo.
+5. Informe que a fase está marcada como validation/TBD e depende de revisão humana antes de commit, implemented, merge ou push.
 
 Importante:
 
 Não marque a fase como approved automaticamente.
 
-implemented significa que a fase foi implementada e commitada.
+implemented significa que a fase foi aprovada e commitada.
 approved continua sendo decisão do Human Reviewer após revisão do report.
 ```

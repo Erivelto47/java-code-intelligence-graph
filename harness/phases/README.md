@@ -32,12 +32,11 @@ PHASE_4_3_JAVA_IF_ELSE_DECISION_SHAPE_REPORT.md
 Allowed statuses:
 
 - `planned`: known, but not selected for execution.
-- `next`: the next phase selected for runner preparation.
-- `in_progress`: execution has started.
+- `next`: the next phase selected for execution.
+- `in_progress`: execution has started; commit must remain `TBD`.
 - `validation`: execution produced a report and is waiting for Human Reviewer
-  approval.
-- `implemented`: executed and committed, but not necessarily approved for
-  merge.
+  approval; commit must remain `TBD`.
+- `implemented`: approved and backed by a real implementation commit hash.
 - `approved`: approved by the Human Reviewer.
 - `blocked`: blocked by an explicit issue or decision.
 - `skipped`: intentionally skipped.
@@ -63,14 +62,24 @@ those ids.
 Queue rules:
 
 - At most one line may use `next`; multiple `next` rows fail.
+- Any `in_progress` row blocks execution of every `next` phase.
 - Any `validation` row blocks execution of every `next` phase.
-- If there is no `next` and no `validation`, the first `planned` phase is
-  promoted to `next`.
+- If there is no `next`, no `in_progress` and no `validation`, the first
+  `planned` phase is promoted to `next`.
 - If there is no `next` and no `planned`, the runner reports that no next phase
   is available.
 - If the derived report already exists for the `next` phase, execution is
   blocked because the phase may already be waiting for validation.
 
-The runner does not mark phases as `implemented`, `approved` or `validation`
-automatically. Those transitions remain conscious manual changes after report
-review. Human approval is still required before merge or push decisions.
+Codex execution must update the active phase with:
+
+```bash
+./harness/bin/update-phase-index-status.sh start <phase-id>
+./harness/bin/update-phase-index-status.sh validation <phase-id>
+```
+
+Those commands preserve row order and TSV format, change only the selected
+phase and keep commit as `TBD`. They do not promote another phase to `next`.
+The harness does not mark phases as `implemented` or `approved` automatically.
+Those transitions require human review and a real commit hash. Human approval is
+still required before merge or push decisions.

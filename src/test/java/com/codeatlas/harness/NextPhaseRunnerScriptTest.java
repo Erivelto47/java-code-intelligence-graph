@@ -46,6 +46,10 @@ class NextPhaseRunnerScriptTest {
         assertTrue(promptText.contains("harness/validations/phase-9-next.validation.md"));
         assertTrue(promptText.contains("harness/completion/phase-9-next.completion.md"));
         assertTrue(promptText.contains("harness/reports/runs/PHASE_9_NEXT_REPORT.md"));
+        assertTrue(promptText.contains("./harness/bin/update-phase-index-status.sh start phase-9-next"));
+        assertTrue(promptText.contains("./harness/bin/update-phase-index-status.sh validation phase-9-next"));
+        assertTrue(promptText.contains("Do not mark this phase as `implemented`."));
+        assertTrue(promptText.contains("Do not promote another phase to `next`."));
     }
 
     @Test
@@ -105,6 +109,25 @@ class NextPhaseRunnerScriptTest {
         assertTrue(result.output().contains("phase-9-validation"));
         assertTrue(result.output().contains("harness/reports/runs/PHASE_9_VALIDATION_REPORT.md"));
         assertTrue(result.output().contains("prevents stacking phase executions"));
+        assertFalse(Files.exists(repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt")));
+    }
+
+    @Test
+    void inProgressStatusBlocksNextPhaseExecution(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-running");
+        writeBlueprint(repo, "phase-9-next");
+        writePhaseIndex(repo,
+                "1\tphase-9-running\tin_progress\tTBD\n"
+                        + "2\tphase-9-next\tnext\tTBD\n");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(1, result.exitCode(), result.output());
+        assertTrue(result.output().contains("Cannot run next phase."));
+        assertTrue(result.output().contains("Phase already in progress:"));
+        assertTrue(result.output().contains("phase-9-running"));
+        assertTrue(result.output().contains("move it to validation before starting another phase"));
         assertFalse(Files.exists(repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt")));
     }
 

@@ -26,11 +26,13 @@ decisao humana.
 4. Codex CLI Executor usa o runner para derivar artefatos operacionais a partir
    do blueprint aprovado.
 5. Codex CLI Executor revisa os derivados quando necessario.
-6. Codex CLI Executor executa no repositorio usando blueprint como fonte
+6. Codex CLI Executor marca a fase como `in_progress` com commit `TBD`.
+7. Codex CLI Executor executa no repositorio usando blueprint como fonte
    primaria e derivados como apoio operacional.
-7. Codex CLI Executor gera report factual.
-8. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
-9. Human Reviewer decide aprovar, iterar, fazer push, fazer merge, pausar ou
+8. Codex CLI Executor gera report factual.
+9. Codex CLI Executor marca a fase como `validation` com commit `TBD`.
+10. ChatGPT Web Architect pode revisar o report e sugerir proxima etapa.
+11. Human Reviewer decide aprovar, iterar, fazer commit, fazer push, fazer merge, pausar ou
    alterar escopo.
 
 ## Entradas
@@ -149,13 +151,13 @@ harness/reports/runs/<ID_UPPER_SNAKE>_REPORT.md
 ```
 
 Para enfileirar muitas fases, basta salvar os blueprints em
-`harness/blueprints/` e rodar o runner. Se nao houver `next` nem `validation`,
-a primeira fase `planned` vira `next`.
+`harness/blueprints/` e rodar o runner. Se nao houver `next`, `in_progress`
+nem `validation`, a primeira fase `planned` vira `next`.
 
 O runner valida que existe no maximo uma entrada `next`, bloqueia se qualquer
-fase estiver em `validation`, valida o blueprint, bloqueia quando o report
-derivado da fase `next` ja existe, chama `run-phase.sh` e gera um prompt padrao
-em:
+fase estiver em `in_progress` ou `validation`, valida o blueprint, bloqueia
+quando o report derivado da fase `next` ja existe, chama `run-phase.sh` e gera
+um prompt padrao em:
 
 ```text
 harness/bin/build/prompts/<phase-id>.codex-prompt.txt
@@ -165,11 +167,22 @@ Fluxo recomendado:
 
 1. Revisar o prompt gerado.
 2. Colar o prompt no Codex.
-3. Executar a fase usando o blueprint como fonte primaria.
-4. Gerar report em `harness/reports/runs/`.
-5. Marcar a fase como `validation` manualmente enquanto o report estiver em
-   revisao humana.
-6. Marcar `implemented` ou `approved` apenas depois de decisao humana.
+3. Marcar a fase como `in_progress` mantendo commit `TBD`:
+
+```bash
+./harness/bin/update-phase-index-status.sh start <phase-id>
+```
+
+4. Executar a fase usando o blueprint como fonte primaria.
+5. Gerar report em `harness/reports/runs/`.
+6. Marcar a fase como `validation` mantendo commit `TBD`:
+
+```bash
+./harness/bin/update-phase-index-status.sh validation <phase-id>
+```
+
+7. Marcar `implemented` ou `approved` apenas depois de revisao humana e commit
+   real.
 
 O runner nao chama Codex automaticamente, nao implementa a fase, nao marca
 `implemented`, nao marca `approved`, nao faz merge e nao faz push.
@@ -206,6 +219,10 @@ validation e completion servem como apoio operacional. Qualquer divergencia
 entre derivados e blueprint deve interromper a execucao ate que os derivados
 sejam corrigidos.
 
+No inicio da execucao, o Executor deve mover a fase atual de `next` para
+`in_progress` com commit `TBD`. O commit continua `TBD` durante toda a execucao
+Codex.
+
 ### 7. Validation
 
 O Executor roda os comandos derivados do blueprint e definidos para a fase. Para
@@ -234,6 +251,10 @@ harness/reports/runs/PHASE_4_2_JAVA_DECISION_UNRESOLVED_EARLY_RETURN_REPORT.md
 O report deve registrar arquivos alterados, validacoes, resultados, riscos,
 pendencias, fora de escopo e proxima etapa sugerida.
 
+Depois que implementacao, validacoes e report estiverem concluidos, o Executor
+deve mover a fase atual de `in_progress` para `validation`, mantendo commit
+`TBD`. A proxima fase nao deve ser promovida nesse fechamento de execucao.
+
 ### 9. Review
 
 O Architect pode revisar o report. O Human Reviewer avalia blueprint, derivados,
@@ -245,6 +266,10 @@ revisao.
 O Human Reviewer decide se aprova, pede ajustes, faz push, faz merge, pausa,
 altera escopo ou inicia a proxima fase. A decisao de merge para `master` nunca
 e automatica.
+
+Somente depois de revisao/aprovacao humana e commit real a fase pode ser
+marcada como `implemented` com o hash do commit. Esse fechamento nao e feito
+automaticamente pelo Codex.
 
 ## Politica de reports
 
