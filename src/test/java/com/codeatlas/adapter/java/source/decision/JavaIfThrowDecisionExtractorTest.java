@@ -1,5 +1,6 @@
 package com.codeatlas.adapter.java.source.decision;
 
+import com.codeatlas.core.decision.DecisionBranch;
 import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;
 import com.codeatlas.core.decision.DecisionTrace;
@@ -818,6 +819,112 @@ class JavaIfThrowDecisionExtractorTest {
                 "if (request.processed()) { return resultFactory.create(request.id()).normalize(); }",
                 trace.unresolved().get(0).expression()
         );
+    }
+
+    @Test
+    void extractsSwitchStatementDecisionWithOrderedLabelsAndDefault() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/StatusDecision.java"),
+                """
+                        package com.example;
+
+                        public class StatusDecision {
+                            public String resolve(StatusRequest request) {
+                                switch (request.status()) {
+                                    case "PENDING":
+                                        return "queued";
+                                    case "APPROVED", "ACTIVE":
+                                        return "open";
+                                    default:
+                                        return "closed";
+                                }
+                            }
+
+                            public record StatusRequest(String status) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.StatusDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("SWITCH_DECISION", decision.kind().name());
+        assertEquals("request.status()", decision.selector());
+        assertEquals("request.status()", decision.expression().text());
+        assertEquals("request.status", decision.expression().normalized());
+        assertEquals(3, decision.branches().size());
+
+        DecisionBranch pending = decision.branches().get(0);
+        assertEquals("CASE", pending.kind());
+        assertEquals(List.of("\"PENDING\""), pending.labels());
+        assertEquals("\"queued\"", pending.outcomes().get(0).target());
+
+        DecisionBranch approvedOrActive = decision.branches().get(1);
+        assertEquals("CASE", approvedOrActive.kind());
+        assertEquals(List.of("\"APPROVED\"", "\"ACTIVE\""), approvedOrActive.labels());
+        assertEquals("\"open\"", approvedOrActive.outcomes().get(0).target());
+
+        DecisionBranch defaultBranch = decision.branches().get(2);
+        assertEquals("DEFAULT", defaultBranch.kind());
+        assertEquals(List.of(), defaultBranch.labels());
+        assertEquals("\"closed\"", defaultBranch.outcomes().get(0).target());
+    }
+
+    @Test
+    void extractsSwitchExpressionDecisionWithAssignmentArrowAndYieldOutputs() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/FeeDecision.java"),
+                """
+                        package com.example;
+
+                        public class FeeDecision {
+                            public String resolve(FeeRequest request) {
+                                String fee = switch (request.type()) {
+                                    case STANDARD -> "standard";
+                                    case PREMIUM -> {
+                                        yield "premium";
+                                    }
+                                    default -> "unknown";
+                                };
+                                return fee;
+                            }
+
+                            public record FeeRequest(FeeType type) {
+                            }
+
+                            public enum FeeType {
+                                STANDARD,
+                                PREMIUM,
+                                UNKNOWN
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.FeeDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("SWITCH_EXPRESSION_DECISION", decision.kind().name());
+        assertEquals("request.type()", decision.selector());
+        assertEquals("fee", decision.assignedTo());
+        assertEquals("fee", decision.subjects().get(1).name());
+        assertEquals("ASSIGNMENT_TARGET", decision.subjects().get(1).kind());
+        assertEquals(3, decision.branches().size());
+
+        assertEquals(List.of("STANDARD"), decision.branches().get(0).labels());
+        assertEquals("ASSIGN", decision.branches().get(0).outcomes().get(0).action().name());
+        assertEquals("\"standard\"", decision.branches().get(0).outcomes().get(0).target());
+
+        assertEquals(List.of("PREMIUM"), decision.branches().get(1).labels());
+        assertEquals("ASSIGN", decision.branches().get(1).outcomes().get(0).action().name());
+        assertEquals("\"premium\"", decision.branches().get(1).outcomes().get(0).target());
+
+        assertEquals("DEFAULT", decision.branches().get(2).kind());
+        assertEquals("ASSIGN", decision.branches().get(2).outcomes().get(0).action().name());
+        assertEquals("\"unknown\"", decision.branches().get(2).outcomes().get(0).target());
     }
 
     @Test

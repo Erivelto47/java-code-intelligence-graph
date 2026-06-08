@@ -85,11 +85,20 @@ public final class DecisionTraceJsonWriter {
 
         @JsonInclude(JsonInclude.Include.NON_NULL)
         abstract Object parent();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object selector();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object assignedTo();
     }
 
     private abstract static class DecisionBranchJsonMixin {
         @JsonInclude(JsonInclude.Include.NON_NULL)
         abstract Object condition();
+
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        abstract Object labels();
     }
 
     private abstract static class DecisionConditionJsonMixin {

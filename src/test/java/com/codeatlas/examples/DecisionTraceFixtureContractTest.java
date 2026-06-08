@@ -24,6 +24,8 @@ class DecisionTraceFixtureContractTest {
             "IF_ELSE_IF_CHAIN",
             "EARLY_RETURN",
             "CONDITIONAL_THROW",
+            "SWITCH_DECISION",
+            "SWITCH_EXPRESSION_DECISION",
             "SWITCH_CASE",
             "TERNARY_CONDITION",
             "OPTIONAL_BRANCH",
@@ -182,6 +184,33 @@ class DecisionTraceFixtureContractTest {
         assertAnalyzeDecisionsFixtureMatches(
                 Path.of("examples/phase-4-decision-trace/15-nested-ternary-decision"),
                 "com.example.decisiontrace.ternarynested.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void switchStatementDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/15-switch-statement-decision"),
+                "com.example.decisiontrace.switchstatement.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void switchExpressionDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/16-switch-expression-decision"),
+                "com.example.decisiontrace.switchexpression.FeeDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void switchFallthroughDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/17-switch-fallthrough-decision"),
+                "com.example.decisiontrace.switchfallthrough.StatusDecision.resolve",
                 tempDir
         );
     }

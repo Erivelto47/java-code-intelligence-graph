@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/17-switch-fallthrough-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.switchfallthrough.StatusDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.switchfallthrough.StatusDecision.resolve:switch:1",
+      "kind": "SWITCH_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.switchfallthrough.StatusDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.switchfallthrough.StatusDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.switchfallthrough.StatusDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/switchfallthrough/StatusDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.status()",
+        "normalized": "request.status"
+      },
+      "subjects": [
+        {
+          "name": "request.status",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "branch:1:CASE",
+          "action": "RETURN",
+          "target": "\"waiting\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch branch returns \"waiting\""
+        },
+        {
+          "when": "branch:2:CASE",
+          "action": "RETURN",
+          "target": "\"complete\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch branch returns \"complete\""
+        },
+        {
+          "when": "branch:3:DEFAULT",
+          "action": "RETURN",
+          "target": "\"unknown\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch branch returns \"unknown\""
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "switch (request.status()) { case \"PENDING\": case \"QUEUED\": return \"waiting\"; case \"DONE\": return \"complete\"; default: return \"unknown\"; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "CASE",
+          "condition": "\"PENDING\", \"QUEUED\"",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "branch:1:CASE",
+              "action": "RETURN",
+              "target": "\"waiting\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch branch returns \"waiting\""
+            }
+          ],
+          "labels": [
+            "\"PENDING\"",
+            "\"QUEUED\""
+          ]
+        },
+        {
+          "kind": "CASE",
+          "condition": "\"DONE\"",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "branch:2:CASE",
+              "action": "RETURN",
+              "target": "\"complete\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch branch returns \"complete\""
+            }
+          ],
+          "labels": [
+            "\"DONE\""
+          ]
+        },
+        {
+          "kind": "DEFAULT",
+          "order": 3,
+          "outcomes": [
+            {
+              "when": "branch:3:DEFAULT",
+              "action": "RETURN",
+              "target": "\"unknown\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch branch returns \"unknown\""
+            }
+          ]
+        }
+      ],
+      "confidence": "HIGH",
+      "selector": "request.status()"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

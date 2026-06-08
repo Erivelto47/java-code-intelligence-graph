@@ -1,0 +1,142 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/16-switch-expression-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.switchexpression.FeeDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.switchexpression.FeeDecision.resolve:switch-expression:1",
+      "kind": "SWITCH_EXPRESSION_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.switchexpression.FeeDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.switchexpression.FeeDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.switchexpression.FeeDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/switchexpression/FeeDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.type()",
+        "normalized": "request.type"
+      },
+      "subjects": [
+        {
+          "name": "request.type",
+          "kind": "INPUT_FIELD"
+        },
+        {
+          "name": "fee",
+          "kind": "ASSIGNMENT_TARGET"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "branch:1:CASE",
+          "action": "ASSIGN",
+          "target": "\"standard\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch STANDARD branch assigns fee to \"standard\""
+        },
+        {
+          "when": "branch:2:CASE",
+          "action": "ASSIGN",
+          "target": "\"premium\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch PREMIUM branch assigns fee to \"premium\""
+        },
+        {
+          "when": "branch:3:DEFAULT",
+          "action": "ASSIGN",
+          "target": "\"unknown\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch default branch assigns fee to \"unknown\""
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "String fee = switch (request.type()) { case STANDARD -> \"standard\"; case PREMIUM -> { yield \"premium\"; } default -> \"unknown\"; };"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "CASE",
+          "condition": "STANDARD",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "branch:1:CASE",
+              "action": "ASSIGN",
+              "target": "\"standard\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch STANDARD branch assigns fee to \"standard\""
+            }
+          ],
+          "labels": [
+            "STANDARD"
+          ]
+        },
+        {
+          "kind": "CASE",
+          "condition": "PREMIUM",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "branch:2:CASE",
+              "action": "ASSIGN",
+              "target": "\"premium\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch PREMIUM branch assigns fee to \"premium\""
+            }
+          ],
+          "labels": [
+            "PREMIUM"
+          ]
+        },
+        {
+          "kind": "DEFAULT",
+          "order": 3,
+          "outcomes": [
+            {
+              "when": "branch:3:DEFAULT",
+              "action": "ASSIGN",
+              "target": "\"unknown\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch default branch assigns fee to \"unknown\""
+            }
+          ]
+        }
+      ],
+      "confidence": "HIGH",
+      "selector": "request.type()",
+      "assignedTo": "fee"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

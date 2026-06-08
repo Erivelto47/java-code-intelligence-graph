@@ -17,11 +17,51 @@ public record DecisionNode(
         List<DecisionBranch> branches,
         List<DecisionChildDecision> children,
         DecisionParent parent,
-        String confidence
+        String confidence,
+        String selector,
+        String assignedTo
 ) {
     public DecisionNode {
         branches = branches == null ? List.of() : List.copyOf(branches);
         children = children == null ? List.of() : List.copyOf(children);
+    }
+
+    public DecisionNode(
+            String id,
+            DecisionKind kind,
+            DecisionCategory category,
+            String method,
+            DecisionSource source,
+            DecisionSourceLocation sourceLocation,
+            DecisionCondition expression,
+            List<DecisionSubject> subjects,
+            List<DecisionOutcome> outcomes,
+            DecisionEvidence evidence,
+            DecisionLinks links,
+            List<DecisionBranch> branches,
+            List<DecisionChildDecision> children,
+            DecisionParent parent,
+            String confidence
+    ) {
+        this(
+                id,
+                kind,
+                category,
+                method,
+                source,
+                sourceLocation,
+                expression,
+                subjects,
+                outcomes,
+                evidence,
+                links,
+                branches,
+                children,
+                parent,
+                confidence,
+                null,
+                null
+        );
     }
 
     public DecisionNode(
@@ -53,7 +93,9 @@ public record DecisionNode(
                 List.of(),
                 List.of(),
                 null,
-                confidence
+                confidence,
+                null,
+                null
         );
     }
 }
