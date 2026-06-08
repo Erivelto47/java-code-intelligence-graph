@@ -5,6 +5,7 @@ import com.codeatlas.core.decision.DecisionBranch;
 import com.codeatlas.core.decision.DecisionCategory;
 import com.codeatlas.core.decision.DecisionChildDecision;
 import com.codeatlas.core.decision.DecisionCondition;
+import com.codeatlas.core.decision.DecisionConditionExpression;
 import com.codeatlas.core.decision.DecisionEvidence;
 import com.codeatlas.core.decision.DecisionKind;
 import com.codeatlas.core.decision.DecisionLinks;
@@ -38,13 +39,15 @@ public final class JavaIfThrowDecisionExtractor {
     private final JavaIfElseDecisionExtractor ifElseDecisionExtractor;
     private final JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor;
     private final JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector;
+    private final JavaBooleanConditionExpressionParser conditionExpressionParser;
 
     public JavaIfThrowDecisionExtractor() {
         this(
                 new JavaElseIfDecisionExtractor(),
                 new JavaIfElseDecisionExtractor(),
                 new JavaEarlyReturnDecisionExtractor(),
-                new JavaUnsupportedDecisionShapeDetector()
+                new JavaUnsupportedDecisionShapeDetector(),
+                new JavaBooleanConditionExpressionParser()
         );
     }
 
@@ -52,7 +55,8 @@ public final class JavaIfThrowDecisionExtractor {
             JavaElseIfDecisionExtractor elseIfDecisionExtractor,
             JavaIfElseDecisionExtractor ifElseDecisionExtractor,
             JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor,
-            JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector
+            JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector,
+            JavaBooleanConditionExpressionParser conditionExpressionParser
     ) {
         this.elseIfDecisionExtractor = Objects.requireNonNull(
                 elseIfDecisionExtractor,
@@ -69,6 +73,10 @@ public final class JavaIfThrowDecisionExtractor {
         this.unsupportedDecisionShapeDetector = Objects.requireNonNull(
                 unsupportedDecisionShapeDetector,
                 "unsupportedDecisionShapeDetector must not be null"
+        );
+        this.conditionExpressionParser = Objects.requireNonNull(
+                conditionExpressionParser,
+                "conditionExpressionParser must not be null"
         );
     }
 
@@ -470,7 +478,7 @@ public final class JavaIfThrowDecisionExtractor {
         ));
     }
 
-    private static DecisionNode toThrowDecisionNode(
+    private DecisionNode toThrowDecisionNode(
             DecisionContext context,
             JavaDecisionSourceSupport.SourceFile sourceFile,
             IfThrowDecision parsedDecision,
@@ -490,7 +498,7 @@ public final class JavaIfThrowDecisionExtractor {
                 context.methodSignature(),
                 new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
                 new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
-                new DecisionCondition(parsedDecision.condition(), normalizedCondition),
+                condition(parsedDecision.condition(), normalizedCondition),
                 subjects,
                 List.of(
                         new DecisionOutcome(
@@ -516,7 +524,7 @@ public final class JavaIfThrowDecisionExtractor {
         );
     }
 
-    private static DecisionNode toEarlyReturnDecisionNode(
+    private DecisionNode toEarlyReturnDecisionNode(
             DecisionContext context,
             JavaDecisionSourceSupport.SourceFile sourceFile,
             JavaEarlyReturnDecisionExtractor.EarlyReturnDecision parsedDecision,
@@ -534,7 +542,7 @@ public final class JavaIfThrowDecisionExtractor {
                 context.methodSignature(),
                 new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
                 new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
-                new DecisionCondition(parsedDecision.condition(), normalizedCondition),
+                condition(parsedDecision.condition(), normalizedCondition),
                 subjects(parsedDecision.condition()),
                 List.of(
                         new DecisionOutcome(
@@ -560,7 +568,7 @@ public final class JavaIfThrowDecisionExtractor {
         );
     }
 
-    private static DecisionNode toIfElseDecisionNode(
+    private DecisionNode toIfElseDecisionNode(
             DecisionContext context,
             JavaDecisionSourceSupport.SourceFile sourceFile,
             JavaIfElseDecisionExtractor.IfElseDecision parsedDecision,
@@ -575,7 +583,7 @@ public final class JavaIfThrowDecisionExtractor {
                 context.methodSignature(),
                 new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
                 new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
-                new DecisionCondition(parsedDecision.condition(), normalizedCondition),
+                condition(parsedDecision.condition(), normalizedCondition),
                 subjects(parsedDecision.condition()),
                 List.of(
                         toBranchOutcome("true", parsedDecision.trueOutcome()),
@@ -585,6 +593,13 @@ public final class JavaIfThrowDecisionExtractor {
                 new DecisionLinks(List.of(), context.calledMethods(), List.of()),
                 "HIGH"
         );
+    }
+
+    private DecisionCondition condition(String text, String normalized) {
+        DecisionConditionExpression expression = conditionExpressionParser
+                .parseComposed(text)
+                .orElse(null);
+        return new DecisionCondition(text, normalized, expression);
     }
 
     private List<DecisionNode> toElseIfDecisionNodes(
@@ -636,7 +651,7 @@ public final class JavaIfThrowDecisionExtractor {
                 context.methodSignature(),
                 new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
                 new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
-                new DecisionCondition(
+                condition(
                         parsedDecision.condition(),
                         JavaDecisionSourceSupport.normalizedCondition(parsedDecision.condition())
                 ),
@@ -697,7 +712,7 @@ public final class JavaIfThrowDecisionExtractor {
                 context.methodSignature(),
                 new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
                 new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.ifStart())),
-                new DecisionCondition(
+                condition(
                         parsedDecision.condition(),
                         JavaDecisionSourceSupport.normalizedCondition(parsedDecision.condition())
                 ),

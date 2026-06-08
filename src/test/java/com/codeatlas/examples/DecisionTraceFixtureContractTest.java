@@ -141,6 +141,24 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void booleanAndOrNotConditionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/11-boolean-and-or-not-condition"),
+                "com.example.decisiontrace.booleancondition.AccessPolicy.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void comparisonAndMethodPredicateConditionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/12-comparison-and-method-predicate-condition"),
+                "com.example.decisiontrace.comparisonpredicate.EligibilityDecision.resolve",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,
@@ -217,6 +235,9 @@ class DecisionTraceFixtureContractTest {
         assertTrue(decision.path("expression").isObject(), decisionJsonFile + " decision must contain expression");
         assertNonBlank(decisionJsonFile, decision.path("expression"), "text");
         assertTrue(decision.path("expression").has("normalized"), decisionJsonFile + " expression.normalized must be present");
+        if (decision.path("expression").has("conditionExpression")) {
+            assertConditionExpressionContract(decisionJsonFile, decision.path("expression").path("conditionExpression"));
+        }
         assertTrue(decision.path("subjects").isArray(), decisionJsonFile + " subjects must be an array");
         assertTrue(decision.path("outcomes").isArray(), decisionJsonFile + " outcomes must be an array");
         assertFalse(decision.path("outcomes").isEmpty(), decisionJsonFile + " outcomes must not be empty");
@@ -240,6 +261,33 @@ class DecisionTraceFixtureContractTest {
     private static void assertNonBlank(Path file, JsonNode node, String fieldName) {
         assertTrue(node.has(fieldName), file + " missing field " + fieldName);
         assertFalse(node.path(fieldName).asText().isBlank(), file + " field " + fieldName + " must not be blank");
+    }
+
+    private static void assertConditionExpressionContract(Path decisionJsonFile, JsonNode expression) {
+        assertNonBlank(decisionJsonFile, expression, "kind");
+        assertNonBlank(decisionJsonFile, expression, "text");
+        switch (expression.path("kind").asText()) {
+            case "AND", "OR" -> {
+                assertTrue(expression.path("operands").isArray(), decisionJsonFile + " boolean expression operands");
+                assertFalse(expression.path("operands").isEmpty(), decisionJsonFile + " boolean expression operands");
+                for (JsonNode operand : expression.path("operands")) {
+                    assertConditionExpressionContract(decisionJsonFile, operand);
+                }
+            }
+            case "NOT", "GROUP" -> {
+                assertTrue(expression.path("operand").isObject(), decisionJsonFile + " unary expression operand");
+                assertConditionExpressionContract(decisionJsonFile, expression.path("operand"));
+            }
+            case "COMPARISON" -> {
+                assertNonBlank(decisionJsonFile, expression, "operator");
+                assertNonBlank(decisionJsonFile, expression, "left");
+                assertNonBlank(decisionJsonFile, expression, "right");
+            }
+            case "METHOD_CALL", "REFERENCE", "EXPRESSION" -> {
+                // Leaf nodes only require deterministic kind and original text.
+            }
+            default -> throw new AssertionError(decisionJsonFile + " unknown condition expression kind");
+        }
     }
 
     private static void assertUnresolvedContract(Path decisionJsonFile, JsonNode unresolved) {

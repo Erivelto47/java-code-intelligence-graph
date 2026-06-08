@@ -28,7 +28,24 @@
       },
       "expression": {
         "text": "request.name() == null || request.name().isBlank()",
-        "normalized": "isNullOrBlank(request.name)"
+        "normalized": "isNullOrBlank(request.name)",
+        "conditionExpression": {
+          "kind": "OR",
+          "text": "request.name() == null || request.name().isBlank()",
+          "operands": [
+            {
+              "kind": "COMPARISON",
+              "text": "request.name() == null",
+              "operator": "==",
+              "left": "request.name()",
+              "right": "null"
+            },
+            {
+              "kind": "METHOD_CALL",
+              "text": "request.name().isBlank()"
+            }
+          ]
+        }
       },
       "subjects": [
         {

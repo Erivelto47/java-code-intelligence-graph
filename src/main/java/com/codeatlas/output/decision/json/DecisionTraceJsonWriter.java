@@ -1,6 +1,8 @@
 package com.codeatlas.output.decision.json;
 
 import com.codeatlas.core.decision.DecisionBranch;
+import com.codeatlas.core.decision.DecisionCondition;
+import com.codeatlas.core.decision.DecisionConditionExpression;
 import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionTrace;
 import com.fasterxml.jackson.annotation.JsonInclude;
@@ -56,6 +58,8 @@ public final class DecisionTraceJsonWriter {
         mapper.registerModule(new JavaTimeModule());
         mapper.addMixIn(DecisionNode.class, DecisionNodeJsonMixin.class);
         mapper.addMixIn(DecisionBranch.class, DecisionBranchJsonMixin.class);
+        mapper.addMixIn(DecisionCondition.class, DecisionConditionJsonMixin.class);
+        mapper.addMixIn(DecisionConditionExpression.class, DecisionConditionExpressionJsonMixin.class);
         mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
@@ -86,5 +90,27 @@ public final class DecisionTraceJsonWriter {
     private abstract static class DecisionBranchJsonMixin {
         @JsonInclude(JsonInclude.Include.NON_NULL)
         abstract Object condition();
+    }
+
+    private abstract static class DecisionConditionJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object conditionExpression();
+    }
+
+    private abstract static class DecisionConditionExpressionJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object operator();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object left();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object right();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object operand();
+
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        abstract Object operands();
     }
 }
