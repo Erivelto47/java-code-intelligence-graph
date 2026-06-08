@@ -1,0 +1,8 @@
+flowchart TD
+  entry["com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve"]
+  d1{"Optional.ofNullable(profile.name()) .map(String::trim) .orElse(\"anonymous\")"}
+  entry --> d1
+  o1b1["PRESENT: present<br/>ASSIGN"]
+  d1 -- 1 --> o1b1
+  o1b2["EMPTY: empty<br/>ASSIGN"]
+  d1 -- 2 --> o1b2

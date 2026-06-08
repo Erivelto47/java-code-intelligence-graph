@@ -40,6 +40,7 @@ public final class JavaIfThrowDecisionExtractor {
     private final JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor;
     private final JavaSwitchDecisionExtractor switchDecisionExtractor;
     private final JavaTernaryDecisionExtractor ternaryDecisionExtractor;
+    private final JavaOptionalDecisionExtractor optionalDecisionExtractor;
     private final JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector;
     private final JavaBooleanConditionExpressionParser conditionExpressionParser;
 
@@ -50,6 +51,7 @@ public final class JavaIfThrowDecisionExtractor {
                 new JavaEarlyReturnDecisionExtractor(),
                 new JavaSwitchDecisionExtractor(),
                 new JavaTernaryDecisionExtractor(),
+                new JavaOptionalDecisionExtractor(),
                 new JavaUnsupportedDecisionShapeDetector(),
                 new JavaBooleanConditionExpressionParser()
         );
@@ -61,6 +63,7 @@ public final class JavaIfThrowDecisionExtractor {
             JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor,
             JavaSwitchDecisionExtractor switchDecisionExtractor,
             JavaTernaryDecisionExtractor ternaryDecisionExtractor,
+            JavaOptionalDecisionExtractor optionalDecisionExtractor,
             JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector,
             JavaBooleanConditionExpressionParser conditionExpressionParser
     ) {
@@ -83,6 +86,10 @@ public final class JavaIfThrowDecisionExtractor {
         this.ternaryDecisionExtractor = Objects.requireNonNull(
                 ternaryDecisionExtractor,
                 "ternaryDecisionExtractor must not be null"
+        );
+        this.optionalDecisionExtractor = Objects.requireNonNull(
+                optionalDecisionExtractor,
+                "optionalDecisionExtractor must not be null"
         );
         this.unsupportedDecisionShapeDetector = Objects.requireNonNull(
                 unsupportedDecisionShapeDetector,
@@ -149,16 +156,23 @@ public final class JavaIfThrowDecisionExtractor {
                 methodRange,
                 directResult.decisions().size() + switchDecisions.size() + 1
         );
+        List<DecisionNode> optionalDecisions = extractOptionalDecisions(
+                directContext,
+                sourceFile,
+                methodRange,
+                directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + 1
+        );
         ExtractionResult helperResult = extractMethodLocalDecisionCalls(
                 entrypoint,
                 sourceFile,
                 methodRange,
-                directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + 1,
+                directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + optionalDecisions.size() + 1,
                 directResult.unresolved().size() + 1
         );
         List<DecisionNode> decisions = new ArrayList<>(directResult.decisions());
         decisions.addAll(switchDecisions);
         decisions.addAll(ternaryDecisions);
+        decisions.addAll(optionalDecisions);
         decisions.addAll(helperResult.decisions());
         List<UnresolvedDecision> unresolved = new ArrayList<>(directResult.unresolved());
         unresolved.addAll(helperResult.unresolved());
@@ -190,6 +204,21 @@ public final class JavaIfThrowDecisionExtractor {
         List<DecisionNode> decisions = new ArrayList<>();
         for (JavaTernaryDecisionExtractor.TernaryDecision ternaryDecision : ternaryDecisionExtractor.parse(sourceFile, methodRange)) {
             decisions.addAll(toTernaryDecisionNodes(context, sourceFile, ternaryDecision, null, counters));
+        }
+        return List.copyOf(decisions);
+    }
+
+    private List<DecisionNode> extractOptionalDecisions(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange methodRange,
+            int startingDecisionOrdinal
+    ) {
+        List<DecisionNode> decisions = new ArrayList<>();
+        int ordinal = startingDecisionOrdinal;
+        for (JavaOptionalDecisionExtractor.OptionalDecision optionalDecision : optionalDecisionExtractor.parse(sourceFile, methodRange)) {
+            decisions.add(toOptionalDecisionNode(context, sourceFile, optionalDecision, ordinal));
+            ordinal++;
         }
         return List.copyOf(decisions);
     }
@@ -721,6 +750,59 @@ public final class JavaIfThrowDecisionExtractor {
                 outcome.exceptionType(),
                 outcome.message(),
                 outcome.meaning()
+        );
+    }
+
+    private DecisionNode toOptionalDecisionNode(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaOptionalDecisionExtractor.OptionalDecision parsedDecision,
+            int ordinal
+    ) {
+        List<DecisionBranch> branches = parsedDecision.branches().stream()
+                .map(branch -> new DecisionBranch(
+                        branch.kind(),
+                        branch.condition(),
+                        branch.order(),
+                        List.of(toOptionalOutcome(branch))
+                ))
+                .toList();
+        List<DecisionOutcome> outcomes = branches.stream()
+                .flatMap(branch -> branch.outcomes().stream())
+                .toList();
+        List<DecisionSubject> optionalSubjects = new ArrayList<>(subjects(parsedDecision.sourceExpression()));
+        if (parsedDecision.target() != null && !parsedDecision.target().isBlank()) {
+            optionalSubjects.add(new DecisionSubject(parsedDecision.target(), "ASSIGNMENT_TARGET"));
+        }
+
+        return new DecisionNode(
+                "decision:" + context.idBase() + ":optional:" + ordinal,
+                DecisionKind.OPTIONAL_BRANCH,
+                DecisionCategory.UNKNOWN,
+                context.methodSignature(),
+                new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
+                new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.expressionStart())),
+                condition(parsedDecision.expression(), JavaDecisionSourceSupport.normalizedCondition(parsedDecision.sourceExpression())),
+                optionalSubjects,
+                outcomes,
+                new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
+                new DecisionLinks(List.of(), context.calledMethods(), List.of()),
+                branches,
+                List.of(),
+                null,
+                "HIGH"
+        );
+    }
+
+    private static DecisionOutcome toOptionalOutcome(JavaOptionalDecisionExtractor.OptionalBranch branch) {
+        String when = "branch:" + branch.order() + ":" + branch.kind();
+        return new DecisionOutcome(
+                when,
+                DecisionOutcomeAction.valueOf(branch.outcomeKind().name()),
+                branch.target(),
+                branch.exceptionType(),
+                branch.message(),
+                branch.meaning()
         );
     }
 

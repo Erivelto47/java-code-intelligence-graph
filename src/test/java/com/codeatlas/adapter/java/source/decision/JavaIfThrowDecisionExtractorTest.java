@@ -1046,6 +1046,136 @@ class JavaIfThrowDecisionExtractorTest {
         assertEquals("WHEN_TRUE", child.parent().branchKind());
     }
 
+    @Test
+    void extractsOptionalOrElseThrowDecision() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/UserDecision.java"),
+                """
+                        package com.example;
+
+                        import java.util.Optional;
+
+                        public class UserDecision {
+                            public User resolve(UserRepository repository, String id) {
+                                return repository.findById(id)
+                                        .filter(user -> user.active())
+                                        .orElseThrow(() -> new NotFoundException("User not found"));
+                            }
+
+                            public interface UserRepository {
+                                Optional<User> findById(String id);
+                            }
+
+                            public record User(boolean active) {
+                            }
+
+                            public static class NotFoundException extends RuntimeException {
+                                NotFoundException(String message) {
+                                    super(message);
+                                }
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.UserDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("OPTIONAL_BRANCH", decision.kind().name());
+        assertEquals(
+                "repository.findById(id) .filter(user -> user.active()) .orElseThrow(() -> new NotFoundException(\"User not found\"))",
+                decision.expression().text()
+        );
+        assertEquals(2, decision.branches().size());
+        assertEquals("PRESENT", decision.branches().get(0).kind());
+        assertEquals("RETURN", decision.branches().get(0).outcomes().get(0).action().name());
+        assertEquals("EMPTY", decision.branches().get(1).kind());
+        assertEquals("THROW", decision.branches().get(1).outcomes().get(0).action().name());
+        assertEquals("NotFoundException", decision.branches().get(1).outcomes().get(0).exceptionType());
+        assertEquals("User not found", decision.branches().get(1).outcomes().get(0).message());
+    }
+
+    @Test
+    void extractsOptionalFallbackDecision() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/DisplayNameDecision.java"),
+                """
+                        package com.example;
+
+                        import java.util.Optional;
+
+                        public class DisplayNameDecision {
+                            public String resolve(Profile profile) {
+                                String displayName = Optional.ofNullable(profile.name())
+                                        .map(String::trim)
+                                        .orElseGet(() -> "anonymous");
+                                return displayName;
+                            }
+
+                            public record Profile(String name) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.DisplayNameDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("OPTIONAL_BRANCH", decision.kind().name());
+        assertEquals("profile.name", decision.subjects().get(0).name());
+        assertEquals("displayName", decision.subjects().get(1).name());
+        assertEquals("ASSIGNMENT_TARGET", decision.subjects().get(1).kind());
+        assertEquals("PRESENT", decision.branches().get(0).kind());
+        assertEquals("ASSIGN", decision.branches().get(0).outcomes().get(0).action().name());
+        assertEquals("EMPTY", decision.branches().get(1).kind());
+        assertEquals("ASSIGN", decision.branches().get(1).outcomes().get(0).action().name());
+        assertEquals("() -> \"anonymous\"", decision.branches().get(1).outcomes().get(0).target());
+    }
+
+    @Test
+    void extractsOptionalIfPresentOrElseDecisionBranches() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/NotificationDecision.java"),
+                """
+                        package com.example;
+
+                        import java.util.Optional;
+
+                        public class NotificationDecision {
+                            public void resolve(Optional<User> user) {
+                                user.ifPresentOrElse(
+                                        value -> notify(value),
+                                        () -> auditMissing());
+                            }
+
+                            private void notify(User user) {
+                            }
+
+                            private void auditMissing() {
+                            }
+
+                            public record User(String id) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.NotificationDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("OPTIONAL_BRANCH", decision.kind().name());
+        assertEquals("user.ifPresentOrElse( value -> notify(value), () -> auditMissing())", decision.expression().text());
+        assertEquals("PRESENT", decision.branches().get(0).kind());
+        assertEquals("value -> notify(value)", decision.branches().get(0).outcomes().get(0).target());
+        assertEquals("EMPTY", decision.branches().get(1).kind());
+        assertEquals("() -> auditMissing()", decision.branches().get(1).outcomes().get(0).target());
+    }
+
     private static void writeJavaFile(Path sourceFile, String source) throws Exception {
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(sourceFile, source);

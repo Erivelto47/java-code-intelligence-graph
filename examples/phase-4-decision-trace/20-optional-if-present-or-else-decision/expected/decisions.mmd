@@ -1,0 +1,8 @@
+flowchart TD
+  entry["com.example.decisiontrace.optionalifpresent.NotificationDecision.resolve"]
+  d1{"user.ifPresentOrElse( value -> notify(value), () -> auditMissing())"}
+  entry --> d1
+  o1b1["PRESENT: present<br/>CALL"]
+  d1 -- 1 --> o1b1
+  o1b2["EMPTY: empty<br/>CALL"]
+  d1 -- 2 --> o1b2

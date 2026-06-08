@@ -215,6 +215,33 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void optionalOrElseThrowDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/18-optional-or-else-throw-decision"),
+                "com.example.decisiontrace.optionalthrow.UserDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void optionalFallbackDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/19-optional-or-else-fallback-decision"),
+                "com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void optionalIfPresentOrElseDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/20-optional-if-present-or-else-decision"),
+                "com.example.decisiontrace.optionalifpresent.NotificationDecision.resolve",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,

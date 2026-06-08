@@ -1,0 +1,108 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/18-optional-or-else-throw-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.optionalthrow.UserDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.optionalthrow.UserDecision.resolve:optional:1",
+      "kind": "OPTIONAL_BRANCH",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.optionalthrow.UserDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.optionalthrow.UserDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.optionalthrow.UserDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/optionalthrow/UserDecision.java",
+        "line": 7
+      },
+      "expression": {
+        "text": "repository.findById(id) .filter(user -> user.active()) .orElseThrow(() -> new NotFoundException(\"User not found\"))",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "repository.findById",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "branch:1:PRESENT",
+          "action": "RETURN",
+          "target": "repository.findById",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Optional present branch uses repository.findById(id) .filter(user -> user.active())"
+        },
+        {
+          "when": "branch:2:EMPTY",
+          "action": "THROW",
+          "target": "NotFoundException",
+          "exceptionType": "NotFoundException",
+          "message": "User not found",
+          "meaning": "Optional empty branch throws new NotFoundException(\"User not found\")"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "return repository.findById(id) .filter(user -> user.active()) .orElseThrow(() -> new NotFoundException(\"User not found\"));"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "PRESENT",
+          "condition": "present",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "branch:1:PRESENT",
+              "action": "RETURN",
+              "target": "repository.findById",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Optional present branch uses repository.findById(id) .filter(user -> user.active())"
+            }
+          ]
+        },
+        {
+          "kind": "EMPTY",
+          "condition": "empty",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "branch:2:EMPTY",
+              "action": "THROW",
+              "target": "NotFoundException",
+              "exceptionType": "NotFoundException",
+              "message": "User not found",
+              "meaning": "Optional empty branch throws new NotFoundException(\"User not found\")"
+            }
+          ]
+        }
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}
