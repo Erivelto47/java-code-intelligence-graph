@@ -820,6 +820,125 @@ class JavaIfThrowDecisionExtractorTest {
         );
     }
 
+    @Test
+    void extractsReturnTernaryDecisionFromEntrypointMethod() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/StatusDecision.java"),
+                """
+                        package com.example;
+
+                        public class StatusDecision {
+                            public String resolve(StatusRequest request) {
+                                return request.active() ? "active" : "inactive";
+                            }
+
+                            public record StatusRequest(boolean active) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.StatusDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("TERNARY_CONDITION", decision.kind().name());
+        assertEquals("request.active()", decision.expression().text());
+        assertEquals("request.active", decision.expression().normalized());
+        assertEquals(2, decision.branches().size());
+
+        DecisionOutcome trueOutcome = decision.outcomes().get(0);
+        assertEquals("true", trueOutcome.when());
+        assertEquals("RETURN", trueOutcome.action().name());
+        assertEquals("\"active\"", trueOutcome.target());
+        assertEquals("Ternary true branch returns \"active\"", trueOutcome.meaning());
+
+        DecisionOutcome falseOutcome = decision.outcomes().get(1);
+        assertEquals("false", falseOutcome.when());
+        assertEquals("RETURN", falseOutcome.action().name());
+        assertEquals("\"inactive\"", falseOutcome.target());
+        assertEquals("Ternary false branch returns \"inactive\"", falseOutcome.meaning());
+        assertEquals(
+                "return request.active() ? \"active\" : \"inactive\";",
+                decision.evidence().snippet()
+        );
+    }
+
+    @Test
+    void extractsAssignmentTernaryDecisionFromEntrypointMethod() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/StatusDecision.java"),
+                """
+                        package com.example;
+
+                        public class StatusDecision {
+                            public String resolve(StatusRequest request) {
+                                String label = request.active() ? "active" : "inactive";
+                                return label;
+                            }
+
+                            public record StatusRequest(boolean active) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.StatusDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("TERNARY_CONDITION", decision.kind().name());
+        assertEquals("request.active()", decision.expression().text());
+        assertEquals("label", decision.subjects().get(1).name());
+        assertEquals("ASSIGNMENT_TARGET", decision.subjects().get(1).kind());
+        assertEquals("ASSIGN", decision.outcomes().get(0).action().name());
+        assertEquals("\"active\"", decision.outcomes().get(0).target());
+        assertEquals("Ternary true branch initializes label with \"active\"", decision.outcomes().get(0).meaning());
+        assertEquals("ASSIGN", decision.outcomes().get(1).action().name());
+        assertEquals("\"inactive\"", decision.outcomes().get(1).target());
+        assertEquals(
+                "String label = request.active() ? \"active\" : \"inactive\";",
+                decision.evidence().snippet()
+        );
+    }
+
+    @Test
+    void extractsNestedTernaryDecisionHierarchy() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/StatusDecision.java"),
+                """
+                        package com.example;
+
+                        public class StatusDecision {
+                            public String resolve(StatusRequest request) {
+                                return request.active() ? (request.admin() ? "admin" : "active") : "inactive";
+                            }
+
+                            public record StatusRequest(boolean active, boolean admin) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor().analyze(tempDir, "com.example.StatusDecision.resolve");
+
+        assertEquals(2, trace.decisions().size());
+        DecisionNode parent = trace.decisions().get(0);
+        DecisionNode child = trace.decisions().get(1);
+        assertEquals("TERNARY_CONDITION", parent.kind().name());
+        assertEquals("request.active()", parent.expression().text());
+        assertEquals(1, parent.children().size());
+        assertEquals(child.id(), parent.children().get(0).decisionId());
+        assertEquals(1, parent.children().get(0).parentBranchOrder());
+        assertEquals("WHEN_TRUE", parent.children().get(0).parentBranchKind());
+
+        assertEquals("TERNARY_CONDITION", child.kind().name());
+        assertEquals("request.admin()", child.expression().text());
+        assertEquals(parent.id(), child.parent().decisionId());
+        assertEquals(1, child.parent().branchOrder());
+        assertEquals("WHEN_TRUE", child.parent().branchKind());
+    }
+
     private static void writeJavaFile(Path sourceFile, String source) throws Exception {
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(sourceFile, source);

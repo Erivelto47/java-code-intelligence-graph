@@ -1,0 +1,207 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/15-nested-ternary-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.ternarynested.StatusDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.ternarynested.StatusDecision.resolve:ternary:1",
+      "kind": "TERNARY_CONDITION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.ternarynested.StatusDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.ternarynested.StatusDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.ternarynested.StatusDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/ternarynested/StatusDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.active()",
+        "normalized": "request.active"
+      },
+      "subjects": [
+        {
+          "name": "request.active",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "(request.admin() ? \"admin\" : \"active\")",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Ternary true branch returns (request.admin() ? \"admin\" : \"active\")"
+        },
+        {
+          "when": "false",
+          "action": "RETURN",
+          "target": "\"inactive\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Ternary false branch returns \"inactive\""
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "return request.active() ? (request.admin() ? \"admin\" : \"active\") : \"inactive\";"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "WHEN_TRUE",
+          "condition": "true",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "true",
+              "action": "RETURN",
+              "target": "(request.admin() ? \"admin\" : \"active\")",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Ternary true branch returns (request.admin() ? \"admin\" : \"active\")"
+            }
+          ]
+        },
+        {
+          "kind": "WHEN_FALSE",
+          "condition": "false",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "false",
+              "action": "RETURN",
+              "target": "\"inactive\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Ternary false branch returns \"inactive\""
+            }
+          ]
+        }
+      ],
+      "children": [
+        {
+          "decisionId": "decision:com.example.decisiontrace.ternarynested.StatusDecision.resolve:ternary:2",
+          "kind": "TERNARY_CONDITION",
+          "condition": "request.admin()",
+          "parentBranchOrder": 1,
+          "parentBranchKind": "WHEN_TRUE"
+        }
+      ],
+      "confidence": "HIGH"
+    },
+    {
+      "id": "decision:com.example.decisiontrace.ternarynested.StatusDecision.resolve:ternary:2",
+      "kind": "TERNARY_CONDITION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.ternarynested.StatusDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.ternarynested.StatusDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.ternarynested.StatusDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/ternarynested/StatusDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.admin()",
+        "normalized": "request.admin"
+      },
+      "subjects": [
+        {
+          "name": "request.admin",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "\"admin\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Ternary true branch returns \"admin\""
+        },
+        {
+          "when": "false",
+          "action": "RETURN",
+          "target": "\"active\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Ternary false branch returns \"active\""
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "return request.active() ? (request.admin() ? \"admin\" : \"active\") : \"inactive\";"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "WHEN_TRUE",
+          "condition": "true",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "true",
+              "action": "RETURN",
+              "target": "\"admin\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Ternary true branch returns \"admin\""
+            }
+          ]
+        },
+        {
+          "kind": "WHEN_FALSE",
+          "condition": "false",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "false",
+              "action": "RETURN",
+              "target": "\"active\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Ternary false branch returns \"active\""
+            }
+          ]
+        }
+      ],
+      "parent": {
+        "decisionId": "decision:com.example.decisiontrace.ternarynested.StatusDecision.resolve:ternary:1",
+        "branchOrder": 1,
+        "branchKind": "WHEN_TRUE"
+      },
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

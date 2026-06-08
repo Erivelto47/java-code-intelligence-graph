@@ -7,8 +7,8 @@ order	id	status	commit
 6	phase-4-3-1-java-mixed-throw-return-if-else	implemented	ef4bb6f
 7	phase-4-4-java-method-local-decision-calls	implemented	01d5ee1
 8	phase-4-5-java-else-if-nested-decision-shape	implemented	TBD
-9	phase-4-6-java-boolean-condition-expression-trace	validation	TBD
-10	phase-4-7-java-ternary-decision-trace	planned	TBD
+9	phase-4-6-java-boolean-condition-expression-trace	implemented	TBD
+10	phase-4-7-java-ternary-decision-trace	validation	TBD
 11	phase-4-8-java-switch-statement-expression-decision-trace	planned	TBD
 12	phase-4-9-java-optional-decision-trace	planned	TBD
 13	phase-4-10-java-stream-filter-match-decision-trace	planned	TBD

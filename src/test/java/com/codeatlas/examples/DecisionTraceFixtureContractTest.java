@@ -159,6 +159,33 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void returnTernaryDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/13-return-ternary-decision"),
+                "com.example.decisiontrace.ternaryreturn.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void assignmentTernaryDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/14-assignment-ternary-decision"),
+                "com.example.decisiontrace.ternaryassignment.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void nestedTernaryDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/15-nested-ternary-decision"),
+                "com.example.decisiontrace.ternarynested.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,

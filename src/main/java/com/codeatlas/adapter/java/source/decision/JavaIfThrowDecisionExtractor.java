@@ -38,6 +38,7 @@ public final class JavaIfThrowDecisionExtractor {
     private final JavaElseIfDecisionExtractor elseIfDecisionExtractor;
     private final JavaIfElseDecisionExtractor ifElseDecisionExtractor;
     private final JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor;
+    private final JavaTernaryDecisionExtractor ternaryDecisionExtractor;
     private final JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector;
     private final JavaBooleanConditionExpressionParser conditionExpressionParser;
 
@@ -46,6 +47,7 @@ public final class JavaIfThrowDecisionExtractor {
                 new JavaElseIfDecisionExtractor(),
                 new JavaIfElseDecisionExtractor(),
                 new JavaEarlyReturnDecisionExtractor(),
+                new JavaTernaryDecisionExtractor(),
                 new JavaUnsupportedDecisionShapeDetector(),
                 new JavaBooleanConditionExpressionParser()
         );
@@ -55,6 +57,7 @@ public final class JavaIfThrowDecisionExtractor {
             JavaElseIfDecisionExtractor elseIfDecisionExtractor,
             JavaIfElseDecisionExtractor ifElseDecisionExtractor,
             JavaEarlyReturnDecisionExtractor earlyReturnDecisionExtractor,
+            JavaTernaryDecisionExtractor ternaryDecisionExtractor,
             JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector,
             JavaBooleanConditionExpressionParser conditionExpressionParser
     ) {
@@ -69,6 +72,10 @@ public final class JavaIfThrowDecisionExtractor {
         this.earlyReturnDecisionExtractor = Objects.requireNonNull(
                 earlyReturnDecisionExtractor,
                 "earlyReturnDecisionExtractor must not be null"
+        );
+        this.ternaryDecisionExtractor = Objects.requireNonNull(
+                ternaryDecisionExtractor,
+                "ternaryDecisionExtractor must not be null"
         );
         this.unsupportedDecisionShapeDetector = Objects.requireNonNull(
                 unsupportedDecisionShapeDetector,
@@ -123,18 +130,39 @@ public final class JavaIfThrowDecisionExtractor {
     ) {
         DecisionContext directContext = DecisionContext.forEntrypoint(entrypoint);
         ExtractionResult directResult = extractDirectDecisions(directContext, sourceFile, methodRange, 1, 1);
+        List<DecisionNode> ternaryDecisions = extractTernaryDecisions(
+                directContext,
+                sourceFile,
+                methodRange,
+                directResult.decisions().size() + 1
+        );
         ExtractionResult helperResult = extractMethodLocalDecisionCalls(
                 entrypoint,
                 sourceFile,
                 methodRange,
-                directResult.decisions().size() + 1,
+                directResult.decisions().size() + ternaryDecisions.size() + 1,
                 directResult.unresolved().size() + 1
         );
         List<DecisionNode> decisions = new ArrayList<>(directResult.decisions());
+        decisions.addAll(ternaryDecisions);
         decisions.addAll(helperResult.decisions());
         List<UnresolvedDecision> unresolved = new ArrayList<>(directResult.unresolved());
         unresolved.addAll(helperResult.unresolved());
         return new ExtractionResult(List.copyOf(decisions), List.copyOf(unresolved));
+    }
+
+    private List<DecisionNode> extractTernaryDecisions(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange methodRange,
+            int startingDecisionOrdinal
+    ) {
+        ExtractionCounters counters = new ExtractionCounters(startingDecisionOrdinal, 1);
+        List<DecisionNode> decisions = new ArrayList<>();
+        for (JavaTernaryDecisionExtractor.TernaryDecision ternaryDecision : ternaryDecisionExtractor.parse(sourceFile, methodRange)) {
+            decisions.addAll(toTernaryDecisionNodes(context, sourceFile, ternaryDecision, null, counters));
+        }
+        return List.copyOf(decisions);
     }
 
     private ExtractionResult extractDirectDecisions(
@@ -600,6 +628,147 @@ public final class JavaIfThrowDecisionExtractor {
                 .parseComposed(text)
                 .orElse(null);
         return new DecisionCondition(text, normalized, expression);
+    }
+
+    private List<DecisionNode> toTernaryDecisionNodes(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaTernaryDecisionExtractor.TernaryDecision parsedDecision,
+            NestedParent nestedParent,
+            ExtractionCounters counters
+    ) {
+        return toTernaryExpressionDecisionNodes(
+                context,
+                sourceFile,
+                parsedDecision,
+                parsedDecision.expression(),
+                nestedParent,
+                counters
+        );
+    }
+
+    private List<DecisionNode> toTernaryExpressionDecisionNodes(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaTernaryDecisionExtractor.TernaryDecision parsedDecision,
+            JavaTernaryDecisionExtractor.TernaryExpression expression,
+            NestedParent nestedParent,
+            ExtractionCounters counters
+    ) {
+        int ordinal = counters.nextDecisionOrdinal();
+        String parentId = "decision:" + context.idBase() + ":ternary:" + ordinal;
+        List<DecisionNode> childDecisions = new ArrayList<>();
+        if (expression.trueChild() != null) {
+            childDecisions.addAll(toTernaryExpressionDecisionNodes(
+                    context,
+                    sourceFile,
+                    parsedDecision,
+                    expression.trueChild(),
+                    new NestedParent(parentId, 1, "WHEN_TRUE"),
+                    counters
+            ));
+        }
+        if (expression.falseChild() != null) {
+            childDecisions.addAll(toTernaryExpressionDecisionNodes(
+                    context,
+                    sourceFile,
+                    parsedDecision,
+                    expression.falseChild(),
+                    new NestedParent(parentId, 2, "WHEN_FALSE"),
+                    counters
+            ));
+        }
+
+        List<DecisionOutcome> outcomes = List.of(
+                ternaryOutcome(parsedDecision.context(), parsedDecision.target(), "true", expression.whenTrue()),
+                ternaryOutcome(parsedDecision.context(), parsedDecision.target(), "false", expression.whenFalse())
+        );
+        List<DecisionBranch> branches = List.of(
+                new DecisionBranch("WHEN_TRUE", "true", 1, List.of(outcomes.get(0))),
+                new DecisionBranch("WHEN_FALSE", "false", 2, List.of(outcomes.get(1)))
+        );
+        List<DecisionChildDecision> children = childDecisions.stream()
+                .filter(child -> child.parent() != null && parentId.equals(child.parent().decisionId()))
+                .map(child -> new DecisionChildDecision(
+                        child.id(),
+                        child.kind(),
+                        child.expression().text(),
+                        child.parent().branchOrder(),
+                        child.parent().branchKind()
+                ))
+                .toList();
+
+        DecisionNode parent = withParent(new DecisionNode(
+                parentId,
+                DecisionKind.TERNARY_CONDITION,
+                DecisionCategory.UNKNOWN,
+                context.methodSignature(),
+                new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
+                new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(expression.expressionStart())),
+                condition(expression.condition(), JavaDecisionSourceSupport.normalizedCondition(expression.condition())),
+                ternarySubjects(expression.condition(), parsedDecision),
+                outcomes,
+                new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
+                new DecisionLinks(List.of(), context.calledMethods(), List.of()),
+                branches,
+                children,
+                null,
+                "HIGH"
+        ), nestedParent);
+
+        List<DecisionNode> decisions = new ArrayList<>();
+        decisions.add(parent);
+        decisions.addAll(childDecisions);
+        return List.copyOf(decisions);
+    }
+
+    private static DecisionOutcome ternaryOutcome(
+            JavaTernaryDecisionExtractor.StatementContext context,
+            String statementTarget,
+            String when,
+            String expression
+    ) {
+        DecisionOutcomeAction action = switch (context) {
+            case RETURN -> DecisionOutcomeAction.RETURN;
+            case VARIABLE_INITIALIZER, ASSIGNMENT -> DecisionOutcomeAction.ASSIGN;
+            case CALL_ARGUMENT -> DecisionOutcomeAction.CALL;
+        };
+        return new DecisionOutcome(
+                when,
+                action,
+                expression,
+                null,
+                null,
+                ternaryMeaning(context, statementTarget, when, expression)
+        );
+    }
+
+    private static String ternaryMeaning(
+            JavaTernaryDecisionExtractor.StatementContext context,
+            String statementTarget,
+            String when,
+            String expression
+    ) {
+        String branch = "true".equals(when) ? "true" : "false";
+        return switch (context) {
+            case RETURN -> "Ternary " + branch + " branch returns " + expression;
+            case VARIABLE_INITIALIZER -> "Ternary " + branch + " branch initializes " + statementTarget + " with " + expression;
+            case ASSIGNMENT -> "Ternary " + branch + " branch assigns " + statementTarget + " to " + expression;
+            case CALL_ARGUMENT -> "Ternary " + branch + " branch passes " + expression + " to " + statementTarget;
+        };
+    }
+
+    private static List<DecisionSubject> ternarySubjects(
+            String condition,
+            JavaTernaryDecisionExtractor.TernaryDecision parsedDecision
+    ) {
+        List<DecisionSubject> subjects = new ArrayList<>(subjects(condition));
+        if (parsedDecision.target() != null
+                && (parsedDecision.context() == JavaTernaryDecisionExtractor.StatementContext.VARIABLE_INITIALIZER
+                || parsedDecision.context() == JavaTernaryDecisionExtractor.StatementContext.ASSIGNMENT)) {
+            subjects.add(new DecisionSubject(parsedDecision.target(), "ASSIGNMENT_TARGET"));
+        }
+        return List.copyOf(subjects);
     }
 
     private List<DecisionNode> toElseIfDecisionNodes(

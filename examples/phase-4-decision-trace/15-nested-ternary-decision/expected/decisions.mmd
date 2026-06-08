@@ -1,0 +1,14 @@
+flowchart TD
+  entry["com.example.decisiontrace.ternarynested.StatusDecision.resolve"]
+  d1{"request.active()"}
+  entry --> d1
+  o1b1["WHEN_TRUE: true<br/>returns (request.admin() ? \"admin\" : \"active\")"]
+  d1 -- 1 --> o1b1
+  o1b1 --> d2
+  o1b2["WHEN_FALSE: false<br/>returns \"inactive\""]
+  d1 -- 2 --> o1b2
+  d2{"request.admin()"}
+  o2b1["WHEN_TRUE: true<br/>returns \"admin\""]
+  d2 -- 1 --> o2b1
+  o2b2["WHEN_FALSE: false<br/>returns \"active\""]
+  d2 -- 2 --> o2b2
