@@ -1,0 +1,10 @@
+flowchart TD
+  entry["com.example.decisiontrace.switchstatement.StatusDecision.resolve"]
+  d1{"request.status()"}
+  entry --> d1
+  o1b1["CASE: \"PENDING\"<br/>returns \"queued\""]
+  d1 -- 1 --> o1b1
+  o1b2["CASE: \"APPROVED\", \"ACTIVE\"<br/>returns \"open\""]
+  d1 -- 2 --> o1b2
+  o1b3["DEFAULT<br/>returns \"closed\""]
+  d1 -- 3 --> o1b3

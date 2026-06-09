@@ -1,0 +1,8 @@
+flowchart TD
+  entry["com.example.decisiontrace.optionalthrow.UserDecision.resolve"]
+  d1{"repository.findById(id) .filter(user -> user.active()) .orElseThrow(() -> new NotFoundException(\"User not found\"))"}
+  entry --> d1
+  o1b1["PRESENT: present<br/>returns repository.findById"]
+  d1 -- 1 --> o1b1
+  o1b2["EMPTY: empty<br/>throws NotFoundException: User not found"]
+  d1 -- 2 --> o1b2

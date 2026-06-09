@@ -52,6 +52,54 @@ derive_report_path() {
   printf 'harness/reports/runs/%s_REPORT.md' "${report_slug}"
 }
 
+blueprint_sort_key() {
+  local blueprint_file="$1"
+  local blueprint_id rest key segment padded segment_count
+
+  blueprint_id="$(basename "${blueprint_file}")"
+  blueprint_id="${blueprint_id%.blueprint.md}"
+
+  # Pad numeric phase segments so phase-4-9 sorts before phase-4-10 without sort -V.
+  if [[ "${blueprint_id}" == phase-[0-9]* ]]; then
+    rest="${blueprint_id#phase-}"
+    key="phase"
+    segment_count=0
+
+    while [[ "${rest}" =~ ^([0-9]+)(-|$) ]]; do
+      segment="${BASH_REMATCH[1]}"
+      printf -v padded '%08d' "$((10#${segment}))"
+      key="${key}-${padded}"
+      segment_count=$((segment_count + 1))
+
+      rest="${rest#${segment}}"
+      if [[ "${rest}" == -* ]]; then
+        rest="${rest#-}"
+      else
+        break
+      fi
+    done
+
+    while [[ "${segment_count}" -lt 16 ]]; do
+      key="${key}-00000000"
+      segment_count=$((segment_count + 1))
+    done
+
+    printf '%s-%s\n' "${key}" "${blueprint_id}"
+    return 0
+  fi
+
+  printf '%s\n' "${blueprint_id}"
+}
+
+sorted_blueprint_files() {
+  local blueprint_file
+
+  find harness/blueprints -maxdepth 1 -type f -name '*.blueprint.md' | while IFS= read -r blueprint_file; do
+    [[ -n "${blueprint_file}" ]] || continue
+    printf '%s\t%s\n' "$(blueprint_sort_key "${blueprint_file}")" "${blueprint_file}"
+  done | LC_ALL=C sort | cut -f2-
+}
+
 index_of_id() {
   local search="$1"
   local i
@@ -161,7 +209,7 @@ sync_phase_index() {
       max_order="${next_order}"
       echo "Synced new blueprint as planned: ${blueprint_id}"
     fi
-  done < <(find harness/blueprints -maxdepth 1 -type f -name '*.blueprint.md' | sort)
+  done < <(sorted_blueprint_files)
 
   write_phase_index "${tmp_index}"
   if ! cmp -s "${tmp_index}" "${phase_index}"; then
@@ -244,14 +292,20 @@ sync_phase_index "${tmp_index}"
 
 next_count=0
 validation_count=0
+in_progress_count=0
 planned_index=-1
 phase_id=""
 next_ids=()
 validation_ids=()
+in_progress_ids=()
 idx=0
 
 for ((idx = 0; idx < ${#ids[@]}; idx++)); do
   case "${statuses[$idx]}" in
+    in_progress)
+      in_progress_count=$((in_progress_count + 1))
+      in_progress_ids+=("${ids[$idx]}")
+      ;;
     next)
       next_count=$((next_count + 1))
       next_ids+=("${ids[$idx]}")
@@ -272,6 +326,16 @@ done
 if [[ "${next_count}" -gt 1 ]]; then
   printf 'Error: Multiple phases marked as next in %s:\n' "${phase_index}" >&2
   printf '  %s\n' "${next_ids[@]}" >&2
+  exit 1
+fi
+
+if [[ "${in_progress_count}" -gt 0 ]]; then
+  echo "Cannot run next phase." >&2
+  echo >&2
+  echo "Phase already in progress:" >&2
+  printf '  %s\n' "${in_progress_ids[@]}" >&2
+  echo >&2
+  echo "Finish the phase report and move it to validation before starting another phase." >&2
   exit 1
 fi
 

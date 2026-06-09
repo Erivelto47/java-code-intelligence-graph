@@ -1,0 +1,6 @@
+flowchart TD
+  entry["com.example.decisiontrace.comparisonpredicate.EligibilityDecision.resolve"]
+  d1{"request.age() >= 18 && request.name() != null && !request.name().isBlank() && request.email().contains(\"@\")"}
+  o1["returns \"eligible\""]
+  entry --> d1
+  d1 --> o1

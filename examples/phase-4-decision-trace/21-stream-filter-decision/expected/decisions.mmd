@@ -1,0 +1,6 @@
+flowchart TD
+  entry["com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve"]
+  d1{"users.stream() .filter(user -> user.active())"}
+  o1["FILTER"]
+  entry --> d1
+  d1 --> o1

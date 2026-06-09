@@ -28,7 +28,15 @@
       },
       "expression": {
         "text": "!request.allowed()",
-        "normalized": null
+        "normalized": null,
+        "conditionExpression": {
+          "kind": "NOT",
+          "text": "!request.allowed()",
+          "operand": {
+            "kind": "METHOD_CALL",
+            "text": "request.allowed()"
+          }
+        }
       },
       "subjects": [
         {

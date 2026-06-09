@@ -1,0 +1,6 @@
+flowchart TD
+  entry["com.example.decisiontrace.booleancondition.AccessPolicy.resolve"]
+  d1{"request.enabled() && (!request.locked() || request.admin())"}
+  o1["returns \"allowed\""]
+  entry --> d1
+  d1 --> o1

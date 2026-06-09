@@ -1,6 +1,12 @@
 package com.codeatlas.output.decision.json;
 
+import com.codeatlas.core.decision.DecisionBranch;
+import com.codeatlas.core.decision.DecisionCondition;
+import com.codeatlas.core.decision.DecisionConditionExpression;
+import com.codeatlas.core.decision.DecisionNode;
+import com.codeatlas.core.decision.DecisionPredicate;
 import com.codeatlas.core.decision.DecisionTrace;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.core.util.DefaultIndenter;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import com.fasterxml.jackson.core.util.Separators;
@@ -51,6 +57,11 @@ public final class DecisionTraceJsonWriter {
     private static ObjectMapper defaultObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+        mapper.addMixIn(DecisionNode.class, DecisionNodeJsonMixin.class);
+        mapper.addMixIn(DecisionBranch.class, DecisionBranchJsonMixin.class);
+        mapper.addMixIn(DecisionCondition.class, DecisionConditionJsonMixin.class);
+        mapper.addMixIn(DecisionConditionExpression.class, DecisionConditionExpressionJsonMixin.class);
+        mapper.addMixIn(DecisionPredicate.class, DecisionPredicateJsonMixin.class);
         mapper.enable(SerializationFeature.ORDER_MAP_ENTRIES_BY_KEYS);
         mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
         return mapper;
@@ -65,5 +76,66 @@ public final class DecisionTraceJsonWriter {
                 .withObjectIndenter(CANONICAL_INDENTER)
                 .withArrayIndenter(CANONICAL_INDENTER)
                 .withSeparators(separators);
+    }
+
+    private abstract static class DecisionNodeJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        abstract Object branches();
+
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        abstract Object children();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object parent();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object selector();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object assignedTo();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object operation();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object pipeline();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object predicate();
+    }
+
+    private abstract static class DecisionBranchJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object condition();
+
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        abstract Object labels();
+    }
+
+    private abstract static class DecisionConditionJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object conditionExpression();
+    }
+
+    private abstract static class DecisionConditionExpressionJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object operator();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object left();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object right();
+
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object operand();
+
+        @JsonInclude(JsonInclude.Include.NON_EMPTY)
+        abstract Object operands();
+    }
+
+    private abstract static class DecisionPredicateJsonMixin {
+        @JsonInclude(JsonInclude.Include.NON_NULL)
+        abstract Object parameter();
     }
 }

@@ -10,6 +10,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Objects;
 
 public final class DecisionTraceMarkdownWriter {
@@ -87,6 +88,9 @@ public final class DecisionTraceMarkdownWriter {
     }
 
     private static String primaryOutcome(DecisionNode decision) {
+        if (!decision.branches().isEmpty()) {
+            return branchOutcome(decision);
+        }
         if (decision.kind() == DecisionKind.IF_ELSE_CONDITION) {
             return ifElseOutcome(decision);
         }
@@ -98,7 +102,40 @@ public final class DecisionTraceMarkdownWriter {
                 return outcome.action() + " " + nullToEmpty(outcome.target());
             }
         }
+        if (!decision.outcomes().isEmpty()) {
+            return outcomeText(decision.outcomes().get(0));
+        }
         return "UNKNOWN";
+    }
+
+    private static String branchOutcome(DecisionNode decision) {
+        StringBuilder outcome = new StringBuilder();
+        for (int i = 0; i < decision.branches().size(); i++) {
+            var branch = decision.branches().get(i);
+            if (i > 0) {
+                outcome.append("\n");
+            }
+            outcome.append(branch.order())
+                    .append(". ")
+                    .append(branch.kind());
+            if (branch.condition() != null && !branch.condition().isBlank()) {
+                outcome.append(" (").append(branch.condition()).append(")");
+            }
+            outcome.append(" -> ");
+            if (branch.outcomes().isEmpty()) {
+                outcome.append("UNKNOWN");
+            } else {
+                outcome.append(outcomeText(branch.outcomes().get(0)));
+            }
+            List<String> childIds = decision.children().stream()
+                    .filter(child -> child.parentBranchOrder() == branch.order())
+                    .map(child -> child.decisionId())
+                    .toList();
+            if (!childIds.isEmpty()) {
+                outcome.append(" | child decisions: ").append(String.join(", ", childIds));
+            }
+        }
+        return outcome.toString();
     }
 
     private static String ifElseOutcome(DecisionNode decision) {

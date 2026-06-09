@@ -1,0 +1,8 @@
+flowchart TD
+  entry["com.example.decisiontrace.ternaryassignment.StatusDecision.resolve"]
+  d1{"request.active()"}
+  entry --> d1
+  o1b1["WHEN_TRUE: true<br/>ASSIGN"]
+  d1 -- 1 --> o1b1
+  o1b2["WHEN_FALSE: false<br/>ASSIGN"]
+  d1 -- 2 --> o1b2

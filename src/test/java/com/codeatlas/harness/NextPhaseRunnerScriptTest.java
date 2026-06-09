@@ -46,6 +46,10 @@ class NextPhaseRunnerScriptTest {
         assertTrue(promptText.contains("harness/validations/phase-9-next.validation.md"));
         assertTrue(promptText.contains("harness/completion/phase-9-next.completion.md"));
         assertTrue(promptText.contains("harness/reports/runs/PHASE_9_NEXT_REPORT.md"));
+        assertTrue(promptText.contains("./harness/bin/update-phase-index-status.sh start phase-9-next"));
+        assertTrue(promptText.contains("./harness/bin/update-phase-index-status.sh validation phase-9-next"));
+        assertTrue(promptText.contains("Do not mark this phase as `implemented`."));
+        assertTrue(promptText.contains("Do not promote another phase to `next`."));
     }
 
     @Test
@@ -109,6 +113,25 @@ class NextPhaseRunnerScriptTest {
     }
 
     @Test
+    void inProgressStatusBlocksNextPhaseExecution(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writeBlueprint(repo, "phase-9-running");
+        writeBlueprint(repo, "phase-9-next");
+        writePhaseIndex(repo,
+                "1\tphase-9-running\tin_progress\tTBD\n"
+                        + "2\tphase-9-next\tnext\tTBD\n");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(1, result.exitCode(), result.output());
+        assertTrue(result.output().contains("Cannot run next phase."));
+        assertTrue(result.output().contains("Phase already in progress:"));
+        assertTrue(result.output().contains("phase-9-running"));
+        assertTrue(result.output().contains("move it to validation before starting another phase"));
+        assertFalse(Files.exists(repo.resolve("harness/bin/build/prompts/phase-9-next.codex-prompt.txt")));
+    }
+
+    @Test
     void newBlueprintIsAddedAsPlannedWithoutChangingExistingStatuses(@TempDir Path tempDir) throws Exception {
         Path repo = createHarnessRepo(tempDir);
         writeBlueprint(repo, "phase-9-implemented");
@@ -148,6 +171,49 @@ class NextPhaseRunnerScriptTest {
         String phaseIndex = Files.readString(repo.resolve("harness/phases/phase-index.tsv"));
         assertTrue(phaseIndex.contains("1\tphase-9-planned-a\tnext\tTBD\n"));
         assertTrue(phaseIndex.contains("2\tphase-9-planned-b\tplanned\tTBD\n"));
+    }
+
+    @Test
+    void syncsNewBlueprintsUsingNaturalPhaseOrder(@TempDir Path tempDir) throws Exception {
+        Path repo = createHarnessRepo(tempDir);
+        writePhaseIndex(repo,
+                "1\tphase-4-2-java-decision-unresolved-early-return\timplemented\t2b1b756\n"
+                        + "2\tphase-4-2-1-java-block-throw-with-pre-statements\timplemented\t79635bd\n"
+                        + "3\tphase-4-2-2-java-single-line-if-throw\timplemented\t07f6398\n"
+                        + "4\tphase-4-3-java-if-else-decision-shape\timplemented\tcb487f1\n"
+                        + "5\tharness-0-4-1-runner-prompt-output-path\timplemented\t5c19a2e\n"
+                        + "6\tphase-4-3-1-java-mixed-throw-return-if-else\timplemented\tef4bb6f\n"
+                        + "7\tphase-4-4-java-method-local-decision-calls\timplemented\t01d5ee1\n");
+        writeBlueprint(repo, "phase-4-5-java-else-if-nested-decision-shape");
+        writeBlueprint(repo, "phase-4-6-java-boolean-condition-expression-trace");
+        writeBlueprint(repo, "phase-4-7-java-ternary-decision-trace");
+        writeBlueprint(repo, "phase-4-8-java-switch-statement-expression-decision-trace");
+        writeBlueprint(repo, "phase-4-9-java-optional-decision-trace");
+        writeBlueprint(repo, "phase-4-10-java-stream-filter-match-decision-trace");
+        writeBlueprint(repo, "phase-4-11-decision-trace-closeout-contract-and-examples");
+
+        CommandResult result = runRunner(repo, "--dry-run");
+
+        assertEquals(0, result.exitCode(), result.output());
+        assertTrue(result.output().contains(
+                "Promoted first planned phase to next: phase-4-5-java-else-if-nested-decision-shape"));
+        assertTrue(result.output().contains(
+                "prompt path: harness/bin/build/prompts/phase-4-5-java-else-if-nested-decision-shape.codex-prompt.txt"));
+        assertFalse(result.output().contains("next phase id: phase-4-10-java-stream-filter-match-decision-trace"));
+
+        List<String> phaseIndexLines = Files.readAllLines(repo.resolve("harness/phases/phase-index.tsv"));
+        assertEquals("8\tphase-4-5-java-else-if-nested-decision-shape\tnext\tTBD", phaseIndexLines.get(8));
+        assertEquals("9\tphase-4-6-java-boolean-condition-expression-trace\tplanned\tTBD", phaseIndexLines.get(9));
+        assertEquals("10\tphase-4-7-java-ternary-decision-trace\tplanned\tTBD", phaseIndexLines.get(10));
+        assertEquals("11\tphase-4-8-java-switch-statement-expression-decision-trace\tplanned\tTBD", phaseIndexLines.get(11));
+        assertEquals("12\tphase-4-9-java-optional-decision-trace\tplanned\tTBD", phaseIndexLines.get(12));
+        assertEquals("13\tphase-4-10-java-stream-filter-match-decision-trace\tplanned\tTBD", phaseIndexLines.get(13));
+        assertEquals("14\tphase-4-11-decision-trace-closeout-contract-and-examples\tplanned\tTBD", phaseIndexLines.get(14));
+
+        assertTrue(Files.isRegularFile(repo.resolve(
+                "harness/bin/build/prompts/phase-4-5-java-else-if-nested-decision-shape.codex-prompt.txt")));
+        assertFalse(Files.exists(repo.resolve(
+                "harness/bin/build/prompts/phase-4-10-java-stream-filter-match-decision-trace.codex-prompt.txt")));
     }
 
     @Test

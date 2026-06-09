@@ -21,12 +21,17 @@ class DecisionTraceFixtureContractTest {
     private static final Set<String> DECISION_KINDS = Set.of(
             "IF_CONDITION",
             "IF_ELSE_CONDITION",
+            "IF_ELSE_IF_CHAIN",
             "EARLY_RETURN",
             "CONDITIONAL_THROW",
+            "SWITCH_DECISION",
+            "SWITCH_EXPRESSION_DECISION",
             "SWITCH_CASE",
             "TERNARY_CONDITION",
             "OPTIONAL_BRANCH",
             "STREAM_FILTER",
+            "STREAM_FILTER_DECISION",
+            "STREAM_MATCH_DECISION",
             "UNKNOWN_CONDITION"
     );
     private static final Set<String> CATEGORIES = Set.of(
@@ -122,6 +127,150 @@ class DecisionTraceFixtureContractTest {
         );
     }
 
+    @Test
+    void elseIfChainFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/09-else-if-chain"),
+                "com.example.decisiontrace.elseif.AccessDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void nestedIfDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/10-nested-if-decision"),
+                "com.example.decisiontrace.nestedif.RoutingDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void booleanAndOrNotConditionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/11-boolean-and-or-not-condition"),
+                "com.example.decisiontrace.booleancondition.AccessPolicy.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void comparisonAndMethodPredicateConditionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/12-comparison-and-method-predicate-condition"),
+                "com.example.decisiontrace.comparisonpredicate.EligibilityDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void returnTernaryDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/13-return-ternary-decision"),
+                "com.example.decisiontrace.ternaryreturn.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void assignmentTernaryDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/14-assignment-ternary-decision"),
+                "com.example.decisiontrace.ternaryassignment.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void nestedTernaryDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/15-nested-ternary-decision"),
+                "com.example.decisiontrace.ternarynested.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void switchStatementDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/15-switch-statement-decision"),
+                "com.example.decisiontrace.switchstatement.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void switchExpressionDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/16-switch-expression-decision"),
+                "com.example.decisiontrace.switchexpression.FeeDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void switchFallthroughDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/17-switch-fallthrough-decision"),
+                "com.example.decisiontrace.switchfallthrough.StatusDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void optionalOrElseThrowDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/18-optional-or-else-throw-decision"),
+                "com.example.decisiontrace.optionalthrow.UserDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void optionalFallbackDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/19-optional-or-else-fallback-decision"),
+                "com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void optionalIfPresentOrElseDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/20-optional-if-present-or-else-decision"),
+                "com.example.decisiontrace.optionalifpresent.NotificationDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void streamFilterDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/21-stream-filter-decision"),
+                "com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void streamAnyMatchDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/22-stream-any-match-decision"),
+                "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void streamAllNoneMatchDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/23-stream-all-none-match-decision"),
+                "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve",
+                tempDir
+        );
+    }
+
     private static void assertAnalyzeDecisionsFixtureMatches(
             Path fixture,
             String entrypoint,
@@ -198,6 +347,9 @@ class DecisionTraceFixtureContractTest {
         assertTrue(decision.path("expression").isObject(), decisionJsonFile + " decision must contain expression");
         assertNonBlank(decisionJsonFile, decision.path("expression"), "text");
         assertTrue(decision.path("expression").has("normalized"), decisionJsonFile + " expression.normalized must be present");
+        if (decision.path("expression").has("conditionExpression")) {
+            assertConditionExpressionContract(decisionJsonFile, decision.path("expression").path("conditionExpression"));
+        }
         assertTrue(decision.path("subjects").isArray(), decisionJsonFile + " subjects must be an array");
         assertTrue(decision.path("outcomes").isArray(), decisionJsonFile + " outcomes must be an array");
         assertFalse(decision.path("outcomes").isEmpty(), decisionJsonFile + " outcomes must not be empty");
@@ -221,6 +373,33 @@ class DecisionTraceFixtureContractTest {
     private static void assertNonBlank(Path file, JsonNode node, String fieldName) {
         assertTrue(node.has(fieldName), file + " missing field " + fieldName);
         assertFalse(node.path(fieldName).asText().isBlank(), file + " field " + fieldName + " must not be blank");
+    }
+
+    private static void assertConditionExpressionContract(Path decisionJsonFile, JsonNode expression) {
+        assertNonBlank(decisionJsonFile, expression, "kind");
+        assertNonBlank(decisionJsonFile, expression, "text");
+        switch (expression.path("kind").asText()) {
+            case "AND", "OR" -> {
+                assertTrue(expression.path("operands").isArray(), decisionJsonFile + " boolean expression operands");
+                assertFalse(expression.path("operands").isEmpty(), decisionJsonFile + " boolean expression operands");
+                for (JsonNode operand : expression.path("operands")) {
+                    assertConditionExpressionContract(decisionJsonFile, operand);
+                }
+            }
+            case "NOT", "GROUP" -> {
+                assertTrue(expression.path("operand").isObject(), decisionJsonFile + " unary expression operand");
+                assertConditionExpressionContract(decisionJsonFile, expression.path("operand"));
+            }
+            case "COMPARISON" -> {
+                assertNonBlank(decisionJsonFile, expression, "operator");
+                assertNonBlank(decisionJsonFile, expression, "left");
+                assertNonBlank(decisionJsonFile, expression, "right");
+            }
+            case "METHOD_CALL", "REFERENCE", "EXPRESSION" -> {
+                // Leaf nodes only require deterministic kind and original text.
+            }
+            default -> throw new AssertionError(decisionJsonFile + " unknown condition expression kind");
+        }
     }
 
     private static void assertUnresolvedContract(Path decisionJsonFile, JsonNode unresolved) {

@@ -1,0 +1,112 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/19-optional-or-else-fallback-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve:optional:1",
+      "kind": "OPTIONAL_BRANCH",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.optionalfallback.DisplayNameDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.optionalfallback.DisplayNameDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/optionalfallback/DisplayNameDecision.java",
+        "line": 9
+      },
+      "expression": {
+        "text": "Optional.ofNullable(profile.name()) .map(String::trim) .orElse(\"anonymous\")",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "profile.name",
+          "kind": "INPUT_FIELD"
+        },
+        {
+          "name": "displayName",
+          "kind": "ASSIGNMENT_TARGET"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "branch:1:PRESENT",
+          "action": "ASSIGN",
+          "target": "Optional.ofNullable(profile.name()) .map(String::trim)",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Optional present branch uses Optional.ofNullable(profile.name()) .map(String::trim)"
+        },
+        {
+          "when": "branch:2:EMPTY",
+          "action": "ASSIGN",
+          "target": "\"anonymous\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Optional empty branch uses fallback value \"anonymous\""
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "String displayName = Optional.ofNullable(profile.name()) .map(String::trim) .orElse(\"anonymous\");"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "PRESENT",
+          "condition": "present",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "branch:1:PRESENT",
+              "action": "ASSIGN",
+              "target": "Optional.ofNullable(profile.name()) .map(String::trim)",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Optional present branch uses Optional.ofNullable(profile.name()) .map(String::trim)"
+            }
+          ]
+        },
+        {
+          "kind": "EMPTY",
+          "condition": "empty",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "branch:2:EMPTY",
+              "action": "ASSIGN",
+              "target": "\"anonymous\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Optional empty branch uses fallback value \"anonymous\""
+            }
+          ]
+        }
+      ],
+      "confidence": "HIGH"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

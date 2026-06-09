@@ -1,0 +1,138 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/15-switch-statement-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.switchstatement.StatusDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.switchstatement.StatusDecision.resolve:switch:1",
+      "kind": "SWITCH_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.switchstatement.StatusDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.switchstatement.StatusDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.switchstatement.StatusDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/switchstatement/StatusDecision.java",
+        "line": 5
+      },
+      "expression": {
+        "text": "request.status()",
+        "normalized": "request.status"
+      },
+      "subjects": [
+        {
+          "name": "request.status",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "branch:1:CASE",
+          "action": "RETURN",
+          "target": "\"queued\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch branch returns \"queued\""
+        },
+        {
+          "when": "branch:2:CASE",
+          "action": "RETURN",
+          "target": "\"open\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch branch returns \"open\""
+        },
+        {
+          "when": "branch:3:DEFAULT",
+          "action": "RETURN",
+          "target": "\"closed\"",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Switch branch returns \"closed\""
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "switch (request.status()) { case \"PENDING\": return \"queued\"; case \"APPROVED\", \"ACTIVE\": return \"open\"; default: return \"closed\"; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "branches": [
+        {
+          "kind": "CASE",
+          "condition": "\"PENDING\"",
+          "order": 1,
+          "outcomes": [
+            {
+              "when": "branch:1:CASE",
+              "action": "RETURN",
+              "target": "\"queued\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch branch returns \"queued\""
+            }
+          ],
+          "labels": [
+            "\"PENDING\""
+          ]
+        },
+        {
+          "kind": "CASE",
+          "condition": "\"APPROVED\", \"ACTIVE\"",
+          "order": 2,
+          "outcomes": [
+            {
+              "when": "branch:2:CASE",
+              "action": "RETURN",
+              "target": "\"open\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch branch returns \"open\""
+            }
+          ],
+          "labels": [
+            "\"APPROVED\"",
+            "\"ACTIVE\""
+          ]
+        },
+        {
+          "kind": "DEFAULT",
+          "order": 3,
+          "outcomes": [
+            {
+              "when": "branch:3:DEFAULT",
+              "action": "RETURN",
+              "target": "\"closed\"",
+              "exceptionType": null,
+              "message": null,
+              "meaning": "Switch branch returns \"closed\""
+            }
+          ]
+        }
+      ],
+      "confidence": "HIGH",
+      "selector": "request.status()"
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

@@ -1,0 +1,10 @@
+flowchart TD
+  entry["com.example.decisiontrace.switchexpression.FeeDecision.resolve"]
+  d1{"request.type()"}
+  entry --> d1
+  o1b1["CASE: STANDARD<br/>ASSIGN"]
+  d1 -- 1 --> o1b1
+  o1b2["CASE: PREMIUM<br/>ASSIGN"]
+  d1 -- 2 --> o1b2
+  o1b3["DEFAULT<br/>ASSIGN"]
+  d1 -- 3 --> o1b3

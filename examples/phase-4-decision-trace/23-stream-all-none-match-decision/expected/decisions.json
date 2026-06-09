@@ -1,0 +1,135 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/23-stream-all-none-match-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.streamallnone.EligibilityDecision.resolve:stream-match:1",
+      "kind": "STREAM_MATCH_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.streamallnone.EligibilityDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/streamallnone/EligibilityDecision.java",
+        "line": 7
+      },
+      "expression": {
+        "text": "accounts.stream().allMatch(account -> account.active())",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "account.active",
+          "kind": "INPUT_FIELD"
+        },
+        {
+          "name": "allActive",
+          "kind": "ASSIGNMENT_TARGET"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "predicate",
+          "action": "ASSIGN",
+          "target": "accounts.stream().allMatch(account -> account.active())",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Stream allMatch checks whether all elements match account.active()"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "boolean allActive = accounts.stream().allMatch(account -> account.active());"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH",
+      "assignedTo": "allActive",
+      "operation": "allMatch",
+      "pipeline": "accounts.stream().allMatch(account -> account.active())",
+      "predicate": {
+        "parameter": "account",
+        "text": "account.active()"
+      }
+    },
+    {
+      "id": "decision:com.example.decisiontrace.streamallnone.EligibilityDecision.resolve:stream-match:2",
+      "kind": "STREAM_MATCH_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.streamallnone.EligibilityDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/streamallnone/EligibilityDecision.java",
+        "line": 8
+      },
+      "expression": {
+        "text": "accounts.stream().noneMatch(account -> account.blocked())",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "account.blocked",
+          "kind": "INPUT_FIELD"
+        },
+        {
+          "name": "noneBlocked",
+          "kind": "ASSIGNMENT_TARGET"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "predicate",
+          "action": "ASSIGN",
+          "target": "accounts.stream().noneMatch(account -> account.blocked())",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Stream noneMatch checks whether no elements match account.blocked()"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "boolean noneBlocked = accounts.stream().noneMatch(account -> account.blocked());"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH",
+      "assignedTo": "noneBlocked",
+      "operation": "noneMatch",
+      "pipeline": "accounts.stream().noneMatch(account -> account.blocked())",
+      "predicate": {
+        "parameter": "account",
+        "text": "account.blocked()"
+      }
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

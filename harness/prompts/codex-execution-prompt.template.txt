@@ -26,15 +26,24 @@ Instructions:
 2. Do not switch to `master`.
 3. Do not merge.
 4. Do not push.
-5. Before executing, check `{{PHASE_INDEX_PATH}}`; do not execute if any phase has status `validation`.
-6. Read the full primary blueprint first and treat it as the source of truth.
-7. Use the derived handoff, validation checklist and completion criteria only as support artifacts.
-8. If any derived artifact conflicts with the blueprint, correct the derived artifact before implementing.
-9. Implement strictly within the blueprint scope and respect all out-of-scope constraints.
-10. Run the validations required by the blueprint and validation checklist.
-11. Generate the runtime report at `{{REPORT_PATH}}` under `harness/reports/runs/`.
-12. Generated Codex prompts belong under `harness/bin/build/prompts/`.
-13. Do not version the report when it is under `harness/reports/runs/` unless explicitly instructed.
-14. Commit versionable changes only after validation, using a commit message derived from `{{PHASE_ID}}` or the blueprint when applicable.
+5. Before executing, check `{{PHASE_INDEX_PATH}}`; do not execute if any phase has status `validation` or `in_progress`.
+6. Before implementing, mark this phase as started:
+   `./harness/bin/update-phase-index-status.sh start {{PHASE_ID}}`
+7. Confirm `{{PHASE_INDEX_PATH}}` now has `{{PHASE_ID}}` as `in_progress` with commit `TBD`.
+8. Read the full primary blueprint first and treat it as the source of truth.
+9. Use the derived handoff, validation checklist and completion criteria only as support artifacts.
+10. If any derived artifact conflicts with the blueprint, correct the derived artifact before implementing.
+11. Implement strictly within the blueprint scope and respect all out-of-scope constraints.
+12. Run the validations required by the blueprint and validation checklist.
+13. Generate the runtime report at `{{REPORT_PATH}}` under `harness/reports/runs/`.
+14. After implementation, validations and report generation, move this phase to validation:
+   `./harness/bin/update-phase-index-status.sh validation {{PHASE_ID}}`
+15. Confirm `{{PHASE_INDEX_PATH}}` now has `{{PHASE_ID}}` as `validation` with commit `TBD`.
+16. Do not mark this phase as `implemented`.
+17. Do not fill the commit column with a hash.
+18. Do not promote another phase to `next`.
+19. Generated Codex prompts belong under `harness/bin/build/prompts/`.
+20. Do not version the report when it is under `harness/reports/runs/` unless explicitly instructed.
+21. Do not commit changes unless the user explicitly asks for a commit in this execution. Human review and a real commit are required before `implemented`.
 
 Do not call Codex, another model, or any autonomous product execution from the harness. This prompt is for a human-initiated Codex execution session.

@@ -129,14 +129,14 @@ harness/reports/runs/<ID_UPPER_SNAKE>_REPORT.md
 ```
 
 Para enfileirar muitas fases, salve os blueprints em `harness/blueprints/` e
-rode o runner. Se nao houver `next` nem `validation`, a primeira fase
-`planned` sera promovida para `next`.
+rode o runner. Se nao houver `next`, `in_progress` nem `validation`, a primeira
+fase `planned` sera promovida para `next`.
 
 O runner valida que existe no maximo uma fase com status `next`, bloqueia se
-qualquer fase estiver em `validation`, confirma que o blueprint da fase `next`
-existe, bloqueia se o report derivado ja existir, chama `run-phase.sh` para
-preparar handoff, validation e completion, e gera um prompt padrao para Codex
-em:
+qualquer fase estiver em `in_progress` ou `validation`, confirma que o
+blueprint da fase `next` existe, bloqueia se o report derivado ja existir,
+chama `run-phase.sh` para preparar handoff, validation e completion, e gera um
+prompt padrao para Codex em:
 
 ```text
 harness/bin/build/prompts/<phase-id>.codex-prompt.txt
@@ -152,9 +152,13 @@ Modo dry-run:
 `run-next-phase.sh` descobre a proxima fase pelo indice e reutiliza
 `run-phase.sh`. Nenhum dos dois executa Codex automaticamente, implementa
 produto, marca fases como `implemented` ou `approved`, faz merge ou faz push.
-Status `validation`, `implemented` e `approved` continuam sendo decisoes
-humanas/manuais. Um report existente para uma fase `next` bloqueia a execucao
-porque pode indicar que a fase ja aguarda revisao humana.
+Durante a execucao pelo Codex, o helper
+`harness/bin/update-phase-index-status.sh` aplica somente `next` ->
+`in_progress` no inicio e `in_progress` -> `validation` depois do report,
+sempre mantendo commit `TBD`. Status `implemented` e `approved` continuam
+sendo decisoes humanas/manuais depois de revisao e commit real. Um report
+existente para uma fase `next` bloqueia a execucao porque pode indicar que a
+fase ja aguarda revisao humana.
 
 ## Roles operacionais
 
@@ -187,12 +191,15 @@ role humana, nao um agente autonomo.
    path a partir do blueprint e dos templates do harness.
 4. Verificar `git status` e `git branch --show-current` antes de alterar
    arquivos.
-5. Executar a implementacao somente na branch de trabalho da fase, usando o
+5. Marcar a fase como `in_progress` com commit `TBD` ao iniciar a execucao.
+6. Executar a implementacao somente na branch de trabalho da fase, usando o
    blueprint como fonte primaria e os derivados como apoio operacional.
-6. Rodar as validacoes derivadas do blueprint.
-7. Gerar report factual em `harness/reports/runs/`.
-8. Enviar o report para revisao humana ou para o Architect.
-9. Decidir a proxima etapa somente depois da revisao.
+7. Rodar as validacoes derivadas do blueprint.
+8. Gerar report factual em `harness/reports/runs/`.
+9. Marcar a fase como `validation` com commit `TBD`.
+10. Enviar o report para revisao humana ou para o Architect.
+11. Decidir commit, `implemented`, push, merge ou proxima fase somente depois
+   da revisao.
 
 O workflow completo fica em
 `harness/workflows/phase-execution.workflow.md`.
