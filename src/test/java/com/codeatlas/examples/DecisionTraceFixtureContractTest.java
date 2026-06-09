@@ -30,6 +30,8 @@ class DecisionTraceFixtureContractTest {
             "TERNARY_CONDITION",
             "OPTIONAL_BRANCH",
             "STREAM_FILTER",
+            "STREAM_FILTER_DECISION",
+            "STREAM_MATCH_DECISION",
             "UNKNOWN_CONDITION"
     );
     private static final Set<String> CATEGORIES = Set.of(
@@ -238,6 +240,33 @@ class DecisionTraceFixtureContractTest {
         assertAnalyzeDecisionsFixtureMatches(
                 Path.of("examples/phase-4-decision-trace/20-optional-if-present-or-else-decision"),
                 "com.example.decisiontrace.optionalifpresent.NotificationDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void streamFilterDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/21-stream-filter-decision"),
+                "com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void streamAnyMatchDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/22-stream-any-match-decision"),
+                "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve",
+                tempDir
+        );
+    }
+
+    @Test
+    void streamAllNoneMatchDecisionFixtureMatchesGeneratedArtifactsExactly(@TempDir Path tempDir) throws Exception {
+        assertAnalyzeDecisionsFixtureMatches(
+                Path.of("examples/phase-4-decision-trace/23-stream-all-none-match-decision"),
+                "com.example.decisiontrace.streamallnone.EligibilityDecision.resolve",
                 tempDir
         );
     }

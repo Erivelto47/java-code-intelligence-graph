@@ -13,6 +13,7 @@ import com.codeatlas.core.decision.DecisionNode;
 import com.codeatlas.core.decision.DecisionOutcome;
 import com.codeatlas.core.decision.DecisionOutcomeAction;
 import com.codeatlas.core.decision.DecisionParent;
+import com.codeatlas.core.decision.DecisionPredicate;
 import com.codeatlas.core.decision.DecisionScope;
 import com.codeatlas.core.decision.DecisionSource;
 import com.codeatlas.core.decision.DecisionSourceLocation;
@@ -41,6 +42,7 @@ public final class JavaIfThrowDecisionExtractor {
     private final JavaSwitchDecisionExtractor switchDecisionExtractor;
     private final JavaTernaryDecisionExtractor ternaryDecisionExtractor;
     private final JavaOptionalDecisionExtractor optionalDecisionExtractor;
+    private final JavaStreamDecisionExtractor streamDecisionExtractor;
     private final JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector;
     private final JavaBooleanConditionExpressionParser conditionExpressionParser;
 
@@ -52,6 +54,7 @@ public final class JavaIfThrowDecisionExtractor {
                 new JavaSwitchDecisionExtractor(),
                 new JavaTernaryDecisionExtractor(),
                 new JavaOptionalDecisionExtractor(),
+                new JavaStreamDecisionExtractor(),
                 new JavaUnsupportedDecisionShapeDetector(),
                 new JavaBooleanConditionExpressionParser()
         );
@@ -64,6 +67,7 @@ public final class JavaIfThrowDecisionExtractor {
             JavaSwitchDecisionExtractor switchDecisionExtractor,
             JavaTernaryDecisionExtractor ternaryDecisionExtractor,
             JavaOptionalDecisionExtractor optionalDecisionExtractor,
+            JavaStreamDecisionExtractor streamDecisionExtractor,
             JavaUnsupportedDecisionShapeDetector unsupportedDecisionShapeDetector,
             JavaBooleanConditionExpressionParser conditionExpressionParser
     ) {
@@ -90,6 +94,10 @@ public final class JavaIfThrowDecisionExtractor {
         this.optionalDecisionExtractor = Objects.requireNonNull(
                 optionalDecisionExtractor,
                 "optionalDecisionExtractor must not be null"
+        );
+        this.streamDecisionExtractor = Objects.requireNonNull(
+                streamDecisionExtractor,
+                "streamDecisionExtractor must not be null"
         );
         this.unsupportedDecisionShapeDetector = Objects.requireNonNull(
                 unsupportedDecisionShapeDetector,
@@ -162,17 +170,25 @@ public final class JavaIfThrowDecisionExtractor {
                 methodRange,
                 directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + 1
         );
+        List<DecisionNode> streamDecisions = extractStreamDecisions(
+                directContext,
+                sourceFile,
+                methodRange,
+                directResult.decisions(),
+                directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + optionalDecisions.size() + 1
+        );
         ExtractionResult helperResult = extractMethodLocalDecisionCalls(
                 entrypoint,
                 sourceFile,
                 methodRange,
-                directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + optionalDecisions.size() + 1,
+                directResult.decisions().size() + switchDecisions.size() + ternaryDecisions.size() + optionalDecisions.size() + streamDecisions.size() + 1,
                 directResult.unresolved().size() + 1
         );
         List<DecisionNode> decisions = new ArrayList<>(directResult.decisions());
         decisions.addAll(switchDecisions);
         decisions.addAll(ternaryDecisions);
         decisions.addAll(optionalDecisions);
+        decisions.addAll(streamDecisions);
         decisions.addAll(helperResult.decisions());
         List<UnresolvedDecision> unresolved = new ArrayList<>(directResult.unresolved());
         unresolved.addAll(helperResult.unresolved());
@@ -218,6 +234,22 @@ public final class JavaIfThrowDecisionExtractor {
         int ordinal = startingDecisionOrdinal;
         for (JavaOptionalDecisionExtractor.OptionalDecision optionalDecision : optionalDecisionExtractor.parse(sourceFile, methodRange)) {
             decisions.add(toOptionalDecisionNode(context, sourceFile, optionalDecision, ordinal));
+            ordinal++;
+        }
+        return List.copyOf(decisions);
+    }
+
+    private List<DecisionNode> extractStreamDecisions(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaDecisionSourceSupport.MethodRange methodRange,
+            List<DecisionNode> directDecisions,
+            int startingDecisionOrdinal
+    ) {
+        List<DecisionNode> decisions = new ArrayList<>();
+        int ordinal = startingDecisionOrdinal;
+        for (JavaStreamDecisionExtractor.StreamDecision streamDecision : streamDecisionExtractor.parse(sourceFile, methodRange)) {
+            decisions.add(toStreamDecisionNode(context, sourceFile, streamDecision, directDecisions, ordinal));
             ordinal++;
         }
         return List.copyOf(decisions);
@@ -806,6 +838,110 @@ public final class JavaIfThrowDecisionExtractor {
         );
     }
 
+    private DecisionNode toStreamDecisionNode(
+            DecisionContext context,
+            JavaDecisionSourceSupport.SourceFile sourceFile,
+            JavaStreamDecisionExtractor.StreamDecision parsedDecision,
+            List<DecisionNode> directDecisions,
+            int ordinal
+    ) {
+        DecisionKind kind = parsedDecision.matchOperation()
+                ? DecisionKind.STREAM_MATCH_DECISION
+                : DecisionKind.STREAM_FILTER_DECISION;
+        String suffix = parsedDecision.matchOperation() ? "stream-match" : "stream-filter";
+        DecisionParent parent = streamParent(parsedDecision, directDecisions);
+        DecisionOutcome outcome = streamOutcome(parsedDecision);
+        List<DecisionSubject> streamSubjects = new ArrayList<>(subjects(parsedDecision.predicate().text()));
+        if (parsedDecision.target() != null && !parsedDecision.target().isBlank()) {
+            streamSubjects.add(new DecisionSubject(parsedDecision.target(), "ASSIGNMENT_TARGET"));
+        }
+
+        return new DecisionNode(
+                "decision:" + context.idBase() + ":" + suffix + ":" + ordinal,
+                kind,
+                DecisionCategory.UNKNOWN,
+                context.methodSignature(),
+                new DecisionSource(context.className(), context.methodName(), context.methodSignature()),
+                new DecisionSourceLocation(sourceFile.relativePath(), sourceFile.lineOf(parsedDecision.expressionStart())),
+                condition(parsedDecision.pipeline(), JavaDecisionSourceSupport.normalizedCondition(parsedDecision.pipeline())),
+                streamSubjects,
+                List.of(outcome),
+                new DecisionEvidence("SOURCE_TEXT", parsedDecision.snippet()),
+                new DecisionLinks(List.of(), context.calledMethods(), List.of()),
+                List.of(),
+                List.of(),
+                parent,
+                "HIGH",
+                null,
+                parsedDecision.target(),
+                parsedDecision.operation(),
+                parsedDecision.pipeline(),
+                new DecisionPredicate(parsedDecision.predicate().parameter(), parsedDecision.predicate().text())
+        );
+    }
+
+    private static DecisionParent streamParent(
+            JavaStreamDecisionExtractor.StreamDecision parsedDecision,
+            List<DecisionNode> directDecisions
+    ) {
+        if (!parsedDecision.insideIfCondition()) {
+            return null;
+        }
+        return directDecisions.stream()
+                .filter(decision -> parsedDecision.pipeline().equals(decision.expression().text()))
+                .findFirst()
+                .map(decision -> new DecisionParent(decision.id(), 0, "CONDITION"))
+                .orElse(null);
+    }
+
+    private static DecisionOutcome streamOutcome(JavaStreamDecisionExtractor.StreamDecision parsedDecision) {
+        DecisionOutcomeAction action = parsedDecision.matchOperation()
+                ? streamMatchAction(parsedDecision.context())
+                : DecisionOutcomeAction.FILTER;
+        String target = parsedDecision.matchOperation()
+                ? streamMatchTarget(parsedDecision)
+                : parsedDecision.predicate().text();
+        return new DecisionOutcome(
+                "predicate",
+                action,
+                target,
+                null,
+                null,
+                streamMeaning(parsedDecision)
+        );
+    }
+
+    private static DecisionOutcomeAction streamMatchAction(JavaStreamDecisionExtractor.StatementContext context) {
+        return switch (context) {
+            case RETURN -> DecisionOutcomeAction.RETURN;
+            case ASSIGNMENT -> DecisionOutcomeAction.ASSIGN;
+            case EXPRESSION, IF_CONDITION -> DecisionOutcomeAction.UNKNOWN;
+        };
+    }
+
+    private static String streamMatchTarget(JavaStreamDecisionExtractor.StreamDecision parsedDecision) {
+        if (parsedDecision.context() == JavaStreamDecisionExtractor.StatementContext.RETURN) {
+            return parsedDecision.pipeline();
+        }
+        if (parsedDecision.context() == JavaStreamDecisionExtractor.StatementContext.ASSIGNMENT) {
+            return parsedDecision.pipeline();
+        }
+        return parsedDecision.predicate().text();
+    }
+
+    private static String streamMeaning(JavaStreamDecisionExtractor.StreamDecision parsedDecision) {
+        if (!parsedDecision.matchOperation()) {
+            return "Stream filter keeps elements matching " + parsedDecision.predicate().text();
+        }
+        String predicate = parsedDecision.predicate().text();
+        return switch (parsedDecision.operation()) {
+            case "anyMatch" -> "Stream anyMatch checks whether any element matches " + predicate;
+            case "allMatch" -> "Stream allMatch checks whether all elements match " + predicate;
+            case "noneMatch" -> "Stream noneMatch checks whether no elements match " + predicate;
+            default -> "Stream match checks predicate " + predicate;
+        };
+    }
+
     private List<DecisionNode> toTernaryDecisionNodes(
             DecisionContext context,
             JavaDecisionSourceSupport.SourceFile sourceFile,
@@ -1231,7 +1367,12 @@ public final class JavaIfThrowDecisionExtractor {
                 decision.branches(),
                 decision.children(),
                 new DecisionParent(nestedParent.decisionId(), nestedParent.branchOrder(), nestedParent.branchKind()),
-                decision.confidence()
+                decision.confidence(),
+                decision.selector(),
+                decision.assignedTo(),
+                decision.operation(),
+                decision.pipeline(),
+                decision.predicate()
         );
     }
 

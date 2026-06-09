@@ -102,6 +102,9 @@ public final class DecisionTraceMarkdownWriter {
                 return outcome.action() + " " + nullToEmpty(outcome.target());
             }
         }
+        if (!decision.outcomes().isEmpty()) {
+            return outcomeText(decision.outcomes().get(0));
+        }
         return "UNKNOWN";
     }
 

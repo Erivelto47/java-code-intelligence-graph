@@ -1,0 +1,132 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/22-stream-any-match-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve:if-return:1",
+      "kind": "EARLY_RETURN",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.streamanymatch.InvalidItemDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/streamanymatch/InvalidItemDecision.java",
+        "line": 7
+      },
+      "expression": {
+        "text": "items.stream().anyMatch(item -> item.invalid())",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "items.stream",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "true",
+          "action": "RETURN",
+          "target": "false",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Returns false from this check"
+        },
+        {
+          "when": "false",
+          "action": "CONTINUE",
+          "target": null,
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Execution continues after this check"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (items.stream().anyMatch(item -> item.invalid())) { return false; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH"
+    },
+    {
+      "id": "decision:com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve:stream-match:2",
+      "kind": "STREAM_MATCH_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.streamanymatch.InvalidItemDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/streamanymatch/InvalidItemDecision.java",
+        "line": 7
+      },
+      "expression": {
+        "text": "items.stream().anyMatch(item -> item.invalid())",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "item.invalid",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "predicate",
+          "action": "UNKNOWN",
+          "target": "item.invalid()",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Stream anyMatch checks whether any element matches item.invalid()"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "if (items.stream().anyMatch(item -> item.invalid())) { return false; }"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "parent": {
+        "decisionId": "decision:com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve:if-return:1",
+        "branchOrder": 0,
+        "branchKind": "CONDITION"
+      },
+      "confidence": "HIGH",
+      "operation": "anyMatch",
+      "pipeline": "items.stream().anyMatch(item -> item.invalid())",
+      "predicate": {
+        "parameter": "item",
+        "text": "item.invalid()"
+      }
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}

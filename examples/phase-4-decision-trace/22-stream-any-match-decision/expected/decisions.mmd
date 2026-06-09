@@ -1,0 +1,9 @@
+flowchart TD
+  entry["com.example.decisiontrace.streamanymatch.InvalidItemDecision.resolve"]
+  d1{"items.stream().anyMatch(item -> item.invalid())"}
+  o1["returns false"]
+  entry --> d1
+  d1 --> o1
+  d2{"items.stream().anyMatch(item -> item.invalid())"}
+  o2["UNKNOWN"]
+  d2 --> o2

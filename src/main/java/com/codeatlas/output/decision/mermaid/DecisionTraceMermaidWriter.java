@@ -165,6 +165,9 @@ public final class DecisionTraceMermaidWriter {
                 return "returns " + outcome.target();
             }
         }
+        if (!decision.outcomes().isEmpty()) {
+            return returnOutcomeLabel(decision.outcomes().get(0));
+        }
         return "UNKNOWN";
     }
 

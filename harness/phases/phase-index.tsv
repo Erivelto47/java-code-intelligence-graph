@@ -11,5 +11,5 @@ order	id	status	commit
 10	phase-4-7-java-ternary-decision-trace	implemented	TBD
 11	phase-4-8-java-switch-statement-expression-decision-trace	implemented	17f945b
 12	phase-4-9-java-optional-decision-trace	implemented	TBD
-13	phase-4-10-java-stream-filter-match-decision-trace	planned	TBD
+13	phase-4-10-java-stream-filter-match-decision-trace	validation	TBD
 14	phase-4-11-decision-trace-closeout-contract-and-examples	planned	TBD

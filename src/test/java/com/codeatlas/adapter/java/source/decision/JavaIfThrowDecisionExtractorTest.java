@@ -1176,6 +1176,121 @@ class JavaIfThrowDecisionExtractorTest {
         assertEquals("() -> auditMissing()", decision.branches().get(1).outcomes().get(0).target());
     }
 
+    @Test
+    void extractsStreamFilterDecision() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/ActiveUserDecision.java"),
+                """
+                        package com.example;
+
+                        import java.util.List;
+
+                        public class ActiveUserDecision {
+                            public List<User> resolve(List<User> users) {
+                                return users.stream()
+                                        .filter(user -> user.active())
+                                        .toList();
+                            }
+
+                            public record User(boolean active) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.ActiveUserDecision.resolve");
+
+        assertEquals(1, trace.decisions().size());
+        DecisionNode decision = trace.decisions().get(0);
+        assertEquals("STREAM_FILTER_DECISION", decision.kind().name());
+        assertEquals("filter", decision.operation());
+        assertEquals("users.stream() .filter(user -> user.active())", decision.pipeline());
+        assertEquals("user", decision.predicate().parameter());
+        assertEquals("user.active()", decision.predicate().text());
+        assertEquals("FILTER", decision.outcomes().get(0).action().name());
+    }
+
+    @Test
+    void extractsStreamAnyMatchDecisionFromIfCondition() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/InvalidItemDecision.java"),
+                """
+                        package com.example;
+
+                        import java.util.List;
+
+                        public class InvalidItemDecision {
+                            public boolean resolve(List<Item> items) {
+                                if (items.stream().anyMatch(item -> item.invalid())) {
+                                    return false;
+                                }
+                                return true;
+                            }
+
+                            public record Item(boolean invalid) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.InvalidItemDecision.resolve");
+
+        assertEquals(2, trace.decisions().size());
+        DecisionNode ifDecision = trace.decisions().get(0);
+        DecisionNode streamDecision = trace.decisions().get(1);
+        assertEquals("EARLY_RETURN", ifDecision.kind().name());
+        assertEquals("STREAM_MATCH_DECISION", streamDecision.kind().name());
+        assertEquals("anyMatch", streamDecision.operation());
+        assertEquals("items.stream().anyMatch(item -> item.invalid())", streamDecision.pipeline());
+        assertEquals("item", streamDecision.predicate().parameter());
+        assertEquals("item.invalid()", streamDecision.predicate().text());
+        assertEquals(ifDecision.id(), streamDecision.parent().decisionId());
+        assertEquals("CONDITION", streamDecision.parent().branchKind());
+    }
+
+    @Test
+    void extractsStreamAllAndNoneMatchDecisions() throws Exception {
+        writeJavaFile(
+                tempDir.resolve("src/main/java/com/example/EligibilityDecision.java"),
+                """
+                        package com.example;
+
+                        import java.util.List;
+
+                        public class EligibilityDecision {
+                            public boolean resolve(List<Account> accounts) {
+                                boolean allActive = accounts.stream().allMatch(account -> account.active());
+                                boolean noneBlocked = accounts.stream().noneMatch(account -> account.blocked());
+                                return allActive && noneBlocked;
+                            }
+
+                            public record Account(boolean active, boolean blocked) {
+                            }
+                        }
+                        """
+        );
+
+        DecisionTrace trace = new JavaIfThrowDecisionExtractor()
+                .analyze(tempDir, "com.example.EligibilityDecision.resolve");
+
+        assertEquals(2, trace.decisions().size());
+        DecisionNode allMatch = trace.decisions().get(0);
+        DecisionNode noneMatch = trace.decisions().get(1);
+        assertEquals("STREAM_MATCH_DECISION", allMatch.kind().name());
+        assertEquals("allMatch", allMatch.operation());
+        assertEquals("account", allMatch.predicate().parameter());
+        assertEquals("account.active()", allMatch.predicate().text());
+        assertEquals("allActive", allMatch.assignedTo());
+
+        assertEquals("STREAM_MATCH_DECISION", noneMatch.kind().name());
+        assertEquals("noneMatch", noneMatch.operation());
+        assertEquals("account", noneMatch.predicate().parameter());
+        assertEquals("account.blocked()", noneMatch.predicate().text());
+        assertEquals("noneBlocked", noneMatch.assignedTo());
+    }
+
     private static void writeJavaFile(Path sourceFile, String source) throws Exception {
         Files.createDirectories(sourceFile.getParent());
         Files.writeString(sourceFile, source);

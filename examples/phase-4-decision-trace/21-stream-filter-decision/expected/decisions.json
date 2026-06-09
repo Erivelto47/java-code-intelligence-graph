@@ -1,0 +1,74 @@
+{
+  "schemaVersion": "1.0",
+  "generatedAt": "1970-01-01T00:00:00Z",
+  "project": "examples/phase-4-decision-trace/21-stream-filter-decision",
+  "scope": {
+    "kind": "ENTRYPOINT",
+    "entrypoint": "com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve",
+    "endpoint": null
+  },
+  "source": {
+    "flowRef": null,
+    "projectIndexRef": null
+  },
+  "decisions": [
+    {
+      "id": "decision:com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve:stream-filter:1",
+      "kind": "STREAM_FILTER_DECISION",
+      "category": "UNKNOWN",
+      "method": "com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve",
+      "source": {
+        "className": "com.example.decisiontrace.streamfilter.ActiveUserDecision",
+        "methodName": "resolve",
+        "signature": "com.example.decisiontrace.streamfilter.ActiveUserDecision.resolve"
+      },
+      "sourceLocation": {
+        "file": "src/main/java/com/example/decisiontrace/streamfilter/ActiveUserDecision.java",
+        "line": 8
+      },
+      "expression": {
+        "text": "users.stream() .filter(user -> user.active())",
+        "normalized": null
+      },
+      "subjects": [
+        {
+          "name": "user.active",
+          "kind": "INPUT_FIELD"
+        }
+      ],
+      "outcomes": [
+        {
+          "when": "predicate",
+          "action": "FILTER",
+          "target": "user.active()",
+          "exceptionType": null,
+          "message": null,
+          "meaning": "Stream filter keeps elements matching user.active()"
+        }
+      ],
+      "evidence": {
+        "kind": "SOURCE_TEXT",
+        "snippet": "return users.stream() .filter(user -> user.active()) .toList();"
+      },
+      "links": {
+        "flowNodeIds": [],
+        "calledMethods": [],
+        "relatedBoundaries": []
+      },
+      "confidence": "HIGH",
+      "operation": "filter",
+      "pipeline": "users.stream() .filter(user -> user.active())",
+      "predicate": {
+        "parameter": "user",
+        "text": "user.active()"
+      }
+    }
+  ],
+  "unresolved": [],
+  "metadata": {
+    "analyzer": "java-source-text-decision-extractor",
+    "phase": "phase-4.3.1-java-mixed-throw-return-if-else",
+    "deterministic": true,
+    "source": "source-text"
+  }
+}
